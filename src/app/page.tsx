@@ -1,66 +1,112 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client';
 
-export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
+import { useState } from 'react';
+import { useBooking } from './hooks/useBooking';
+
+
+export default function BookingPage() {
+  const [bookingId, setBookingId] = useState('');
+  const {
+    booking,
+    loading,
+    error,
+    loadBooking,
+    cancel,
+    canCancel,
+  } = useBooking();
+
+  const onCancel = async () => {
+    const confirmed = window.confirm(
+      '¿Seguro que quieres cancelar esta actuación?\n\nLa cancelación no implica devolución automática.',
+    );
+
+    if (!confirmed) return;
+
+    await cancel('Cancelación iniciada desde la interfaz');
+  };
+
+  const renderStatus = () => {
+    if (!booking) return null;
+
+    switch (booking.status) {
+      case 'PAID_FULL':
+        return (
+          <p style={{ color: 'green' }}>
+            🟢 Actuación confirmada y pagada
           </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        );
+      case 'CANCELLED':
+        return (
+          <p style={{ color: 'red' }}>
+            🔴 Actuación cancelada
+          </p>
+        );
+      case 'COMPLETED':
+        return (
+          <p style={{ color: 'gray' }}>
+            ✅ Actuación realizada
+          </p>
+        );
+      default:
+        return <p>Estado: {booking.status}</p>;
+    }
+  };
+
+  return (
+    <main style={{ padding: 40, maxWidth: 600 }}>
+      <h1>Detalle de actuación</h1>
+
+      {!booking && (
+        <>
+          <input
+            placeholder="ID de la actuación"
+            value={bookingId}
+            onChange={(e) => setBookingId(e.target.value)}
+            style={{ width: '100%' }}
+          />
+
+          <button
+            onClick={() => loadBooking(bookingId)}
+            disabled={!bookingId || loading}
+            style={{ marginTop: 10 }}
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Ver actuación
+          </button>
+        </>
+      )}
+
+      {loading && <p>Procesando…</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      {booking && (
+        <div style={{ marginTop: 30 }}>
+          {renderStatus()}
+
+          <div style={{ marginTop: 20 }}>
+            <p><strong>Importe acordado</strong></p>
+            <p style={{ fontSize: 24 }}>
+              {booking.totalAmount} {booking.currency}
+            </p>
+          </div>
+
+          {canCancel && (
+            <div style={{ marginTop: 30 }}>
+              <button
+                onClick={onCancel}
+                disabled={loading}
+                style={{ color: 'red' }}
+              >
+                Cancelar actuación
+              </button>
+
+              <p style={{ fontSize: 12, marginTop: 10 }}>
+                La cancelación no implica devolución automática.
+                El caso será revisado según las condiciones del contrato.
+              </p>
+            </div>
+          )}
         </div>
-      </main>
-    </div>
+      )}
+    </main>
   );
 }
