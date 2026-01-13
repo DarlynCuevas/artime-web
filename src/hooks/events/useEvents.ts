@@ -1,8 +1,8 @@
 // Hook para eventos
 import { useEffect, useState } from 'react';
-import type { Event } from '../types/event';
-import { eventsService } from '../services/events/events.service';
-import { useAuth } from '../hooks/useAuth';
+import type { Event } from '../../types/event';
+import { eventsService } from '../../services/events/events.service';
+import { useAuth } from '../useAuth';
 
 
 export function useEvents() {

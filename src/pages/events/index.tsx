@@ -1,6 +1,6 @@
 
 import Link from 'next/link';
-import { useEvents } from '../../hooks/useEvents';
+import { useEvents } from '../../hooks/events/useEvents';
 
 
 export default function EventsPage() {

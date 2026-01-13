@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { useCreateBooking } from '@/hooks/useCreateBooking';
+import { useCreateBooking } from '@/hooks/bookings/useCreateBooking';
 import { useAuth } from '@/hooks/useAuth';
 
 

@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useBooking } from '../../hooks/useBooking';
+import { useBooking } from '../../hooks/bookings/useBooking';
 
 
 export default function BookingPage() {

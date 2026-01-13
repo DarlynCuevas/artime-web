@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react';
 import type { Event } from '@/types/event';
 import { eventsService } from '@/services/events/events.service';
 import { useAuth } from '@/hooks/useAuth';
-import { useCreateBooking } from '@/hooks/useCreateBooking';
+import { useCreateBooking } from '@/hooks/bookings/useCreateBooking';
+import { useArtists } from '@/hooks/artists/useArtists';
+import { useEventBookings } from '@/hooks/events/useEventBookings';
+
+
 
 
 export default function EventDetailPage() {
@@ -14,9 +18,17 @@ export default function EventDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const { user } = useAuth();
+    const {
+        bookings: eventBookings,
+        loading: bookingsLoading,
+        error: bookingsError,
+    } = useEventBookings(event?.id);
+
     const { submit: createBooking, loading: creating } = useCreateBooking(user.token);
     const canInitiateBooking =
         user?.role === 'VENUE' || user?.role === 'MANAGER';
+    const [selectedArtistId, setSelectedArtistId] = useState<string | null>(null);
+    const { artists, artistsLoading, artistsError } = useArtists();
 
 
 
@@ -35,12 +47,16 @@ export default function EventDetailPage() {
 
     const handleCreateBooking = async () => {
         if (!user || !event) return;
+        if (!selectedArtistId) {
+            alert('Selecciona un artista antes de iniciar la contratación');
+            return;
+        }
         try {
 
 
             const booking = await createBooking({
                 eventId: event.id,
-                artistId: '11111111-1111-1111-1111-111111111111',
+                artistId: selectedArtistId!,
                 start_date: event.start_date,
                 currency: 'EUR', // Ajusta según corresponda
                 totalAmount: 1000 // Ajusta según corresponda
@@ -66,7 +82,50 @@ export default function EventDetailPage() {
                     {creating ? 'Creando booking…' : 'Iniciar contratación'}
                 </button>
             )}
+            <h3>Selecciona un artista</h3>
+
+            {artistsLoading && <p>Cargando artistas…</p>}
+            {artistsError && <p style={{ color: 'red' }}>{artistsError}</p>}
+
+            {!artistsLoading && !artistsError && (
+                <select
+                    value={selectedArtistId ?? ''}
+                    onChange={(e) => setSelectedArtistId(e.target.value)}
+                >
+                    <option value="">— Selecciona un artista —</option>
+                    {artists.map((artist) => (
+                        <option key={artist.id} value={artist.id}>
+                            {artist.name}
+                        </option>
+                    ))}
+                </select>
+            )}
+
+            <h2>Contrataciones del evento</h2>
+
+            {bookingsLoading && <p>Cargando contrataciones…</p>}
+            {bookingsError && (
+                <p style={{ color: 'red' }}>{bookingsError}</p>
+            )}
+
+            {!bookingsLoading && !bookingsError && eventBookings.length === 0 && (
+                <p>No hay contrataciones asociadas a este evento.</p>
+            )}
+
+            {!bookingsLoading && !bookingsError && eventBookings.length > 0 && (
+                <ul>
+                    {eventBookings.map((booking) => (
+                        <li key={booking.id}>
+                            <strong>{booking.artist?.name}</strong> —{' '}
+                            {booking.start_date} —{' '}
+                            <em>{booking.status}</em>
+                        </li>
+                    ))}
+                </ul>
+            )}
+
 
         </div>
+
     );
 }

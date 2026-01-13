@@ -1,21 +1,22 @@
+
 import { useState } from 'react';
-import {
-  getBookingById,
-  BookingDto,
-} from '../services/bookings/bookings.service';
-import { cancelBooking } from '../services/payouts/cancellations.service';
+import { getBookingById, BookingDto } from '../../services/bookings/bookings.service';
+import { cancelBooking } from '../../services/payouts/cancellations.service';
+import { useAuth } from '@/hooks/useAuth';
 
 export function useBooking() {
   const [booking, setBooking] = useState<BookingDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const loadBooking = async (bookingId: string) => {
     setLoading(true);
     setError(null);
 
     try {
-      const data = await getBookingById(bookingId);
+      if (!user?.token) throw new Error('No token');
+      const data = await getBookingById(bookingId, user.token);
       setBooking(data);
     } catch (err: any) {
       setError(err.message);

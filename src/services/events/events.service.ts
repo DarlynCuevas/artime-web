@@ -5,7 +5,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export const eventsService = {
     async getEvents(token: string): Promise<Event[]> {
-        
+
         const res = await fetch(`${BASE_URL}/events`, {
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -97,7 +97,25 @@ export const eventsService = {
         }
 
         return res.json();
+    },
+};
+export async function getEventBookings(
+    eventId: string,
+    token: string,
+) {
+    const res = await fetch(
+        `${BASE_URL}/events/${eventId}/bookings`,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    ); 
+
+    if (!res.ok) {
+        throw new Error('Error fetching event bookings');
     }
 
+    return res.json();
+}
 
-};

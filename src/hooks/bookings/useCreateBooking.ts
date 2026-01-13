@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createBooking, CreateBookingPayload } from '../services/bookings/bookings.service';
+import { createBooking, CreateBookingPayload } from '../../services/bookings/bookings.service';
 
 
 export function useCreateBooking(token: string) {
