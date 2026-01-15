@@ -1,7 +1,13 @@
 // Servicio para eventos
-import type { Event } from '../../types/event';
+import type { Event, EventVisibility } from '../../types/event';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+type UpdateBookingOrganizationPayload = {
+  event_day_id?: string;
+  order?: number;
+  start_time?: string;
+  end_time?: string;
+};
 
 export const eventsService = {
     async getEvents(token: string): Promise<Event[]> {
@@ -98,11 +104,30 @@ export const eventsService = {
 
         return res.json();
     },
-};
+
+    async updateEventVisibility(eventId: string, visibility: EventVisibility, token: string) {
+        const res = await fetch(
+            `${BASE_URL}/events/${eventId}/visibility`,
+            {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ visibility }),
+            }
+        );
+        if (!res.ok) {
+            throw new Error('Failed to update event visibility');
+        }
+        return res.json();
+    },
+}
+
 export async function getEventBookings(
     eventId: string,
     token: string,
-) {
+    ) {
     const res = await fetch(
         `${BASE_URL}/events/${eventId}/bookings`,
         {
@@ -118,4 +143,50 @@ export async function getEventBookings(
 
     return res.json();
 }
+
+//Vincular booking a event
+export async function linkBookingToEvent(
+  eventId: string,
+  bookingId: string,
+  token: string
+) {
+  const res = await fetch(
+    `${BASE_URL}/events/${eventId}/bookings/${bookingId}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to link booking to event');
+  }
+
+  return res.json();
+}
+
+//Organizar booking dentro del event
+export const updateEventBookingOrganization = async (
+  eventId: string,
+  bookingId: string,
+  payload: UpdateBookingOrganizationPayload
+) => {
+  const res = await fetch(
+    `/events/${eventId}/bookings/${bookingId}/organization`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  return res.json();
+};
+
+//Cambiar visibilidad del Event
+ 
 

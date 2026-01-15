@@ -1,3 +1,4 @@
+export type EventVisibility = 'PRIVATE' | 'VISIBLE';
 export type EventStatus =
   | 'DRAFT'
   | 'SEARCHING'
@@ -20,4 +21,27 @@ export interface Event {
 
   createdAt: string;
   updatedAt: string;
+
+  location:string
+
+  visibility: EventVisibility;
+  days?: EventDay[];
+  bookings?: EventBookingLink[];
+
 }
+
+export type EventDay = {
+  id: string;
+  date: string;
+  order: number;
+};
+
+export type EventBookingLink = {
+  id: string;
+  booking_id: string;
+  event_day_id?: string;
+  order?: number;
+  start_time?: string;
+  end_time?: string;
+};
+

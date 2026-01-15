@@ -1,3 +1,5 @@
+import { Booking } from "@/types/booking";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL!;
 
 export type BookingDto = {
@@ -45,8 +47,6 @@ export async function createBooking(
   payload: CreateBookingPayload,
   token: string,
 ) {
-  console.log('payload ', payload);
-  
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings`,
     {
@@ -62,6 +62,27 @@ export async function createBooking(
   if (!res.ok) {
     const error = await res.text();
     throw new Error(error || 'Error creating booking');
+  }
+
+  return res.json();
+}
+
+export async function getBookingsByEvent(
+  eventId: string,
+  token: string,
+): Promise<Booking[]> {
+  const res = await fetch(
+    `${API_BASE_URL}/events/${eventId}/bookings`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!res.ok) {
+    const error = await res.text();
+    throw new Error(error || 'Error fetching event bookings');
   }
 
   return res.json();

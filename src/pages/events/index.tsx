@@ -1,40 +1,73 @@
-
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useEvents } from '../../hooks/events/useEvents';
+import { useAuth } from '@/hooks/useAuth';
+import { eventsService } from '@/services/events/events.service';
+import type { Event } from '@/types/event';
+import { useRouter } from 'next/router';
 
 
 export default function EventsPage() {
-  const { events, loading } = useEvents();
+  const { user } = useAuth();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const canCreateEvent = user?.role === 'VENUE';
+
+  useEffect(() => {
+    if (!user?.token) return;
+
+    eventsService
+      .getEvents(user.token)
+      .then(setEvents)
+      .catch(() => setError('No se pudieron cargar los eventos'))
+      .finally(() => setLoading(false));
+  }, [user?.token]);
 
   if (loading) return <p>Cargando eventos…</p>;
+  if (error) return <p style={{ color: 'red' }}>{error}</p>;
 
   return (
     <div>
-      <header style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <h1>Mis eventos</h1>
+      <h1>Mis eventos</h1>
 
-        {/* CTA principal */}
-        <Link href="/events/new">
-          <button>Crear evento</button>
-        </Link>
-      </header>
-
-      {events.length === 0 && (
-        <p>No tienes eventos todavía.</p>
+      {canCreateEvent && (
+        <button
+          onClick={() => router.push('/events/new')}
+          style={{ marginBottom: 24 }}
+        >
+          Crear evento
+        </button>
       )}
 
-      <ul>
-        {events.map(event => (
-          <li key={event.id}>
-            <Link href={`/events/${event.id}`}>
+
+      {events.length === 0 && (
+        <p>No has creado ningún evento todavía.</p>
+      )}
+
+      {events.length > 0 && (
+        <ul>
+          {events.map((event) => (
+            <li key={event.id} style={{ marginBottom: 16 }}>
               <strong>{event.name}</strong>
-            </Link>
-            <div>
+              <br />
+              Fecha:{' '}
+              {event.start_date
+                ? new Date(event.start_date).toLocaleDateString()
+                : 'Sin fecha'}
+              <br />
               Estado: {event.status}
-            </div>
-          </li>
-        ))}
-      </ul>
+              <br />
+              Visibilidad: {event.visibility}
+              <br />
+              <Link href={`/events/${event.id}`}>
+                Ver evento
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
+
