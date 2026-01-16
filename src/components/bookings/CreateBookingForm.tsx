@@ -1,54 +1,102 @@
-import { useState } from 'react';
-
-import { useCreateBooking } from '@/hooks/bookings/useCreateBooking';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { createBooking } from '@/services/bookings/bookings.service';
+import { getArtists } from '@/services/artists/artists.service';
 
+export function CreateBookingForm() {
+  const { user } = useAuth();
 
-interface Props  {
-  eventId: string;
-  artistId: string;
-  onSuccess: () => void;
-}
+  const [artists, setArtists] = useState<any[]>([]);
+  const [artistId, setArtistId] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [totalAmount, setTotalAmount] = useState('');
+  const [message, setMessage] = useState(
+    `Estamos interesados en contratarte para una actuación.
 
-export function CreateBookingForm({ eventId, artistId, onSuccess }: Props ) {
-  const { user } = useAuth(); // 👈 importante
-  const { submit, loading, error } = useCreateBooking(user.token);
+Las condiciones iniciales están detalladas en esta propuesta.
+Quedamos atentos a tu respuesta.`
+  );
+  const [loading, setLoading] = useState(false);
 
-  const [totalAmount, setTotalAmount] = useState<number>(0);
+  // 1️⃣ cargar artistas
+  useEffect(() => {
+    if (!user?.token) return;
+    getArtists(user.token).then(setArtists);
+  }, [user?.token]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // 2️⃣ submit del formulario
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!user?.token) return;
 
-    await submit({
-      artistId,
-      eventId,
-      currency: 'EUR',
-      totalAmount,
-      // start_date: ... // Aquí puedes pasar start_date si lo tienes disponible en el formulario
-    });
+    try {
+      setLoading(true);
 
-    onSuccess();
-  };
+      // 3️⃣ llamar al backend
+      const booking = await createBooking(
+        {
+          artistId,
+          start_date: startDate,
+          totalAmount: Number(totalAmount),
+          currency: 'EUR',
+          message,
+        },
+        user.token
+      );
+
+      // 4️⃣ 👉 AQUÍ VA EL REDIRECT
+      window.location.href = `/bookings/${booking.id}`;
+
+    } catch (error) {
+      alert('No se pudo crear la contratación');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <form onSubmit={handleSubmit}>
-      <label>
-        Caché (€)
-        <input
-          type="number"
-          value={totalAmount}
-          onChange={(e) => setTotalAmount(Number(e.target.value))}
-          required
-        />
-      </label>
+      <h1>Crear propuesta de contratación</h1>
 
-      {error && <p>{error}</p>}
+      <label>Artista</label>
+      <select
+        value={artistId}
+        onChange={(e) => setArtistId(e.target.value)}
+        required
+      >
+        <option value="">Selecciona un artista</option>
+        {artists.map((artist) => (
+          <option key={artist.id} value={artist.id}>
+            {artist.name}
+          </option>
+        ))}
+      </select>
+
+      <label>Fecha</label>
+      <input
+        type="date"
+        value={startDate}
+        onChange={(e) => setStartDate(e.target.value)}
+        required
+      />
+
+      <label>Precio (€)</label>
+      <input
+        type="number"
+        value={totalAmount}
+        onChange={(e) => setTotalAmount(e.target.value)}
+        required
+      />
+
+      <label>Mensaje inicial (opcional)</label>
+      <textarea
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+      />
 
       <button type="submit" disabled={loading}>
-        {loading ? 'Creando…' : 'Crear booking'}
+        {loading ? 'Enviando…' : 'Enviar propuesta de contratación'}
       </button>
     </form>
   );
 }
-
-

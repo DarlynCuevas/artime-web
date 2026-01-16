@@ -9,6 +9,10 @@ export type BookingDto = {
   status: string;
   currency: string;
   totalAmount: number;
+  handledByRole: 'ARTIST' | 'MANAGER' | 'VENUE' | 'PROMOTER' | null;
+  handledByUserId: string | null;
+  handledAt: string | null;
+  messagesCount?: number;
 };
 export interface CreateBookingPayload {
   artistId: string;
@@ -16,6 +20,7 @@ export interface CreateBookingPayload {
   totalAmount: number;
   eventId?: string;
   start_date?: string;
+  message?: string;
 }
 
 export async function getBookingById(
@@ -24,7 +29,7 @@ export async function getBookingById(
 ): Promise<BookingDto> {
   const res = await fetch(
     `${API_BASE_URL}/bookings/${bookingId}`,
-      {
+    {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -40,7 +45,7 @@ export async function getBookingById(
 
   return res.json();
 
-  
+
 }
 
 export async function createBooking(

@@ -1,110 +1,155 @@
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
-import { useState } from 'react';
-import { useBooking } from '../../hooks/bookings/useBooking';
+import { useAuth } from '@/hooks/useAuth';
+import { BookingDto } from '@/services/bookings/bookings.service';
 
+export default function BookingsPage() {
+  const { user } = useAuth();
+  const [bookings, setBookings] = useState<BookingDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-export default function BookingPage() {
-  const [bookingId, setBookingId] = useState('');
-  const {
-    booking,
-    loading,
-    error,
-    loadBooking,
-    cancel,
-    canCancel,
-  } = useBooking();
+  useEffect(() => {
+    if (!user?.token) return;
 
-  const onCancel = async () => {
-    const confirmed = window.confirm(
-      '¿Seguro que quieres cancelar esta actuación?\n\nLa cancelación no implica devolución automática.',
+    setLoading(true);
+
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings`, {
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Error cargando las contrataciones');
+        }
+        return res.json();
+      })
+      .then(setBookings)
+      .catch(() => setError('No se pudieron cargar las contrataciones'))
+      .finally(() => setLoading(false));
+  }, [user?.token]);
+
+  if (loading) {
+    return <p style={{ padding: 40 }}>Cargando contrataciones…</p>;
+  }
+
+  if (error) {
+    return (
+      <p style={{ padding: 40, color: 'red' }}>
+        {error}
+      </p>
     );
-
-    if (!confirmed) return;
-
-    await cancel('Cancelación iniciada desde la interfaz');
-  };
-
-  const renderStatus = () => {
-    if (!booking) return null;
-
-    switch (booking.status) {
-      case 'PAID_FULL':
-        return (
-          <p style={{ color: 'green' }}>
-            🟢 Actuación confirmada y pagada
-          </p>
-        );
-      case 'CANCELLED':
-        return (
-          <p style={{ color: 'red' }}>
-            🔴 Actuación cancelada
-          </p>
-        );
-      case 'COMPLETED':
-        return (
-          <p style={{ color: 'gray' }}>
-            ✅ Actuación realizada
-          </p>
-        );
-      default:
-        return <p>Estado: {booking.status}</p>;
-    }
-  };
+  }
 
   return (
-    <main style={{ padding: 40, maxWidth: 600 }}>
-      <h1>Detalle de actuación</h1>
+    <main
+      style={{
+        maxWidth: 1100,
+        margin: '0 auto',
+        padding: '32px 24px',
+      }}
+    >
+      {/* HEADER */}
+      <header style={{ marginBottom: 32 }}>
+        <h1 style={{ fontSize: 24, marginBottom: 8 }}>
+          Contrataciones
+        </h1>
+        <p style={{ color: '#555' }}>
+          Gestión de tus actuaciones y propuestas activas.
+        </p>
+      </header>
 
-      {!booking && (
-        <>
-          <input
-            placeholder="ID de la actuación"
-            value={bookingId}
-            onChange={(e) => setBookingId(e.target.value)}
-            style={{ width: '100%' }}
-          />
-
-          <button
-            onClick={() => loadBooking(bookingId)}
-            disabled={!bookingId || loading}
-            style={{ marginTop: 10 }}
-          >
-            Ver actuación
-          </button>
-        </>
+      {bookings.length === 0 && (
+        <section
+          style={{
+            padding: 24,
+            border: '1px solid #ddd',
+            background: '#fafafa',
+          }}
+        >
+          <p>
+            No tienes contrataciones registradas.
+          </p>
+        </section>
       )}
 
-      {loading && <p>Procesando…</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {bookings.length > 0 && (
+        <section
+          style={{
+            border: '1px solid #ddd',
+            padding: 16,
+          }}
+        >
+          <table
+            style={{
+              width: '100%',
+              borderCollapse: 'collapse',
+            }}
+          >
+            <thead>
+              <tr style={{ borderBottom: '1px solid #ccc' }}>
+                <th align="left">Referencia</th>
+                <th align="left">Fecha</th>
+                <th align="left">Estado</th>
+                <th align="right">Importe</th>
+                <th />
+              </tr>
+            </thead>
 
-      {booking && (
-        <div style={{ marginTop: 30 }}>
-          {renderStatus()}
+            <tbody>
+              {bookings.map((booking) => {
+                const isCancelled =
+                  booking.status === 'CANCELLED' ||
+                  booking.status === 'CANCELLED_PENDING_REVIEW';
 
-          <div style={{ marginTop: 20 }}>
-            <p><strong>Importe acordado</strong></p>
-            <p style={{ fontSize: 24 }}>
-              {booking.totalAmount} {booking.currency}
-            </p>
-          </div>
+                return (
+                  <tr
+                    key={booking.id}
+                    style={{
+                      borderTop: '1px solid #eee',
+                      background: isCancelled ? '#fafafa' : 'transparent',
+                    }}
+                  >
+                    <td style={{ padding: '12px 0' }}>
+                      {booking.id.slice(0, 8)}…
+                    </td>
 
-          {canCancel && (
-            <div style={{ marginTop: 30 }}>
-              <button
-                onClick={onCancel}
-                disabled={loading}
-                style={{ color: 'red' }}
-              >
-                Cancelar actuación
-              </button>
+                    <td>
+                      {booking.start_date
+                        ? new Date(
+                            booking.start_date,
+                          ).toLocaleDateString()
+                        : '—'}
+                    </td>
 
-              <p style={{ fontSize: 12, marginTop: 10 }}>
-                La cancelación no implica devolución automática.
-                El caso será revisado según las condiciones del contrato.
-              </p>
-            </div>
-          )}
-        </div>
+                    <td>
+                      <span
+                        style={{
+                          fontWeight: 500,
+                          color: isCancelled ? '#999' : '#000',
+                        }}
+                      >
+                        {booking.status}
+                      </span>
+                    </td>
+
+                    <td align="right">
+                      {booking.totalAmount} {booking.currency}
+                    </td>
+
+                    <td align="right">
+                      <Link href={`/bookings/${booking.id}`}>
+                        Ver detalle
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </section>
       )}
     </main>
   );

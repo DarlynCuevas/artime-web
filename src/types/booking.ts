@@ -21,6 +21,11 @@ export interface Booking {
   id: string;
   status: BookingStatus;
   start_date?: string;
+  
+  handledByRole: 'ARTIST' | 'MANAGER' | 'VENUE' | 'PROMOTER' | null;
+  handledByUserId: string | null;
+  handledAt: string | null;
 
   artist: BookingArtist;
+  messagesCount?: number;
 }
