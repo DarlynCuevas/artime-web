@@ -2,12 +2,16 @@ import { useState } from 'react';
 import { useNegotiation } from '@/hooks/bookings/useNegotiation';
 import type { UserRole } from '@/types/user-role';
 import { useAuth } from '@/hooks/useAuth';
+import { acceptFinalOffer } from '@/services/bookings/negotiations.service';
+import { acceptBooking } from '@/services/bookings/bookings.service';
+
 type Props = {
   bookingId: string;
   isHandledByOther: boolean;
   bookingStatus: string;
   userRole: UserRole;
   onBookingUpdated: () => void;
+  refreshContract: () => void;
 };
 
 export function NegotiationPanel({
@@ -16,6 +20,7 @@ export function NegotiationPanel({
   userRole,
   bookingStatus,
   onBookingUpdated,
+  refreshContract,
 }: Props) {
   const {
     messages,
@@ -24,13 +29,13 @@ export function NegotiationPanel({
     error,
     sendMessage,
     sendOfferFinal,
-    accept,
     reject,
   } = useNegotiation(bookingId);
 
   const { user } = useAuth();
   const [text, setText] = useState('');
   const [fee, setFee] = useState<number | ''>('');
+  const [isFinalOffer, setIsFinalOffer] = useState(false);
 
   const lastMessage =
     messages.length > 0 ? messages[messages.length - 1] : null;
@@ -53,16 +58,20 @@ export function NegotiationPanel({
   const canWrite =
     ['PENDING', 'NEGOTIATING'].includes(bookingStatus) &&
     isMyTurn &&
-    !isInitialPendingVenue;
+    !(
+      bookingStatus === 'PENDING' &&
+      isVenueSide
+    );
+
 
   //  Validación de importe para contraoferta
   const parsedFee = Number(fee);
   const needsFee =
-    bookingStatus === 'NEGOTIATING' &&
-    (!fee || isNaN(parsedFee) || parsedFee <= 0);
+    !fee || isNaN(parsedFee) || parsedFee <= 0;
+
 
   //  Enviar oferta final
-  const canSendFinalOffer =
+  const canMarkAsFinalOffer =
     isMyTurn &&
     (
       (isArtistSide &&
@@ -71,6 +80,7 @@ export function NegotiationPanel({
     );
 
   //  Aceptar /  Rechazar booking u oferta
+
   const canAcceptOrReject =
     ['PENDING', 'NEGOTIATING', 'FINAL_OFFER_SENT'].includes(bookingStatus) &&
     isMyTurn &&
@@ -78,6 +88,11 @@ export function NegotiationPanel({
       bookingStatus === 'PENDING' &&
       isVenueSide
     );
+
+
+
+
+
 
   return (
     <section style={{ marginTop: 32 }}>
@@ -155,50 +170,54 @@ export function NegotiationPanel({
 
           {needsFee && (
             <p style={{ color: '#b00020', fontSize: 13 }}>
-              Debes indicar un importe para enviar una contraoferta.
+              Debes indicar un importe para enviar una propuesta.
             </p>
           )}
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            {bookingStatus === 'NEGOTIATING' && (
-              <button
-                type="button"
-                disabled={sending || needsFee}
-                onClick={async () => {
-                  if (needsFee) return;
+          {canMarkAsFinalOffer && (
+            <label style={{ display: 'block', marginBottom: 8 }}>
+              <input
+                type="checkbox"
+                checked={isFinalOffer}
+                onChange={(e) => setIsFinalOffer(e.target.checked)}
+              />{' '}
+              Oferta final
+            </label>
+          )}
 
-                  await sendMessage({
-                    message: text ?? '',
-                    proposedFee: parsedFee,
-                  });
-                  setText('');
-                  setFee('');
-                }}
-              >
-                Enviar contraoferta
-              </button>
-            )}
+          <button
+            type="button"
+            disabled={sending || needsFee}
+            onClick={async () => {
+              if (needsFee) return;
 
-            {canSendFinalOffer && (
-              <button
-                type="button"
-                disabled={sending || !fee}
-                style={{ background: '#000', color: '#fff' }}
-                onClick={async () => {
-                  await sendOfferFinal({
-                    proposedFee: parsedFee,
-                    message: text ?? '',
-                  });
-                  setText('');
-                  setFee('');
-                }}
-              >
-                Enviar oferta final
-              </button>
-            )}
-          </div>
+              if (isFinalOffer) {
+                //  Oferta final
+                await sendOfferFinal({
+                  proposedFee: parsedFee,
+                  message: text || '',
+                });
+              } else {
+                //  Propuesta normal
+                await sendMessage({
+                  message: text || '',
+                  proposedFee: parsedFee,
+                });
+              }
+
+              // Reset UI
+              setText('');
+              setFee('');
+              setIsFinalOffer(false);
+            }}
+          >
+            Enviar propuesta
+          </button>
+
         </>
       )}
+
+
 
       {/* ACEPTAR / RECHAZAR */}
       {canAcceptOrReject && (
@@ -207,12 +226,21 @@ export function NegotiationPanel({
             type="button"
             disabled={sending}
             onClick={async () => {
-              await accept(bookingStatus);
+              if (bookingStatus === 'FINAL_OFFER_SENT') {
+                // Aceptar oferta final (negociación)
+                await acceptFinalOffer(bookingId, user?.token);
+              } else if (bookingStatus === 'PENDING') {
+                // Aceptar booking inicial (sin negociación)
+                await acceptBooking(bookingId, user?.token);
+              }
+
               onBookingUpdated();
+              refreshContract();
             }}
           >
             Aceptar
           </button>
+
 
           <button
             type="button"

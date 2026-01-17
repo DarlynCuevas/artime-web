@@ -11,7 +11,6 @@ export type NegotiationMessageDto = {
   createdAt: string;
 };
 
-
 /**
  * Obtener mensajes de negociación de un booking
  */
@@ -36,16 +35,15 @@ export async function getNegotiationMessages(
 }
 
 /**
- * Enviar mensaje de negociación (oferta normal)
+ * Enviar mensaje de negociación (propuesta normal)
  */
 export async function sendNegotiationMessage(
   bookingId: string,
   token: string,
   payload: {
-  message: string;
-  proposedFee?: number;
-  isFinalOffer?: boolean;
-}
+    message: string;
+    proposedFee?: number;
+  }
 ): Promise<void> {
   const res = await fetch(
     `${API_BASE_URL}/bookings/${bookingId}/negotiations/messages`,
@@ -71,10 +69,9 @@ export async function sendFinalOffer(
   bookingId: string,
   token: string,
   payload: {
-  message: string;
-  proposedFee?: number;
-  isFinalOffer?: boolean;
-}
+    message: string;
+    proposedFee: number;
+  }
 ): Promise<void> {
   const res = await fetch(
     `${API_BASE_URL}/bookings/${bookingId}/negotiations/final-offer`,
@@ -92,63 +89,11 @@ export async function sendFinalOffer(
     throw new Error('Error al enviar la oferta final');
   }
 }
-/**
- * Aceptar oferta (normal)
- */
-
-export async function acceptBooking(
-  bookingId: string,
-  token: string,
-): Promise<void> {
-  await fetch(`${API_BASE_URL}/bookings/${bookingId}/accept`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-}
 
 /**
- * Rechazar oferta (normal)
+ * Rechazar booking (antes de oferta final)
  */
 export async function rejectBooking(
-  bookingId: string,
-  token: string,
-): Promise<void> {
-  await fetch(`${API_BASE_URL}/bookings/${bookingId}/reject`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-}
-
-/**
- * Aceptar oferta (final)
- */
-export async function acceptFinalOffer(
-  bookingId: string,
-  token: string,
-): Promise<void> {
-  const res = await fetch(
-      `${API_BASE_URL}/bookings/${bookingId}/negotiations/accept`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
-
-  if (!res.ok) {
-    throw new Error('Error al aceptar la oferta');
-  }
-}
-
-/**
- * Rechazar oferta (final)
- */
-export async function rejectFinalOffer(
   bookingId: string,
   token: string,
 ): Promise<void> {
@@ -163,6 +108,50 @@ export async function rejectFinalOffer(
   );
 
   if (!res.ok) {
-    throw new Error('Error al rechazar la oferta');
+    throw new Error('Error al rechazar el booking');
+  }
+}
+
+/**
+ * Aceptar oferta final
+ */
+export async function acceptFinalOffer(
+  bookingId: string,
+  token: string,
+): Promise<void> {
+  const res = await fetch(
+    `${API_BASE_URL}/bookings/${bookingId}/final-offer/accept`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error('Error al aceptar la oferta final');
+  }
+}
+
+/**
+ * Rechazar oferta final
+ */
+export async function rejectFinalOffer(
+  bookingId: string,
+  token: string,
+): Promise<void> {
+  const res = await fetch(
+    `${API_BASE_URL}/bookings/${bookingId}/final-offer/reject`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error('Error al rechazar la oferta final');
   }
 }

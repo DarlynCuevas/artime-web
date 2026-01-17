@@ -5,9 +5,7 @@ import {
   getNegotiationMessages,
   sendNegotiationMessage,
   sendFinalOffer,
-  acceptBooking,
   rejectBooking,
-  acceptFinalOffer,
   rejectFinalOffer,
   NegotiationMessageDto,
 } from '@/services/bookings/negotiations.service';
@@ -94,27 +92,7 @@ export function useNegotiation(bookingId?: string) {
       setSending(false);
     }
   };
-
-  const accept = async (bookingStatus: string) => {
-    if (!bookingId || !user?.token) return;
-
-    setSending(true);
-    setError(null);
-
-    try {
-      if (bookingStatus === 'FINAL_OFFER_SENT') {
-        await acceptFinalOffer(bookingId, user.token);
-      } else {
-        await acceptBooking(bookingId, user.token);
-      }
-      await loadMessages();
-    } catch {
-      setError('No se pudo aceptar');
-      throw new Error();
-    } finally {
-      setSending(false);
-    }
-  };
+ 
 
   const reject = async (bookingStatus: string) => {
     if (!bookingId || !user?.token) return;
@@ -137,15 +115,15 @@ export function useNegotiation(bookingId?: string) {
     }
   };
 
-  return {
-    messages,
-    lastOffer,
-    loading,
-    sending,
-    error,
-    sendMessage,
-    sendOfferFinal,
-    accept,
-    reject,
-  };
+return {
+  messages,
+  lastOffer,
+  loading,
+  sending,
+  error,
+  sendMessage,
+  sendOfferFinal,
+  reject,
+};
+
 }

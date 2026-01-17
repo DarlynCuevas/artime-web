@@ -92,3 +92,22 @@ export async function getBookingsByEvent(
 
   return res.json();
 }
+
+export async function acceptBooking(
+  bookingId: string,
+  token: string,
+): Promise<void> {
+  const res = await fetch(
+    `${API_BASE_URL}/bookings/${bookingId}/accept`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error('Error al aceptar la contratación');
+  }
+}
