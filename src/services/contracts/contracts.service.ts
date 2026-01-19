@@ -25,13 +25,16 @@ export async function signContract(
   contractId: string,
   token: string,
 ): Promise<void> {
+
   const res = await fetch(
     `${API_BASE_URL}/contracts/${contractId}/sign`,
     {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ conditionsAccepted: true,conditionsVersion: 'v1.0', }),
     }
   );
 

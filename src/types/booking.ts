@@ -17,6 +17,9 @@ export interface BookingArtist {
   name: string;
 }
 
+export type ContractStatus = 'DRAFT' | 'SIGNED';
+export type Role = 'ARTIST' | 'MANAGER' | 'VENUE' | 'PROMOTER';
+
 export interface Booking {
   id: string;
   status: BookingStatus;

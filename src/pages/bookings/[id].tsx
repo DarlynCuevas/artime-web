@@ -9,7 +9,7 @@ import { acceptBooking } from '@/services/bookings/bookings.service';
 import { signContract } from '@/services/contracts/contracts.service';
 import { CancelBookingModal } from '@/components/bookings/CancelBookingModal';
 import { cancelBooking } from "@/services/bookings/cancellations.service";
-import { BookingStatus } from "@/types/booking";
+import { BookingStatus, Role } from "@/types/booking";
 
 
 import { confirmPaymentForMilestone } from "@/services/bookings/payments/confirmPayment.service";
@@ -22,6 +22,7 @@ import {
   PaymentElement,
 } from "@stripe/react-stripe-js";
 import { createPaymentIntentForMilestone, getMilestonesForBooking } from "@/services/bookings/payments/payments.service.";
+import { getPrimaryAction, getSecondaryActions, getStatusMessage } from "@/components/bookings/booking-ui.helpers";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -51,9 +52,33 @@ export default function BookingDetailPage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [milestoneId, setMilestoneId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [conditionsAccepted, setConditionsAccepted] = useState(false);
+
+
 
   if (loading) return <p style={{ padding: 24 }}>Cargando contratación…</p>;
   if (!booking) return <p>No se pudo cargar la contratación.</p>;
+  const hasTurn = isHandledByOther;
+  const statusMessage = getStatusMessage({
+    bookingStatus: booking.status,
+    contractStatus: contract?.status,
+    role: user.role as Role,
+    hasTurn,
+  });
+
+  const primaryAction = getPrimaryAction({
+    bookingStatus: booking.status,
+    contractStatus: contract?.status,
+    role: user.role as Role,
+    hasTurn,
+  });
+
+  const secondaryActions = getSecondaryActions({
+    bookingStatus: booking.status,
+    contractStatus: contract?.status,
+    role: user.role as Role,
+    hasTurn: isHandledByOther
+  });
 
   const hasContract = Boolean(contract);
 
@@ -72,6 +97,63 @@ export default function BookingDetailPage() {
         <p><strong>Estado:</strong> {booking.status}</p>
       </section>
 
+      <section style={{ marginTop: 32 }}>
+        {/* Mensaje de estado */}
+        {statusMessage && (
+          <p style={{ marginBottom: 12 }}>
+            {statusMessage}
+          </p>
+        )}
+
+        {/* Acción principal */}
+        {primaryAction && (
+          <div style={{ marginBottom: 12 }}>
+            {primaryAction.type === 'SIGN_CONTRACT' && (
+              <button>Firmar contrato</button>
+            )}
+          </div>
+        )}
+
+        {/* Acciones secundarias → AQUÍ va lo que preguntas */}
+        {secondaryActions.length > 0 && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            {secondaryActions
+              .filter((action): action is NonNullable<typeof action> => action !== null)
+              .map(action => {
+                switch (action.type) {
+                  case 'REJECT_PROPOSAL':
+                    return (
+                      <button key="reject">
+                        Rechazar propuesta
+                      </button>
+                    );
+
+                  case 'CANCEL_BOOKING':
+                    return (
+                      <button
+                        key="cancel"
+                        onClick={() => setShowCancelModal(true)}
+                      >
+                        Cancelar booking
+                      </button>
+                    );
+
+                  case 'ANNUL_CONTRACT':
+                    return (
+                      <button key="annul">
+                        Anular contrato
+                      </button>
+                    );
+
+                  default:
+                    return null;
+                }
+              })}
+          </div>
+        )}
+      </section>
+
+
       {/* NEGOCIACIÓN */}
       {!hasContract && (
         <NegotiationPanel
@@ -85,28 +167,36 @@ export default function BookingDetailPage() {
       )}
 
       {/* FIRMAR CONTRATO / ESPERA FIRMA */}
-
       {booking.status === 'ACCEPTED' && contract?.status === 'DRAFT' && (
         <>
           {(user.role === 'ARTIST' || user.role === 'MANAGER') && (
-            <button
-              disabled={isSigning}
-              onClick={async () => {
-                setIsSigning(true);
-                await signContract(contract.id, user.token);
-                await refresh();
-                await refreshContract();
-                setIsSigning(false);
-              }}
-            >
-              Firmar contrato
-            </button>
-          )}
-
-          {(user.role === 'VENUE' || user.role === 'PROMOTER') && (
-            <p style={{ marginTop: 12 }}>
-              Contrato enviado, pendiente de firma del artista
-            </p>
+            <>
+              <label style={{ display: 'block', marginBottom: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={conditionsAccepted}
+                  onChange={(e) => setConditionsAccepted(e.target.checked)}
+                />
+                Acepto las{' '}
+                <a href="/legal/conditions" target="_blank" rel="noopener noreferrer">
+                  condiciones generales de ARTIME
+                </a>
+              </label>
+              <div>
+                <button
+                  disabled={isSigning || !conditionsAccepted}
+                  onClick={async () => {
+                    setIsSigning(true);
+                    await signContract(contract.id, user.token);
+                    await refresh();
+                    await refreshContract();
+                    setIsSigning(false);
+                  }}
+                >
+                  Firmar contrato
+                </button>
+              </div>
+            </>
           )}
         </>
       )}
@@ -179,79 +269,6 @@ export default function BookingDetailPage() {
           </section>
         )}
 
-      {/* ACEPTAR CONDICIONES */}
-      {booking.status === 'FINAL_OFFER_SENT' && !hasContract && (
-        <section style={{ marginBottom: 32, display: 'flex', gap: 12 }}>
-          <button
-            type="button"
-            onClick={() => setShowAcceptModal(true)}
-            style={{
-              padding: '10px 14px',
-              background: '#000',
-              color: '#fff',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            Aceptar condiciones
-          </button>
-        </section>
-      )}
-
-      {/* MODAL ACEPTACIÓN */}
-      {showAcceptModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div style={{ background: '#fff', padding: 24, maxWidth: 520 }}>
-            <h2>Confirmar contratación</h2>
-
-            <p>
-              Estás a punto de confirmar esta actuación con las siguientes condiciones:
-            </p>
-
-            <ul>
-              <li><strong>Fecha:</strong> {booking.start_date}</li>
-              <li><strong>Importe:</strong> {booking.totalAmount} €</li>
-              <li><strong>Moneda:</strong> {booking.currency}</li>
-            </ul>
-
-            <div style={{ marginTop: 24, display: 'flex', gap: 8 }}>
-              <button
-                disabled={isAccepting}
-                onClick={async () => {
-                  setIsAccepting(true);
-                  try {
-                    await acceptBooking(booking.id, user.token);
-                    setShowAcceptModal(false);
-                    await refresh();
-                    await refreshContract();
-                  } finally {
-                    setIsAccepting(false);
-                  }
-                }}
-              >
-                Confirmar contratación
-              </button>
-
-              <button
-                onClick={() => setShowAcceptModal(false)}
-                disabled={isAccepting}
-              >
-                Volver
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <CancelBookingModal
         open={showCancelModal}

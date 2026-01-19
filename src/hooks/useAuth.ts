@@ -1,7 +1,7 @@
 // Hook de autenticación simulado para desarrollo
 import { useState } from 'react';
 export function useAuth() {
-  const [user] = useState(USERS['v']);
+  const [user] = useState(USERS['aa']);
   return { user };
 }
 const USERS = {
@@ -9,7 +9,7 @@ const USERS = {
     id: '64e1cd47-51eb-4e3d-ad92-f13fdbe9971c',
     name: 'Venue User',
     role: 'VENUE',
-    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NGUxY2Q0Ny01MWViLTRlM2QtYWQ5Mi1mMTNmZGJlOTk3MWMiLCJyb2xlIjoiVkVOVUUiLCJpYXQiOjE3Njg3NDMxNzUsImV4cCI6MTc2ODgyOTU3NX0.gOSBkD3B_dl_h08FRNLiEKSRSmySEN_BQpHeOeAZ8J8',
+    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NGUxY2Q0Ny01MWViLTRlM2QtYWQ5Mi1mMTNmZGJlOTk3MWMiLCJyb2xlIjoiVkVOVUUiLCJpYXQiOjE3Njg4MzE2NzYsImV4cCI6MTc2ODkxODA3Nn0.Xb08uhVG060yKIe36CI4xuFc9zRbI6mKMUgpW98XLpA',
   },
   a: {
     id: '11111111-1111-1111-1111-111111111111',

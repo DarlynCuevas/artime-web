@@ -1,4 +1,4 @@
-import { Booking } from "@/types/booking";
+import { Booking, BookingStatus, Role } from "@/types/booking";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL!;
 
@@ -6,10 +6,10 @@ export type BookingDto = {
   eventId: any;
   start_date: string;
   id: string;
-  status: string;
+  status: BookingStatus;
   currency: string;
   totalAmount: number;
-  handledByRole: 'ARTIST' | 'MANAGER' | 'VENUE' | 'PROMOTER' | null;
+  handledByRole: Role;
   handledByUserId: string | null;
   handledAt: string | null;
   messagesCount?: number;
