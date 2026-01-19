@@ -2,7 +2,32 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { useAuth } from '@/hooks/useAuth';
-import { BookingDto } from '@/services/bookings/bookings.service';
+import { Booking } from '@/types/booking';
+
+type BookingDto = {
+  id: string;
+  status: string;
+  start_date: string | null;
+  totalAmount?: number;
+  currency?: string;
+};
+
+function groupByStatus(bookings: BookingDto[]) {
+  return bookings.reduce<Record<string, BookingDto[]>>(
+    (acc, booking) => {
+      if (!acc[booking.status]) {
+        acc[booking.status] = [];
+      }
+      acc[booking.status].push(booking);
+      return acc;
+    },
+    {},
+  );
+}
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString();
+}
 
 export default function BookingsPage() {
   const { user } = useAuth();
@@ -22,12 +47,14 @@ export default function BookingsPage() {
     })
       .then((res) => {
         if (!res.ok) {
-          throw new Error('Error cargando las contrataciones');
+          throw new Error();
         }
         return res.json();
       })
       .then(setBookings)
-      .catch(() => setError('No se pudieron cargar las contrataciones'))
+      .catch(() =>
+        setError('No se pudieron cargar las contrataciones'),
+      )
       .finally(() => setLoading(false));
   }, [user?.token]);
 
@@ -43,6 +70,8 @@ export default function BookingsPage() {
     );
   }
 
+  const bookingsByStatus = groupByStatus(bookings);
+
   return (
     <main
       style={{
@@ -54,13 +83,15 @@ export default function BookingsPage() {
       {/* HEADER */}
       <header style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 24, marginBottom: 8 }}>
-          Contrataciones
+          Bookings
         </h1>
         <p style={{ color: '#555' }}>
-          Gestión de tus actuaciones y propuestas activas.
+          Listado de contrataciones registradas y su estado
+          actual.
         </p>
       </header>
 
+      {/* EMPTY STATE */}
       {bookings.length === 0 && (
         <section
           style={{
@@ -69,88 +100,115 @@ export default function BookingsPage() {
             background: '#fafafa',
           }}
         >
-          <p>
-            No tienes contrataciones registradas.
+          <p>No hay bookings activos.</p>
+          <p style={{ color: '#666' }}>
+            No existen responsabilidades operativas en este
+            momento.
           </p>
         </section>
       )}
 
+      {/* BOOKINGS BY STATUS */}
       {bookings.length > 0 && (
-        <section
-          style={{
-            border: '1px solid #ddd',
-            padding: 16,
-          }}
-        >
-          <table
-            style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-            }}
-          >
-            <thead>
-              <tr style={{ borderBottom: '1px solid #ccc' }}>
-                <th align="left">Referencia</th>
-                <th align="left">Fecha</th>
-                <th align="left">Estado</th>
-                <th align="right">Importe</th>
-                <th />
-              </tr>
-            </thead>
-
-            <tbody>
-              {bookings.map((booking) => {
-                const isCancelled =
-                  booking.status === 'CANCELLED' ||
-                  booking.status === 'CANCELLED_PENDING_REVIEW';
-
-                return (
-                  <tr
-                    key={booking.id}
+        <section>
+          {Object.entries(bookingsByStatus).map(
+            ([status, statusBookings]) => (
+              <section
+                key={status}
+                style={{
+                  marginBottom: 32,
+                  border: '1px solid #ddd',
+                }}
+              >
+                {/* STATUS HEADER */}
+                <header
+                  style={{
+                    padding: '16px',
+                    borderBottom: '1px solid #ddd',
+                    background: '#f5f5f5',
+                  }}
+                >
+                  <h2
                     style={{
-                      borderTop: '1px solid #eee',
-                      background: isCancelled ? '#fafafa' : 'transparent',
+                      fontSize: 16,
+                      marginBottom: 4,
                     }}
                   >
-                    <td style={{ padding: '12px 0' }}>
-                      {booking.id.slice(0, 8)}…
-                    </td>
+                    {status}
+                  </h2>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: '#555',
+                    }}
+                  >
+                    {statusBookings.length}{' '}
+                    {statusBookings.length === 1
+                      ? 'booking'
+                      : 'bookings'}
+                  </p>
+                </header>
 
-                    <td>
-                      {booking.start_date
-                        ? new Date(
-                            booking.start_date,
-                          ).toLocaleDateString()
-                        : '—'}
-                    </td>
+                <ul
+                  style={{
+                    listStyle: 'none',
+                    margin: 0,
+                    padding: 0,
+                  }}
+                >
+                  {statusBookings.map((booking) => (
+                    <li
+                      key={booking.id}
+                      style={{
+                        padding: 16,
+                        borderTop:
+                          '1px solid #eee',
+                        display: 'grid',
+                        gridTemplateColumns:
+                          '2fr 2fr 2fr 1fr',
+                        gap: 16,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <div>
+                        <strong>
+                          Booking{' '}
+                          {booking.id.slice(0, 8)}…
+                        </strong>
+                      </div>
 
-                    <td>
-                      <span
-                        style={{
-                          fontWeight: 500,
-                          color: isCancelled ? '#999' : '#000',
-                        }}
-                      >
-                        {booking.status}
-                      </span>
-                    </td>
+                      <div>
+                        Fecha:{' '}
+                        {booking.start_date
+                          ? formatDate(
+                              booking.start_date,
+                            )
+                          : '—'}
+                      </div>
 
-                    <td align="right">
-                      {booking.totalAmount} {booking.currency}
-                    </td>
+                      <div>
+                        Importe:{' '}
+                        {booking.totalAmount
+                          ? `${booking.totalAmount} ${booking.currency}`
+                          : '—'}
+                      </div>
 
-                    <td align="right">
-                      <Link href={`/bookings/${booking.id}`}>
-                        Ver detalle
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      <div style={{ textAlign: 'right' }}>
+                        <Link
+                          href={`/bookings/${booking.id}`}
+                        >
+                          Abrir booking
+                        </Link>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ),
+          )}
         </section>
       )}
     </main>
   );
 }
+

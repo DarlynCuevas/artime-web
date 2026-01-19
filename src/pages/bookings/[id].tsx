@@ -5,12 +5,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/user-role";
 import { useRouter } from "next/router";
 import { useState } from "react";
-import { acceptBooking } from '@/services/bookings/bookings.service';
 import { signContract } from '@/services/contracts/contracts.service';
 import { CancelBookingModal } from '@/components/bookings/CancelBookingModal';
 import { cancelBooking } from "@/services/bookings/cancellations.service";
-import { BookingStatus, Role } from "@/types/booking";
-
+import { Role } from "@/types/booking";
 
 import { confirmPaymentForMilestone } from "@/services/bookings/payments/confirmPayment.service";
 
@@ -21,8 +19,16 @@ import {
   useElements,
   PaymentElement,
 } from "@stripe/react-stripe-js";
-import { createPaymentIntentForMilestone, getMilestonesForBooking } from "@/services/bookings/payments/payments.service.";
-import { getPrimaryAction, getSecondaryActions, getStatusMessage } from "@/components/bookings/booking-ui.helpers";
+import {
+  createPaymentIntentForMilestone,
+  getMilestonesForBooking,
+} from "@/services/bookings/payments/payments.service.";
+
+import {
+  getPrimaryAction,
+  getSecondaryActions,
+  getStatusMessage,
+} from "@/components/bookings/booking-ui.helpers";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -44,9 +50,6 @@ export default function BookingDetailPage() {
 
   const { contract, refresh: refreshContract } = useContract(bookingId);
 
-  const [showAcceptModal, setShowAcceptModal] = useState(false);
-  const [isAccepting, setIsAccepting] = useState(false);
-  const [isSigning, setIsSigning] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -54,11 +57,11 @@ export default function BookingDetailPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [conditionsAccepted, setConditionsAccepted] = useState(false);
 
-
-
   if (loading) return <p style={{ padding: 24 }}>Cargando contratación…</p>;
   if (!booking) return <p>No se pudo cargar la contratación.</p>;
+
   const hasTurn = isHandledByOther;
+
   const statusMessage = getStatusMessage({
     bookingStatus: booking.status,
     contractStatus: contract?.status,
@@ -77,84 +80,119 @@ export default function BookingDetailPage() {
     bookingStatus: booking.status,
     contractStatus: contract?.status,
     role: user.role as Role,
-    hasTurn: isHandledByOther
+    hasTurn,
   });
 
   const hasContract = Boolean(contract);
 
   return (
     <main style={{ maxWidth: 960, margin: '0 auto', padding: '32px 24px' }}>
+      {/* HEADER */}
       <header style={{ marginBottom: 32 }}>
-        <h1>Contratación</h1>
-        <p>Estado actual de la actuación y negociación asociada.</p>
+        <h1>Booking</h1>
+        <p>Relación contractual y estado operativo vigente.</p>
       </header>
 
-      {/* DATOS BOOKING */}
+      {/* 1️⃣ ESTADO CONTRACTUAL */}
+      <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 24 }}>
+        <p><strong>Estado del booking:</strong> {booking.status}</p>
+        {statusMessage && <p>{statusMessage}</p>}
+      </section>
+
+      {/* 2️⃣ ACCIONES PERMITIDAS */}
+      {(primaryAction || secondaryActions.length > 0) && (
+        <section style={{ marginBottom: 32 }}>
+          {primaryAction?.type === 'SIGN_CONTRACT' && (
+            <button>Firmar contrato</button>
+          )}
+
+          {secondaryActions.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              {secondaryActions
+                .filter(Boolean)
+                .map(action => {
+                  switch (action!.type) {
+                    case 'CANCEL_BOOKING':
+                      return (
+                        <button
+                          key="cancel"
+                          onClick={() => setShowCancelModal(true)}
+                        >
+                          Cancelar booking
+                        </button>
+                      );
+                    default:
+                      return null;
+                  }
+                })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* 3️⃣ VÍNCULO CONTRACTUAL */}
       <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 32 }}>
         <p><strong>ID:</strong> {booking.id}</p>
         <p><strong>Fecha:</strong> {booking.start_date}</p>
         <p><strong>Importe:</strong> {booking.totalAmount} €</p>
-        <p><strong>Estado:</strong> {booking.status}</p>
+        {contract && (
+          <p><strong>Contrato:</strong> {contract.status}</p>
+        )}
       </section>
 
-      <section style={{ marginTop: 32 }}>
-        {/* Mensaje de estado */}
-        {statusMessage && (
-          <p style={{ marginBottom: 12 }}>
-            {statusMessage}
-          </p>
-        )}
+      {/* 4️⃣ PAGO */}
+      {booking.status === 'CONTRACT_SIGNED' &&
+        (user?.role === 'VENUE' || user?.role === 'PROMOTER') && (
+          <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 32 }}>
+            <h2>Pago</h2>
 
-        {/* Acción principal */}
-        {primaryAction && (
-          <div style={{ marginBottom: 12 }}>
-            {primaryAction.type === 'SIGN_CONTRACT' && (
-              <button>Firmar contrato</button>
+            {!clientSecret && (
+              <button
+                onClick={async () => {
+                  const milestones = await getMilestonesForBooking(
+                    booking.id,
+                    user.token
+                  );
+
+                  const pending = milestones.find(
+                    (m: any) => m.props?.status === 'PENDING'
+                  );
+
+                  if (!pending) {
+                    setPaymentError('No hay milestones pendientes');
+                    return;
+                  }
+
+                  const result = await createPaymentIntentForMilestone(
+                    pending.props.id,
+                    user.token
+                  );
+
+                  setMilestoneId(pending.props.id);
+                  setClientSecret(result.clientSecret);
+                }}
+              >
+                Proceder al pago
+              </button>
             )}
-          </div>
+
+            {clientSecret && milestoneId && (
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <SimpleCardPaymentForm
+                  clientSecret={clientSecret}
+                  bookingId={booking.id}
+                  milestoneId={milestoneId}
+                  token={user.token}
+                  onSuccess={refresh}
+                />
+              </Elements>
+            )}
+
+            {paymentError && <p>{paymentError}</p>}
+          </section>
         )}
 
-        {/* Acciones secundarias → AQUÍ va lo que preguntas */}
-        {secondaryActions.length > 0 && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            {secondaryActions
-              .filter((action): action is NonNullable<typeof action> => action !== null)
-              .map(action => {
-                switch (action.type) {
-                  case 'REJECT_PROPOSAL':
-                    return (
-                      <button key="reject">
-                        Rechazar propuesta
-                      </button>
-                    );
-
-                  case 'CANCEL_BOOKING':
-                    return (
-                      <button
-                        key="cancel"
-                        onClick={() => setShowCancelModal(true)}
-                      >
-                        Cancelar booking
-                      </button>
-                    );
-
-                  case 'ANNUL_CONTRACT':
-                    return (
-                      <button key="annul">
-                        Anular contrato
-                      </button>
-                    );
-
-                  default:
-                    return null;
-                }
-              })}
-          </div>
-        )}
-      </section>
-
-
-      {/* NEGOCIACIÓN */}
+      {/* 5️⃣ NEGOCIACIÓN */}
       {!hasContract && (
         <NegotiationPanel
           bookingId={booking.id}
@@ -165,110 +203,6 @@ export default function BookingDetailPage() {
           refreshContract={refreshContract}
         />
       )}
-
-      {/* FIRMAR CONTRATO / ESPERA FIRMA */}
-      {booking.status === 'ACCEPTED' && contract?.status === 'DRAFT' && (
-        <>
-          {(user.role === 'ARTIST' || user.role === 'MANAGER') && (
-            <>
-              <label style={{ display: 'block', marginBottom: 8 }}>
-                <input
-                  type="checkbox"
-                  checked={conditionsAccepted}
-                  onChange={(e) => setConditionsAccepted(e.target.checked)}
-                />
-                Acepto las{' '}
-                <a href="/legal/conditions" target="_blank" rel="noopener noreferrer">
-                  condiciones generales de ARTIME
-                </a>
-              </label>
-              <div>
-                <button
-                  disabled={isSigning || !conditionsAccepted}
-                  onClick={async () => {
-                    setIsSigning(true);
-                    await signContract(contract.id, user.token);
-                    await refresh();
-                    await refreshContract();
-                    setIsSigning(false);
-                  }}
-                >
-                  Firmar contrato
-                </button>
-              </div>
-            </>
-          )}
-        </>
-      )}
-
-
-      {/* PAGO */}
-      {booking.status === 'CONTRACT_SIGNED' &&
-        (user?.role === 'VENUE' || user?.role === 'PROMOTER') && (
-          <section style={{ marginTop: 32, border: '1px solid #ddd', padding: 16 }}>
-            <h2>Pago de la actuación</h2>
-
-            {!clientSecret && (
-              <button
-                onClick={async () => {
-                  try {
-                    const milestones = await getMilestonesForBooking(
-                      booking.id,
-                      user.token
-                    );
-
-                    const pending = milestones.find(
-                      (m: any) => m.props?.status === 'PENDING'
-                    );
-                    console.log('Milestone pendiente:', pending);
-
-                    if (!pending) {
-                      setPaymentError('No hay milestones pendientes');
-                      return;
-                    }
-
-                    const milestoneId = pending.props?.id;
-                    const result = await createPaymentIntentForMilestone(
-                      milestoneId,
-                      user.token
-                    );
-                    const { clientSecret } = result;
-
-                    setMilestoneId(pending.props.id);
-                    setClientSecret(clientSecret);
-                  } catch (e) {
-                    setPaymentError('No se pudo preparar el pago');
-                    console.error('Error en el flujo de pago:', e);
-                  }
-                }}
-              >
-                Proceder al pago
-              </button>
-            )}
-
-            {(() => {
-              if (clientSecret && milestoneId) {
-                return (
-                  <Elements stripe={stripePromise} options={{ clientSecret }}>
-                    <SimpleCardPaymentForm
-                      clientSecret={clientSecret}
-                      bookingId={booking.id}
-                      milestoneId={milestoneId}
-                      token={user.token}
-                      onSuccess={async () => {
-                        await refresh();
-                      }}
-                    />
-                  </Elements>
-                );
-              }
-              return null;
-            })()}
-
-            {paymentError && <p>{paymentError}</p>}
-          </section>
-        )}
-
 
       <CancelBookingModal
         open={showCancelModal}
@@ -291,7 +225,7 @@ export default function BookingDetailPage() {
 }
 
 /* =========================
-   FORMULARIO STRIPE LIMPIO
+   FORMULARIO DE PAGO STRIPE
    ========================= */
 
 function SimpleCardPaymentForm({
@@ -338,7 +272,6 @@ function SimpleCardPaymentForm({
         milestoneId,
         token,
       });
-
       onSuccess();
     }
 

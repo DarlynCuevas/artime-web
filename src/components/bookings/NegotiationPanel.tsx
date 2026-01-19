@@ -33,6 +33,7 @@ export function NegotiationPanel({
   } = useNegotiation(bookingId);
 
   const { user } = useAuth();
+
   const [text, setText] = useState('');
   const [fee, setFee] = useState<number | ''>('');
   const [isFinalOffer, setIsFinalOffer] = useState(false);
@@ -46,31 +47,18 @@ export function NegotiationPanel({
   const isVenueSide =
     userRole === 'VENUE' || userRole === 'PROMOTER';
 
-  //  Turno: la otra parte fue la última en actuar
   const isMyTurn =
     !lastMessage || lastMessage.senderUserId !== user?.id;
 
-  // Caso especial: mensaje inicial automático del venue
-  const isInitialPendingVenue =
-    bookingStatus === 'PENDING' && isVenueSide;
-
-  //  Puede escribir / negociar
   const canWrite =
     ['PENDING', 'NEGOTIATING'].includes(bookingStatus) &&
     isMyTurn &&
-    !(
-      bookingStatus === 'PENDING' &&
-      isVenueSide
-    );
+    !(bookingStatus === 'PENDING' && isVenueSide);
 
-
-  //  Validación de importe para contraoferta
   const parsedFee = Number(fee);
   const needsFee =
     !fee || isNaN(parsedFee) || parsedFee <= 0;
 
-
-  //  Enviar oferta final
   const canMarkAsFinalOffer =
     isMyTurn &&
     (
@@ -79,83 +67,84 @@ export function NegotiationPanel({
       (isVenueSide && bookingStatus === 'NEGOTIATING')
     );
 
-  //  Aceptar /  Rechazar booking u oferta
-
   const canAcceptOrReject =
     ['PENDING', 'NEGOTIATING', 'FINAL_OFFER_SENT'].includes(bookingStatus) &&
     isMyTurn &&
-    !(
-      bookingStatus === 'PENDING' &&
-      isVenueSide
-    );
-
-
-
-
-
+    !(bookingStatus === 'PENDING' && isVenueSide);
 
   return (
     <section style={{ marginTop: 32 }}>
       <h2>Negociación</h2>
 
-      {loading && <p>Cargando mensajes…</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {/* 1️⃣ ESTADO DE NEGOCIACIÓN */}
+      <section style={{ marginBottom: 16 }}>
+        {loading && <p>Cargando negociación…</p>}
+        {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      {/* HISTORIAL */}
-      <div
+        {!canWrite && !canAcceptOrReject && (
+          <p style={{ color: '#666' }}>
+            La negociación está pendiente de acción de la otra
+            parte.
+          </p>
+        )}
+      </section>
+
+      {/* 2️⃣ HISTORIAL TRAZABLE */}
+      <section
         style={{
           border: '1px solid #ddd',
           padding: 12,
-          marginBottom: 16,
+          marginBottom: 24,
           maxHeight: 300,
           overflowY: 'auto',
         }}
       >
         {messages.length === 0 && (
           <p style={{ color: '#666' }}>
-            Aún no hay mensajes de negociación.
+            No existen propuestas registradas.
           </p>
         )}
 
         {messages.map((msg) => (
-          <div key={msg.id} style={{ marginBottom: 12 }}>
-            <strong>{msg.senderRole}</strong>
+          <div key={msg.id} style={{ marginBottom: 16 }}>
+            <div>
+              <strong>{msg.senderRole}</strong>
+              {typeof msg.proposedFee === 'number' && (
+                <strong> — {msg.proposedFee} €</strong>
+              )}
+              {msg.isFinalOffer && (
+                <span style={{ marginLeft: 8 }}>
+                  (OFERTA FINAL)
+                </span>
+              )}
+            </div>
 
-            {typeof msg.proposedFee === 'number' && (
-              <strong> — {msg.proposedFee} €</strong>
+            {msg.message && (
+              <div style={{ marginTop: 4 }}>
+                {msg.message}
+              </div>
             )}
-
-            {msg.isFinalOffer && (
-              <span style={{ marginLeft: 8, color: 'red' }}>
-                (OFERTA FINAL)
-              </span>
-            )}
-
-            {msg.message && <div>{msg.message}</div>}
 
             <small style={{ color: '#999' }}>
               {new Date(msg.createdAt).toLocaleString()}
             </small>
           </div>
         ))}
-      </div>
+      </section>
 
-      {/* MENSAJE DE ESPERA */}
-      {!canWrite && !canAcceptOrReject && (
-        <p style={{ color: '#999' }}>
-          Debes esperar a que la otra parte responda.
-        </p>
-      )}
-
-      {/* ENVÍO CONTRAOFERTA / OFERTA FINAL */}
+      {/* 3️⃣ ENVÍO DE PROPUESTA */}
       {canWrite && (
-        <>
+        <section style={{ marginBottom: 24 }}>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={sending}
-            placeholder="Mensaje opcional…"
-            style={{ width: '100%', minHeight: 80, marginBottom: 8 }}
+            placeholder="Mensaje opcional"
+            style={{
+              width: '100%',
+              minHeight: 80,
+              marginBottom: 8,
+            }}
           />
 
           <input
@@ -170,7 +159,7 @@ export function NegotiationPanel({
 
           {needsFee && (
             <p style={{ color: '#b00020', fontSize: 13 }}>
-              Debes indicar un importe para enviar una propuesta.
+              Es necesario indicar un importe válido.
             </p>
           )}
 
@@ -181,7 +170,7 @@ export function NegotiationPanel({
                 checked={isFinalOffer}
                 onChange={(e) => setIsFinalOffer(e.target.checked)}
               />{' '}
-              Oferta final
+              Marcar como oferta final
             </label>
           )}
 
@@ -192,20 +181,17 @@ export function NegotiationPanel({
               if (needsFee) return;
 
               if (isFinalOffer) {
-                //  Oferta final
                 await sendOfferFinal({
                   proposedFee: parsedFee,
                   message: text || '',
                 });
               } else {
-                //  Propuesta normal
                 await sendMessage({
                   message: text || '',
                   proposedFee: parsedFee,
                 });
               }
 
-              // Reset UI
               setText('');
               setFee('');
               setIsFinalOffer(false);
@@ -213,46 +199,42 @@ export function NegotiationPanel({
           >
             Enviar propuesta
           </button>
-
-        </>
+        </section>
       )}
 
-
-
-      {/* ACEPTAR / RECHAZAR */}
+      {/* 4️⃣ DECISIÓN CONTRACTUAL */}
       {canAcceptOrReject && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <button
-            type="button"
-            disabled={sending}
-            onClick={async () => {
-              if (bookingStatus === 'FINAL_OFFER_SENT') {
-                // Aceptar oferta final (negociación)
-                await acceptFinalOffer(bookingId, user?.token);
-              } else if (bookingStatus === 'PENDING') {
-                // Aceptar booking inicial (sin negociación)
-                await acceptBooking(bookingId, user?.token);
-              }
+        <section>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              disabled={sending}
+              onClick={async () => {
+                if (bookingStatus === 'FINAL_OFFER_SENT') {
+                  await acceptFinalOffer(bookingId, user?.token);
+                } else if (bookingStatus === 'PENDING') {
+                  await acceptBooking(bookingId, user?.token);
+                }
 
-              onBookingUpdated();
-              refreshContract();
-            }}
-          >
-            Aceptar
-          </button>
+                onBookingUpdated();
+                refreshContract();
+              }}
+            >
+              Aceptar
+            </button>
 
-
-          <button
-            type="button"
-            disabled={sending}
-            onClick={async () => {
-              await reject(bookingStatus);
-              onBookingUpdated();
-            }}
-          >
-            Rechazar
-          </button>
-        </div>
+            <button
+              type="button"
+              disabled={sending}
+              onClick={async () => {
+                await reject(bookingStatus);
+                onBookingUpdated();
+              }}
+            >
+              Rechazar
+            </button>
+          </div>
+        </section>
       )}
     </section>
   );

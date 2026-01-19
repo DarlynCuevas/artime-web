@@ -1,7 +1,7 @@
 // Hook de autenticación simulado para desarrollo
 import { useState } from 'react';
 export function useAuth() {
-  const [user] = useState(USERS['aa']);
+  const [user] = useState(USERS['v']);
   return { user };
 }
 const USERS = {
