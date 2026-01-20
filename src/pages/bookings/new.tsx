@@ -7,6 +7,10 @@ import { getArtists } from '@/services/artists/artists.service';
 export default function NewBookingPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { artistId: artistIdFromQuery, date: dateFromQuery } = router.query as {
+    artistId?: string;
+    date?: string;
+  };
 
   const [artists, setArtists] = useState<any[]>([]);
   const [artistId, setArtistId] = useState('');
@@ -39,6 +43,17 @@ El contenido y el importe quedarán registrados en ARTIME como base de la negoci
         setError('No se pudieron cargar los artistas');
       });
   }, [user?.token]);
+
+  useEffect(() => {
+    if (artistIdFromQuery && typeof artistIdFromQuery === 'string') {
+      setArtistId(artistIdFromQuery);
+    }
+
+    if (dateFromQuery && typeof dateFromQuery === 'string') {
+      setStartDate(dateFromQuery);
+    }
+  }, [artistIdFromQuery, dateFromQuery]);
+
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -105,20 +120,11 @@ El contenido y el importe quedarán registrados en ARTIME como base de la negoci
           </h2>
 
           <label style={{ display: 'block', marginBottom: 12 }}>
-            Artista
-            <select
-              value={artistId}
-              onChange={(e) => setArtistId(e.target.value)}
-              required
-              style={{ width: '100%', marginTop: 4 }}
-            >
-              <option value="">Selecciona un artista</option>
-              {artists.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
+            {artistIdFromQuery && (
+              <p style={{ fontSize: 12, color: '#666' }}>
+                Artista preseleccionado desde el perfil.
+              </p>
+            )}
           </label>
 
           <label style={{ display: 'block', marginBottom: 12 }}>
@@ -128,6 +134,7 @@ El contenido y el importe quedarán registrados en ARTIME como base de la negoci
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               required
+              disabled={!!dateFromQuery}
               style={{ width: '100%', marginTop: 4 }}
             />
           </label>
