@@ -35,3 +35,30 @@ export async function discoverArtists(token: string) {
 
   return res.json();
 }
+
+export type AvailabilityDay = {
+  date: string;
+  status: 'AVAILABLE' | 'BOOKED' | 'UNAVAILABLE';
+};
+
+export async function getArtistAvailability(
+  artistId: string,
+  from: string,
+  to: string,
+  token: string,
+) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/artists/${artistId}/availability?from=${from}&to=${to}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch artist availability');
+  }
+
+  return res.json();
+}
