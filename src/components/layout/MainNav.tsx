@@ -19,10 +19,10 @@ export function MainNav() {
     >
       {user.role === 'VENUE' && (
         <>
-          <Link href="/venue/discover">Discover</Link>
-          <Link href="/venue/search">Search</Link>
+          <Link href="/venues/discover">Discover</Link>
+          <Link href="/venues/search">Search</Link>
           <Link href="/bookings">Bookings</Link>
-          <Link href="/venue">Dashboard</Link>
+          <Link href="/venues">Dashboard</Link>
         </>
       )}
 

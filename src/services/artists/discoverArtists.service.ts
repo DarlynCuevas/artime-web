@@ -14,7 +14,7 @@ export async function discoverArtists(
   ).toString()
 
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/venues/discover/artists?${query}`,
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/venues-discover/artists?${query}`,
     {
       method: 'GET',
       headers: {

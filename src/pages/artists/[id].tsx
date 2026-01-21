@@ -239,8 +239,8 @@ export default function ArtistProfilePage() {
           onClick={() => {
             router.push(
               date
-                ? `/bookings/new?artistId=${artist.id}&date=${date}`
-                : `/bookings/new?artistId=${artist.id}`,
+                ? `/bookings/new?artistId=${id}&date=${date}`
+                : `/bookings/new?artistId=${id}`,
             );
           }}
         >

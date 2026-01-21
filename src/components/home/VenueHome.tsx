@@ -31,7 +31,7 @@ export default function VenueHome() {
         }}
       >
         {/* DISCOVER */}
-        <Link href="/venue/discover" style={{ textDecoration: 'none' }}>
+        <Link href="/venues/discover" style={{ textDecoration: 'none' }}>
           <div
             style={{
               border: '1px solid #ddd',
@@ -50,7 +50,7 @@ export default function VenueHome() {
         </Link>
 
         {/* SEARCH */}
-        <Link href="/venue/search" style={{ textDecoration: 'none' }}>
+        <Link href="/venues/search" style={{ textDecoration: 'none' }}>
           <div
             style={{
               border: '1px solid #ddd',
