@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { fetchPayoutById } from '@/services/payouts/payouts.service';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { Payout } from '@/types/payout.type';
 import { PayoutDetail } from './PayoutDetail';
 

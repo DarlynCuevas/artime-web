@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getEventBookings } from '@/services/events/events.service';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 export function useEventBookings(eventId?: string) {
   const { user } = useAuth();

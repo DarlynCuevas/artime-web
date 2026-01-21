@@ -1,7 +1,7 @@
 import { fetchPayouts } from '@/services/payouts/payouts.service';
 import { Payout } from '@/types/payout.type';
 import { useEffect, useState } from 'react';
-import { useAuth } from '../useAuth';
+import { useAuth } from '../auth/useAuth';
 
 export function usePayouts() {
   const [payouts, setPayouts] = useState<Payout[]>([]);

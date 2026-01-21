@@ -2,7 +2,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import type { Event } from '@/types/event';
 import { eventsService } from '@/services/events/events.service';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { useEventBookings } from '@/hooks/events/useEventBookings';
 import { useArtists } from '@/hooks/artists/useArtists';
 import { useCreateBooking } from '@/hooks/bookings/useCreateBooking';

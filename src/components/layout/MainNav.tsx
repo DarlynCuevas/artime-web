@@ -1,9 +1,11 @@
 import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { useMe } from '@/hooks/auth/useMe';
 
 export function MainNav() {
-  const { user } = useAuth();
-
+const { user, loading: authLoading } = useAuth();
+const { data: me, loading: meLoading } = useMe();
+console.log('ME', me);
   if (!user) return null;
 
   return (
@@ -17,7 +19,7 @@ export function MainNav() {
         justifyContent: 'center', // Centra los elementos horizontalmente
       }}
     >
-      {user.role === 'VENUE' && (
+      {me?.profiles?.venue && (
         <>
           <Link href="/venues/discover">Discover</Link>
           <Link href="/venues/search">Search</Link>
@@ -26,7 +28,7 @@ export function MainNav() {
         </>
       )}
 
-      {user.role === 'ARTIST' && (
+      {me?.profiles?.artist && (
         <>
           <Link href="/artists/dashboard">Dashboard</Link>
           <Link href="/artists/calendar">Calendario</Link>
@@ -35,14 +37,14 @@ export function MainNav() {
         </>
       )}
 
-      {user.role === 'MANAGER' && (
+      {me?.profiles?.manager && (
         <>
           <Link href="/artists/dashboard">Dashboard</Link>
           <Link href="/bookings">Bookings</Link>
         </>
       )}
 
-      {user.role === 'PROMOTER' && (
+      {me?.profiles?.promoter && (
         <>
           <Link href="/events">Eventos</Link>
           <Link href="/bookings">Bookings</Link>

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { getBookingById, BookingDto } from '../../services/bookings/bookings.service';
 import { cancelBooking } from '../../services/payouts/cancellations.service';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { Booking } from '@/types/booking';
 
 export function useBooking(bookingId?: string) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { eventsService } from '@/services/events/events.service';
 import type { Event } from '@/types/event';
 import { useRouter } from 'next/router';

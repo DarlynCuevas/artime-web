@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { createBooking } from '@/services/bookings/bookings.service';
 import { getArtists } from '@/services/artists/artists.service';
 

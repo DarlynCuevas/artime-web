@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { createBooking } from '@/services/bookings/bookings.service';
 import { getArtists } from '@/services/artists/artists.service';
 

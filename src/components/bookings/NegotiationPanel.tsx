@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNegotiation } from '@/hooks/bookings/useNegotiation';
 import type { UserRole } from '@/types/user-role';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { acceptFinalOffer } from '@/services/bookings/negotiations.service';
 import { acceptBooking } from '@/services/bookings/bookings.service';
 

@@ -1,35 +1,40 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { useMe } from '@/hooks/auth/useMe';
 
 export default function IndexPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { data: me, loading: meLoading } = useMe();
   const router = useRouter();
 
+
   useEffect(() => {
-    if (!user) return;
+    if (authLoading || meLoading) return;
 
-    switch (user.role) {
-      case 'VENUE':
-        router.replace('/venue'); // home sala
-        break;
-
-      case 'ARTIST':
-        router.replace('/artists/dashboard');
-        break;
-
-      case 'MANAGER':
-        router.replace('/artists/dashboard');
-        break;
-
-      case 'PROMOTER':
-        router.replace('/events');
-        break;
-
-      default:
-        router.replace('/');
+    if (!user) {
+      router.replace('/login');
+      return;
     }
-  }, [user, router]);
+
+    if (me?.profiles.venue) {
+      router.replace('/venue');
+      return;
+    }
+
+    if (me?.profiles.artist) {
+      router.replace('/artists/dashboard');
+      return;
+    }
+
+    if (me?.profiles.promoter) {
+      router.replace('/events');
+      return;
+    }
+
+    // Caso: usuario sin perfiles → onboarding
+    router.replace('/onboarding');
+  }, [user, me, authLoading, meLoading, router]);
 
   return (
     <main style={{ padding: 32 }}>

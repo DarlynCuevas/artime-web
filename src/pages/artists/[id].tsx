@@ -1,4 +1,4 @@
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { useArtistAvailability } from '@/hooks/artists/useArtistAvailability';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';

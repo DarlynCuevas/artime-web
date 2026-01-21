@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getArtists } from '@/services/artists/artists.service';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 export function useArtists() {
   const { user } = useAuth();

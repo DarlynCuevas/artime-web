@@ -1,6 +1,6 @@
 import { discoverArtists } from '@/services/artists/discoverArtists.service'
 import { useEffect, useState } from 'react'
-import { useAuth } from '../useAuth'
+import { useAuth } from '../auth/useAuth'
 
 export function useDiscoverArtists(filters: {
   date: string

@@ -1,7 +1,7 @@
 import { NegotiationPanel } from "@/components/bookings/NegotiationPanel";
 import { useContract } from '@/hooks/bookings/contracts/useContract';
 import { useBooking } from "@/hooks/bookings/useBooking";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/auth/useAuth";
 import { UserRole } from "@/types/user-role";
 import { useRouter } from "next/router";
 import { useState } from "react";

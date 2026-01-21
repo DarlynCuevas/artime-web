@@ -26,7 +26,7 @@ export function useEvents() {
 import { useEffect, useState, useCallback } from 'react';
 import type { Event } from '../../types/event';
 import { eventsService } from '../../services/events/events.service';
-import { useAuth } from '../useAuth';
+import { useAuth } from '../auth/useAuth';
 
 export function useEvent(eventId: string) {
   const { user } = useAuth();
