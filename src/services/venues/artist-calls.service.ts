@@ -24,3 +24,31 @@ export async function createArtistCall(
 
   return res.json();
 }
+
+export type InterestedArtistCall = {
+  callId: string;
+  date: string | null;
+  city: string | null;
+  artistId: string | null;
+  artistName: string;
+  artistCity: string | null;
+  basePrice: number | null;
+  currency: string;
+  respondedAt: string;
+  offeredPrice: number | null;
+};
+
+export async function getInterestedArtistCalls(token: string): Promise<InterestedArtistCall[]> {
+  const res = await fetch(`${API_BASE_URL}/venues/artist-calls/interested`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'No se pudieron cargar los interesados');
+  }
+
+  return res.json();
+}

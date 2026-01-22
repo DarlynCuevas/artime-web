@@ -216,10 +216,9 @@ function ArtistBookingsPage() {
                 }}
               >
                 <div>
-                  <strong>Booking {booking.id.slice(0, 8)}…</strong>
+                  <strong>{booking.venueName || booking.venueId || 'Venue sin nombre'}</strong>
                   <div style={{ color: '#666', fontSize: 13 }}>
-                    {booking.venueName || booking.venueId || 'Venue sin nombre'}
-                    {booking.city ? ` · ${booking.city}` : ''}
+                    {booking.city ? `Ciudad: ${booking.city}` : 'Ciudad no indicada'}
                   </div>
                 </div>
 

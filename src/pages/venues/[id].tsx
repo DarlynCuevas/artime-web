@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { getVenueById } from '@/services/venues/venues.service';
+import { useAuth } from '@/hooks/auth/useAuth';
 
 type VenueProfile = {
   id: string;
@@ -16,6 +17,8 @@ type VenueProfile = {
 export default function VenueProfilePage() {
   const router = useRouter();
   const { id } = router.query as { id: string };
+  const artistName = (router.query?.artistName as string) || null;
+  const { user } = useAuth();
 
   const [venue, setVenue] = useState<VenueProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,6 +51,11 @@ export default function VenueProfilePage() {
       <header style={{ marginBottom: 40 }}>
         <h1 style={{ marginBottom: 8 }}>{venue.name}</h1>
         <p style={{ color: '#555' }}>{venue.city}</p>
+        {artistName && (
+          <p style={{ color: '#333', marginTop: 6, fontSize: 14 }}>
+            Artista: {artistName}
+          </p>
+        )}
       </header>
 
       {/* CUERPO — DOS COLUMNAS */}
@@ -118,6 +126,12 @@ export default function VenueProfilePage() {
           <h2 style={{ fontSize: 16, marginBottom: 12 }}>
             Datos operativos
           </h2>
+
+          {artistName && (
+            <p style={{ marginBottom: 8 }}>
+              Artista: {artistName}
+            </p>
+          )}
 
           {venue.capacity && (
             <p style={{ marginBottom: 8 }}>

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { NegotiationPanel } from "@/components/bookings/NegotiationPanel";
 import { useContract } from '@/hooks/bookings/contracts/useContract';
 import { useBooking } from "@/hooks/bookings/useBooking";
@@ -76,6 +77,11 @@ function BookingDetailPage() {
   if (!isAuthorized) {
     return <p style={{ padding: 24 }}>Acceso no autorizado</p>;
   }
+
+  const venueName = (booking as any).venue?.name ?? (booking as any).venueName ?? 'Sala';
+  const venueCity = (booking as any).venue?.city ?? null;
+  const venueId = (booking as any).venue?.id ?? booking.venueId;
+  const artistName = (booking as any).artist?.name ?? (booking as any).artistName ?? null;
 
   // Si lo maneja la otra parte, no es tu turno
   const hasTurn = !isHandledByOther;
@@ -174,7 +180,18 @@ function BookingDetailPage() {
 
       {/* 3️⃣ VÍNCULO CONTRACTUAL */}
       <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 32 }}>
-        <p><strong>ID:</strong> {booking.id}</p>
+        <p>
+          <strong>Sala:</strong> {venueName}
+          {venueCity ? ` · ${venueCity}` : ''}
+          {venueId && (
+            <>
+              {' '}
+              <Link href={`/venues/${venueId}${artistName ? `?artistName=${encodeURIComponent(artistName)}` : ''}`}>
+                Ver sala
+              </Link>
+            </>
+          )}
+        </p>
         <p><strong>Fecha:</strong> {booking.start_date}</p>
         <p><strong>Importe:</strong> {booking.totalAmount} €</p>
         {contract && (

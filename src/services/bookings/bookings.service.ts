@@ -17,6 +17,17 @@ export type BookingDto = {
   venueId?: string;
   promoterId?: string | null;
   managerId?: string | null;
+  venueName?: string | null;
+  artistName?: string | null;
+  venue?: {
+    id?: string;
+    name?: string;
+    city?: string;
+  } | null;
+  artist?: {
+    id?: string;
+    name?: string;
+  } | null;
 };
 export interface CreateBookingPayload {
   artistId: string;

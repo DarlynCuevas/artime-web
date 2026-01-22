@@ -9,9 +9,10 @@ import { withRole } from '@/components/auth/withRole';
 function NewBookingPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { artistId: artistIdFromQuery, date: dateFromQuery } = router.query as {
+  const { artistId: artistIdFromQuery, date: dateFromQuery, amount: amountFromQuery } = router.query as {
     artistId?: string;
     date?: string;
+    amount?: string;
   };
 
   const [artists, setArtists] = useState<any[]>([]);
@@ -57,7 +58,11 @@ El contenido y el importe quedarán registrados en ARTIME como base de la negoci
     if (dateFromQuery && typeof dateFromQuery === 'string') {
       setStartDate(dateFromQuery);
     }
-  }, [artistIdFromQuery, dateFromQuery]);
+
+    if (amountFromQuery && typeof amountFromQuery === 'string') {
+      setAmount(amountFromQuery);
+    }
+  }, [artistIdFromQuery, dateFromQuery, amountFromQuery]);
 
 
   async function handleSubmit(e: React.FormEvent) {

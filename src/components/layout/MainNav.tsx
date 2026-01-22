@@ -3,21 +3,38 @@ import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/hooks/auth/useMe';
 import { useArtistNotifications } from '@/hooks/artists/useArtistNotifications';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 export function MainNav() {
   const { user } = useAuth();
   const { role, loading, profileId } = useMe();
   const [showDropdown, setShowDropdown] = useState(false);
+  const bellRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
 
   const { notifications, unreadCount, markAsRead } = useArtistNotifications({
     artistId: role === 'ARTIST' ? profileId : undefined,
     token: user?.token,
-    limit: 30,
+    limit: 5,
   });
 
   const latestNotifications = useMemo(() => notifications.slice(0, 5), [notifications]);
+
+  useEffect(() => {
+    function handleClickOutside(evt: MouseEvent) {
+      if (!bellRef.current) return;
+      if (bellRef.current.contains(evt.target as Node)) return;
+      setShowDropdown(false);
+    }
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
 
   if (!user || loading) return null;
 
@@ -48,7 +65,7 @@ export function MainNav() {
           <Link href="/artists/calendar">Calendario</Link>
           <Link href="/artists/bookings">Bookings</Link>
           <Link href="/artists">Perfil</Link>
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative' }} ref={bellRef}>
             <button
               onClick={() => setShowDropdown((s) => !s)}
               style={{

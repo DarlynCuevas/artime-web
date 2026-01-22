@@ -160,12 +160,16 @@ function ArtistCalendarPage() {
           {bookingLoading && <p style={{ marginTop: 8 }}>Cargando booking…</p>}
           {!bookingLoading && bookingDetail && (
             <div style={{ marginTop: 8, display: 'grid', gap: 4 }}>
-              <div><strong>ID:</strong> {bookingDetail.id}</div>
               <div><strong>Estado:</strong> {bookingDetail.status}</div>
               <div><strong>Monto:</strong> {bookingDetail.totalAmount ?? '—'} {bookingDetail.currency ?? ''}</div>
               {bookingDetail.venue && (
                 <div>
-                  <strong>Venue:</strong> {bookingDetail.venue.name ?? '—'}{bookingDetail.venue.city ? ` · ${bookingDetail.venue.city}` : ''}
+                  <strong>Sala:</strong> {bookingDetail.venue.name ?? '—'}{bookingDetail.venue.city ? ` · ${bookingDetail.venue.city}` : ''}
+                </div>
+              )}
+              {!bookingDetail.venue && (
+                <div>
+                  <strong>Sala:</strong> —
                 </div>
               )}
             </div>

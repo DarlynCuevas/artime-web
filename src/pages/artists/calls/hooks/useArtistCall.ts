@@ -13,6 +13,7 @@ export type ArtistCall = {
 		minPrice?: number;
 		maxPrice?: number;
 	};
+	venueRaw?: any;
 };
 
 export type CallResponseStatus = 'UNANSWERED' | 'INTERESTED' | 'NOT_INTERESTED';
@@ -66,14 +67,18 @@ export function useArtistCall({ callId, artistId, token, initialCall }: Params) 
 				}
 
 				if (data) {
+					const venue = Array.isArray((data as any).venue)
+						? (data as any).venue[0]
+						: (data as any).venue;
 					setCall({
 						id: data.id,
 						date: data.date,
 						city: data.city,
 						filters: data.filters ?? {},
-						venueName: data.venue?.name,
-						venueId: data.venue?.id,
+						venueName: venue?.name,
+						venueId: venue?.id,
 						offeredMaxPrice: data.filters?.maxPrice,
+						venueRaw: (data as any).venue ?? null,
 					});
 				}
 			} catch (err) {

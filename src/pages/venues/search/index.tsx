@@ -110,11 +110,11 @@ export default function VenueDiscoverPage() {
             Precio máximo (€)
             <input
               type="number"
-              onChange={(e) =>
-                setMaxPrice(
-                  Number(e.target.value) || undefined
-                )
-              }
+              value={maxPrice ?? ''}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setMaxPrice(Number.isFinite(val) ? val : undefined);
+              }}
               style={{ width: '100%', marginTop: 4 }}
             />
           </label>
@@ -128,14 +128,14 @@ export default function VenueDiscoverPage() {
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 12 }}>
           <button
             type="button"
-            disabled={callLoading || !user?.token || !date || !city}
+            disabled={callLoading || !user?.token || !date || maxPrice === undefined}
             onClick={async () => {
               if (!user?.token) {
                 setCallError('Debes iniciar sesión para notificar.');
                 return;
               }
-              if (!date || !city) {
-                setCallError('Indica fecha y ciudad para notificar.');
+              if (!date || maxPrice === undefined) {
+                setCallError('Indica fecha y precio máximo para notificar.');
                 return;
               }
               setCallLoading(true);
@@ -174,7 +174,7 @@ export default function VenueDiscoverPage() {
             {callLoading ? 'Notificando…' : 'Notificar artistas'}
           </button>
           <span style={{ fontSize: 12, color: '#555' }}>
-            Requiere fecha y ciudad. Usa los filtros actuales.
+            Requiere fecha y precio máximo. Usa los filtros actuales.
           </span>
         </div>
 
