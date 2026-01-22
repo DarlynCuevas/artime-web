@@ -5,36 +5,40 @@ import { useMe } from '@/hooks/auth/useMe';
 
 export default function IndexPage() {
   const { user, loading: authLoading } = useAuth();
-  const { data: me, loading: meLoading } = useMe();
+  const { role, loading: meLoading } = useMe();
   const router = useRouter();
 
 
   useEffect(() => {
-    if (authLoading || meLoading) return;
+    if (authLoading || meLoading) {
+      return;
+    }
 
-    if (!user) {
+    // Si loading terminó y no hay usuario, login
+
+    // Solo redirigir a login si loading terminó y user es null
+    if (!user && !authLoading && !meLoading) {
       router.replace('/login');
       return;
     }
 
-    if (me?.profiles.venue) {
-      router.replace('/venue');
+    // Si hay usuario y role definido
+    if (role === 'VENUE') {
+      router.replace('/venues');
       return;
     }
-
-    if (me?.profiles.artist) {
+    if (role === 'ARTIST') {
       router.replace('/artists/dashboard');
       return;
     }
-
-    if (me?.profiles.promoter) {
+    if (role === 'PROMOTER') {
       router.replace('/events');
       return;
     }
 
-    // Caso: usuario sin perfiles → onboarding
-    router.replace('/onboarding');
-  }, [user, me, authLoading, meLoading, router]);
+    // Si loading terminó y no hay usuario, login
+    // Si user existe pero role es null, NO redirigir (esperar a que role se actualice)
+  }, [user, role, authLoading, meLoading, router]);
 
   return (
     <main style={{ padding: 32 }}>

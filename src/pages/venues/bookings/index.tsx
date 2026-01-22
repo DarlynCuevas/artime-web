@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { useAuth } from '@/hooks/auth/useAuth';
-import { Booking } from '@/types/booking';
+import { withRole } from '@/components/auth/withRole';
 
 type BookingDto = {
   id: string;
@@ -29,7 +29,7 @@ function formatDate(date: string) {
   return new Date(date).toLocaleDateString();
 }
 
-export default function BookingsPage() {
+function BookingsVenuePage() {
   const { user } = useAuth();
   const [bookings, setBookings] = useState<BookingDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,9 +194,7 @@ export default function BookingsPage() {
                       </div>
 
                       <div style={{ textAlign: 'right' }}>
-                        <Link
-                          href={`/bookings/${booking.id}`}
-                        >
+                        <Link href={`/bookings/${booking.id}`}>
                           Abrir booking
                         </Link>
                       </div>
@@ -211,4 +209,6 @@ export default function BookingsPage() {
     </main>
   );
 }
+
+export default withRole(BookingsVenuePage, ['VENUE', 'PROMOTER']);
 

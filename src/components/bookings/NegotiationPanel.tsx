@@ -47,8 +47,9 @@ export function NegotiationPanel({
   const isVenueSide =
     userRole === 'VENUE' || userRole === 'PROMOTER';
 
+  // Si lo maneja la otra parte, no es tu turno
   const isMyTurn =
-    !lastMessage || lastMessage.senderUserId !== user?.id;
+    !isHandledByOther && (!lastMessage || lastMessage.senderUserId !== user?.id);
 
   const canWrite =
     ['PENDING', 'NEGOTIATING'].includes(bookingStatus) &&

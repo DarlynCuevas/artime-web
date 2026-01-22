@@ -2,6 +2,7 @@ import { NegotiationPanel } from "@/components/bookings/NegotiationPanel";
 import { useContract } from '@/hooks/bookings/contracts/useContract';
 import { useBooking } from "@/hooks/bookings/useBooking";
 import { useAuth } from "@/hooks/auth/useAuth";
+import { useMe } from "@/hooks/auth/useMe";
 import { UserRole } from "@/types/user-role";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -9,6 +10,7 @@ import { signContract } from '@/services/contracts/contracts.service';
 import { CancelBookingModal } from '@/components/bookings/CancelBookingModal';
 import { cancelBooking } from "@/services/bookings/cancellations.service";
 import { Role } from "@/types/booking";
+import { withRole } from '@/components/auth/withRole';
 
 import { confirmPaymentForMilestone } from "@/services/bookings/payments/confirmPayment.service";
 
@@ -34,10 +36,11 @@ const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 );
 
-export default function BookingDetailPage() {
+function BookingDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { user } = useAuth();
+  const { role, loading: meLoading, profileId } = useMe();
 
   const bookingId = typeof id === 'string' ? id : undefined;
 
@@ -56,30 +59,45 @@ export default function BookingDetailPage() {
   const [milestoneId, setMilestoneId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [conditionsAccepted, setConditionsAccepted] = useState(false);
+  const [signing, setSigning] = useState(false);
+  const [signError, setSignError] = useState<string | null>(null);
 
-  if (loading) return <p style={{ padding: 24 }}>Cargando contratación…</p>;
+  if (loading || meLoading) return <p style={{ padding: 24 }}>Cargando contratación…</p>;
   if (!booking) return <p>No se pudo cargar la contratación.</p>;
+  if (!user) return null;
 
-  const hasTurn = isHandledByOther;
+  // Control de ownership por rol
+  const isArtistOwner = role === 'ARTIST' && profileId && booking.artistId === profileId;
+  const isVenueOwner = role === 'VENUE' && profileId && booking.venueId === profileId;
+  const isManagerOwner = role === 'MANAGER' && profileId && booking.managerId === profileId;
+  const isPromoterOwner = role === 'PROMOTER' && profileId && booking.promoterId === profileId;
+  const isAuthorized = isArtistOwner || isVenueOwner || isManagerOwner || isPromoterOwner;
+
+  if (!isAuthorized) {
+    return <p style={{ padding: 24 }}>Acceso no autorizado</p>;
+  }
+
+  // Si lo maneja la otra parte, no es tu turno
+  const hasTurn = !isHandledByOther;
 
   const statusMessage = getStatusMessage({
     bookingStatus: booking.status,
     contractStatus: contract?.status,
-    role: user.role as Role,
+    role: role as Role,
     hasTurn,
   });
 
   const primaryAction = getPrimaryAction({
     bookingStatus: booking.status,
     contractStatus: contract?.status,
-    role: user.role as Role,
+    role: role as Role,
     hasTurn,
   });
 
   const secondaryActions = getSecondaryActions({
     bookingStatus: booking.status,
     contractStatus: contract?.status,
-    role: user.role as Role,
+    role: role as Role,
     hasTurn,
   });
 
@@ -103,7 +121,31 @@ export default function BookingDetailPage() {
       {(primaryAction || secondaryActions.length > 0) && (
         <section style={{ marginBottom: 32 }}>
           {primaryAction?.type === 'SIGN_CONTRACT' && (
-            <button>Firmar contrato</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button
+                disabled={signing}
+                onClick={async () => {
+                  if (!contract?.id) {
+                    setSignError('No hay contrato generado todavía');
+                    return;
+                  }
+                  if (!user?.token) return;
+                  setSigning(true);
+                  setSignError(null);
+                  try {
+                    await signContract(contract.id, user.token);
+                    await Promise.all([refresh(), refreshContract()]);
+                  } catch (err: any) {
+                    setSignError(err?.message || 'No se pudo firmar el contrato');
+                  } finally {
+                    setSigning(false);
+                  }
+                }}
+              >
+                {signing ? 'Firmando…' : 'Firmar contrato'}
+              </button>
+              {signError && <p style={{ color: 'red', margin: 0 }}>{signError}</p>}
+            </div>
           )}
 
           {secondaryActions.length > 0 && (
@@ -142,7 +184,7 @@ export default function BookingDetailPage() {
 
       {/* 4️⃣ PAGO */}
       {booking.status === 'CONTRACT_SIGNED' &&
-        (user?.role === 'VENUE' || user?.role === 'PROMOTER') && (
+        (role === 'VENUE' || role === 'PROMOTER') && (
           <section style={{ border: '1px solid #ddd', padding: 16, marginBottom: 32 }}>
             <h2>Pago</h2>
 
@@ -198,7 +240,7 @@ export default function BookingDetailPage() {
           bookingId={booking.id}
           isHandledByOther={isHandledByOther}
           bookingStatus={booking.status}
-          userRole={user?.role as UserRole}
+          userRole={role as UserRole}
           onBookingUpdated={refresh}
           refreshContract={refreshContract}
         />
@@ -215,7 +257,7 @@ export default function BookingDetailPage() {
             reason,
             description,
             token: user.token,
-            initiator: user.role as any,
+            initiator: role as any,
           });
           await refresh();
         }}
@@ -223,6 +265,8 @@ export default function BookingDetailPage() {
     </main>
   );
 }
+
+export default withRole(BookingDetailPage, ['VENUE', 'PROMOTER', 'ARTIST', 'MANAGER']);
 
 /* =========================
    FORMULARIO DE PAGO STRIPE

@@ -3,10 +3,10 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/hooks/auth/useMe';
 
 export function MainNav() {
-const { user, loading: authLoading } = useAuth();
-const { data: me, loading: meLoading } = useMe();
-console.log('ME', me);
-  if (!user) return null;
+  const { user } = useAuth();
+  const { role, loading } = useMe();
+
+  if (!user || loading) return null;
 
   return (
     <nav
@@ -14,40 +14,41 @@ console.log('ME', me);
         borderBottom: '1px solid #ddd',
         padding: '12px 24px',
         display: 'flex',
-        gap: 32, // Espacio uniforme entre los elementos
+        gap: 32,
         alignItems: 'center',
-        justifyContent: 'center', // Centra los elementos horizontalmente
+        justifyContent: 'center',
       }}
     >
-      {me?.profiles?.venue && (
+      {role === 'VENUE' && (
         <>
           <Link href="/venues/discover">Discover</Link>
           <Link href="/venues/search">Search</Link>
-          <Link href="/bookings">Bookings</Link>
-          <Link href="/venues">Dashboard</Link>
+          <Link href="/venues/bookings">Bookings</Link>
+          {/* <Link href="/venues">Dashboard</Link> */}
+          <Link href="/venues/dashboard">Dashboard</Link>
         </>
       )}
 
-      {me?.profiles?.artist && (
+      {role === 'ARTIST' && (
         <>
           <Link href="/artists/dashboard">Dashboard</Link>
           <Link href="/artists/calendar">Calendario</Link>
-          <Link href="/bookings">Bookings</Link>
-          <Link href="/artists/profile">Perfil</Link>
+          <Link href="/artists/bookings">Bookings</Link>
+          <Link href="/artists">Perfil</Link>
         </>
       )}
 
-      {me?.profiles?.manager && (
+      {role === 'MANAGER' && (
         <>
           <Link href="/artists/dashboard">Dashboard</Link>
           <Link href="/bookings">Bookings</Link>
         </>
       )}
 
-      {me?.profiles?.promoter && (
+      {role === 'PROMOTER' && (
         <>
           <Link href="/events">Eventos</Link>
-          <Link href="/bookings">Bookings</Link>
+          <Link href="/venues/bookings">Bookings</Link>
         </>
       )}
     </nav>

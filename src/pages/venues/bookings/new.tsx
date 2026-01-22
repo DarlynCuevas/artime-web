@@ -18,7 +18,6 @@ function NewBookingPage() {
   const [artistId, setArtistId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [amount, setAmount] = useState('');
-  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [message, setMessage] = useState(
     `Esta propuesta define las condiciones iniciales de la contratación.
 
@@ -68,7 +67,6 @@ El contenido y el importe quedarán registrados en ARTIME como base de la negoci
     try {
       setSubmitting(true);
       setError(null);
-      setSuggestions([]);
 
 
       const booking = await createBooking(
@@ -83,20 +81,7 @@ El contenido y el importe quedarán registrados en ARTIME como base de la negoci
       );
 
       router.push(`/bookings/${booking.id}`);
-    } catch (err: any) {
-      try {
-        const parsed = JSON.parse(err?.message ?? '{}');
-        if (parsed?.message === 'DATE_NOT_AVAILABLE') {
-          setError(parsed.reason === 'BOOKING_CONFLICT'
-            ? 'La fecha ya tiene un booking confirmado.'
-            : 'La fecha está bloqueada por el artista.');
-          setSuggestions(parsed.suggestions ?? []);
-          return;
-        }
-      } catch (parseErr) {
-        // ignore JSON parse errors
-      }
-
+    } catch {
       setError('No se pudo crear la propuesta');
     } finally {
       setSubmitting(false);
@@ -200,40 +185,6 @@ El contenido y el importe quedarán registrados en ARTIME como base de la negoci
           <p style={{ color: 'red', marginBottom: 16 }}>
             {error}
           </p>
-        )}
-
-        {suggestions.length > 0 && (
-          <div style={{
-            border: '1px solid #f59e0b',
-            background: '#fff7ed',
-            color: '#92400e',
-            padding: 12,
-            borderRadius: 8,
-            marginBottom: 16,
-          }}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>
-              Fechas sugeridas cercanas
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {suggestions.map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => setStartDate(d)}
-                  style={{
-                    padding: '6px 10px',
-                    border: '1px solid #92400e',
-                    background: '#fff',
-                    color: '#92400e',
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
-          </div>
         )}
 
         {/* CONFIRMACIÓN IMPLÍCITA */}

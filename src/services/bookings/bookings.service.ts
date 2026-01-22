@@ -13,6 +13,10 @@ export type BookingDto = {
   handledByUserId: string | null;
   handledAt: string | null;
   messagesCount?: number;
+  artistId?: string;
+  venueId?: string;
+  promoterId?: string | null;
+  managerId?: string | null;
 };
 export interface CreateBookingPayload {
   artistId: string;
@@ -52,6 +56,8 @@ export async function createBooking(
   payload: CreateBookingPayload,
   token: string,
 ) {
+  console.log(payload);
+  
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings`,
     {

@@ -2,6 +2,7 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { useArtistAvailability } from '@/hooks/artists/useArtistAvailability';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
+import { getPublicArtistCalendarBlocks } from '@/services/artists/calendar.service';
 
 type ArtistProfile = {
   id: string;
@@ -26,9 +27,25 @@ export default function ArtistProfilePage() {
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState<Date>(new Date());
+  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
 
   const { days: availability, loading: availabilityLoading } =
   useArtistAvailability(id, month, user?.token);
+
+  useEffect(() => {
+    if (!id || !user?.token) return;
+
+    const from = new Date(Date.UTC(month.getFullYear(), month.getMonth(), 1))
+      .toISOString()
+      .slice(0, 10);
+    const to = new Date(Date.UTC(month.getFullYear(), month.getMonth() + 1, 0))
+      .toISOString()
+      .slice(0, 10);
+
+    getPublicArtistCalendarBlocks(id, from, to, user.token)
+      .then((data) => setBlockedDates(new Set((data ?? []).map((d: any) => d.date))))
+      .catch(() => setBlockedDates(new Set()));
+  }, [id, month, user?.token]);
   useEffect(() => {
     if (!id || !user?.token) return;
 
@@ -142,13 +159,17 @@ export default function ArtistProfilePage() {
                   marginBottom: 12,
                 }}
               >
-                {availability.map((day) => (
+                {availability.map((day) => {
+                  const isBlocked = blockedDates.has(day.date);
+                  const status = isBlocked ? 'UNAVAILABLE' : day.status;
+                  return (
                   <div
                     key={day.date}
                     onClick={() => {
-                      if (day.status !== 'AVAILABLE') return;
+                      if (status !== 'AVAILABLE') return;
                       router.push(
-                        `/bookings/new?artistId=${artist.id}&date=${day.date}`,
+                        `/bookings/new?artistId=${
+                          id}&date=${day.date}`,
                       );
                     }}
                     style={{
@@ -156,20 +177,20 @@ export default function ArtistProfilePage() {
                       textAlign: 'center',
                       fontSize: 12,
                       cursor:
-                        day.status === 'AVAILABLE'
+                        status === 'AVAILABLE'
                           ? 'pointer'
                           : 'default',
                       background:
-                        day.status === 'AVAILABLE'
+                        status === 'AVAILABLE'
                           ? '#e6f4ea'
-                          : day.status === 'BOOKED'
+                          : status === 'BOOKED'
                           ? '#ccc'
                           : '#eee',
                     }}
                   >
                     {day.date.slice(8, 10)}
                   </div>
-                ))}
+                );})}
               </div>
             )}
 
