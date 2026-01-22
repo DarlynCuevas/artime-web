@@ -2,6 +2,8 @@ import { ArtistCard } from '@/components/artists/ArtistCard';
 import { useDiscoverArtists } from '@/hooks/artists/useDiscoverArtists';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { createArtistCall } from '@/services/venues/artist-calls.service';
 
 export default function VenueDiscoverPage() {
   const [date, setDate] = useState('');
@@ -11,6 +13,10 @@ export default function VenueDiscoverPage() {
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
   const router = useRouter()
   const [search, setSearch] = useState('');
+  const { user } = useAuth();
+  const [callLoading, setCallLoading] = useState(false);
+  const [callMessage, setCallMessage] = useState<string | null>(null);
+  const [callError, setCallError] = useState<string | null>(null);
 
   const { artists, loading } = useDiscoverArtists({
     date,
@@ -118,6 +124,62 @@ export default function VenueDiscoverPage() {
           Los resultados se actualizan según los criterios
           seleccionados.
         </p>
+
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 12 }}>
+          <button
+            type="button"
+            disabled={callLoading || !user?.token || !date || !city}
+            onClick={async () => {
+              if (!user?.token) {
+                setCallError('Debes iniciar sesión para notificar.');
+                return;
+              }
+              if (!date || !city) {
+                setCallError('Indica fecha y ciudad para notificar.');
+                return;
+              }
+              setCallLoading(true);
+              setCallError(null);
+              setCallMessage(null);
+              try {
+                const res = await createArtistCall(
+                  {
+                    date,
+                    city,
+                    filters: {
+                      genre: genre || undefined,
+                      minPrice,
+                      maxPrice,
+                      search: search || undefined,
+                    },
+                  },
+                  user.token,
+                );
+                setCallMessage(`Convocatoria creada. Artistas notificados: ${res.notifiedArtists ?? res.notified ?? 0}`);
+              } catch (err: any) {
+                setCallError(err?.message || 'No se pudo notificar a los artistas');
+              } finally {
+                setCallLoading(false);
+              }
+            }}
+            style={{
+              padding: '10px 14px',
+              background: '#0f172a',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              cursor: callLoading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {callLoading ? 'Notificando…' : 'Notificar artistas'}
+          </button>
+          <span style={{ fontSize: 12, color: '#555' }}>
+            Requiere fecha y ciudad. Usa los filtros actuales.
+          </span>
+        </div>
+
+        {callMessage && <p style={{ color: 'green', marginTop: 8 }}>{callMessage}</p>}
+        {callError && <p style={{ color: 'red', marginTop: 8 }}>{callError}</p>}
       </section>
 
       {/* RESULTADOS */}

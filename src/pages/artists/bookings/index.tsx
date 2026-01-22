@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { withRole } from '@/components/auth/withRole';
@@ -23,6 +23,29 @@ function groupByStatus(bookings: BookingDto[]) {
   }, {});
 }
 
+const TABS = [
+  {
+    key: 'PENDING',
+    label: 'Pendientes',
+    statuses: ['PENDING', 'FINAL_OFFER_SENT'],
+  },
+  {
+    key: 'NEGOTIATING',
+    label: 'En negociación',
+    statuses: ['NEGOTIATING'],
+  },
+  {
+    key: 'CONFIRMED',
+    label: 'Confirmadas',
+    statuses: ['ACCEPTED', 'CONTRACT_SIGNED', 'PAID', 'PAID_50', 'PAID_75', 'PAID_100', 'PAID_BALANCE'],
+  },
+  {
+    key: 'HISTORIC',
+    label: 'Histórico',
+    statuses: ['COMPLETED', 'REJECTED', 'CANCELLED'],
+  },
+];
+
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString();
 }
@@ -32,6 +55,7 @@ function ArtistBookingsPage() {
   const [bookings, setBookings] = useState<BookingDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('PENDING');
 
   useEffect(() => {
     if (!user?.token) {
@@ -82,6 +106,20 @@ function ArtistBookingsPage() {
 
   const bookingsByStatus = groupByStatus(bookings);
 
+  const countsByTab = useMemo(() => {
+    const map: Record<string, number> = {};
+    TABS.forEach((tab) => {
+      map[tab.key] = bookings.filter((b) => tab.statuses.includes(b.status)).length;
+    });
+    return map;
+  }, [bookings]);
+
+  const filteredBookings = useMemo(() => {
+    const tab = TABS.find((t) => t.key === activeTab);
+    if (!tab) return [] as BookingDto[];
+    return bookings.filter((b) => tab.statuses.includes(b.status));
+  }, [bookings, activeTab]);
+
   return (
     <main
       style={{
@@ -96,6 +134,42 @@ function ArtistBookingsPage() {
           Vista del artista con estado de contrataciones, fee y sala.
         </p>
       </header>
+
+      <section style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            style={{
+              padding: '10px 14px',
+              borderRadius: 8,
+              border: activeTab === tab.key ? '1px solid #0f172a' : '1px solid #ddd',
+              background: activeTab === tab.key ? '#0f172a' : '#fff',
+              color: activeTab === tab.key ? '#fff' : '#0f172a',
+              cursor: 'pointer',
+              minWidth: 160,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+            }}
+          >
+            <span>{tab.label}</span>
+            <span
+              style={{
+                background: activeTab === tab.key ? 'rgba(255,255,255,0.2)' : '#f2f2f2',
+                color: activeTab === tab.key ? '#fff' : '#0f172a',
+                borderRadius: 20,
+                padding: '2px 10px',
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              {countsByTab[tab.key] ?? 0}
+            </span>
+          </button>
+        ))}
+      </section>
 
       {bookings.length === 0 && (
         <section
@@ -113,68 +187,58 @@ function ArtistBookingsPage() {
       )}
 
       {bookings.length > 0 && (
-        <section>
-          {Object.entries(bookingsByStatus).map(([status, statusBookings]) => (
-            <section
-              key={status}
-              style={{
-                marginBottom: 32,
-                border: '1px solid #ddd',
-              }}
-            >
-              <header
+        <section style={{ border: '1px solid #ddd' }}>
+          <header
+            style={{
+              padding: '16px',
+              borderBottom: '1px solid #ddd',
+              background: '#f5f5f5',
+            }}
+          >
+            <h2 style={{ fontSize: 16, marginBottom: 4 }}>{TABS.find((t) => t.key === activeTab)?.label}</h2>
+            <p style={{ fontSize: 13, color: '#555' }}>
+              {filteredBookings.length}{' '}
+              {filteredBookings.length === 1 ? 'booking' : 'bookings'}
+            </p>
+          </header>
+
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {filteredBookings.map((booking) => (
+              <li
+                key={booking.id}
                 style={{
-                  padding: '16px',
-                  borderBottom: '1px solid #ddd',
-                  background: '#f5f5f5',
+                  padding: 16,
+                  borderTop: '1px solid #eee',
+                  display: 'grid',
+                  gridTemplateColumns: '2fr 2fr 2fr 1fr',
+                  gap: 16,
+                  alignItems: 'center',
                 }}
               >
-                <h2 style={{ fontSize: 16, marginBottom: 4 }}>{status}</h2>
-                <p style={{ fontSize: 13, color: '#555' }}>
-                  {statusBookings.length}{' '}
-                  {statusBookings.length === 1 ? 'booking' : 'bookings'}
-                </p>
-              </header>
+                <div>
+                  <strong>Booking {booking.id.slice(0, 8)}…</strong>
+                  <div style={{ color: '#666', fontSize: 13 }}>
+                    {booking.venueName || booking.venueId || 'Venue sin nombre'}
+                    {booking.city ? ` · ${booking.city}` : ''}
+                  </div>
+                </div>
 
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {statusBookings.map((booking) => (
-                  <li
-                    key={booking.id}
-                    style={{
-                      padding: 16,
-                      borderTop: '1px solid #eee',
-                      display: 'grid',
-                      gridTemplateColumns: '2fr 2fr 2fr 1fr',
-                      gap: 16,
-                      alignItems: 'center',
-                    }}
-                  >
-                    <div>
-                      <strong>Booking {booking.id.slice(0, 8)}…</strong>
-                      <div style={{ color: '#666', fontSize: 13 }}>
-                        {booking.venueName || booking.venueId || 'Venue sin nombre'}
-                        {booking.city ? ` · ${booking.city}` : ''}
-                      </div>
-                    </div>
+                <div>
+                  Fecha: {booking.start_date ? formatDate(booking.start_date) : '—'}
+                </div>
 
-                    <div>
-                      Fecha: {booking.start_date ? formatDate(booking.start_date) : '—'}
-                    </div>
+                <div>
+                  Fee: {booking.totalAmount ? `${booking.totalAmount} ${booking.currency}` : '—'}
+                </div>
 
-                    <div>
-                      Fee: {booking.totalAmount ? `${booking.totalAmount} ${booking.currency}` : '—'}
-                    </div>
-
-                    <div style={{ textAlign: 'right' }}>
-                      <Link href={`/bookings/${booking.id}`}>
-                        Abrir booking
-                      </Link>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
+                <div style={{ textAlign: 'right' }}>
+                  <Link href={`/bookings/${booking.id}`}>
+                    Abrir booking
+                  </Link>
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
     </main>
