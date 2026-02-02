@@ -84,7 +84,7 @@ function ArtistPrivateProfilePage() {
 	}
 
 	const handleChange = (field: keyof EditableProfile, value: string | number | boolean) => {
-		setProfile((prev) => ({ ...prev, [field]: value }));
+		setProfile((prev) => (prev ? { ...prev, [field]: value } : prev));
 	};
 
 	const handleSave = async () => {

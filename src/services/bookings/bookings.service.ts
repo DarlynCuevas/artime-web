@@ -12,6 +12,8 @@ export type BookingDto = {
   handledByRole: Role;
   handledByUserId: string | null;
   handledAt: string | null;
+  createdAt?: string;
+  updatedAt?: string | null;
   messagesCount?: number;
   artistId?: string;
   venueId?: string;

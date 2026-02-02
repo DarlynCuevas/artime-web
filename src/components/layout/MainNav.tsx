@@ -1,16 +1,115 @@
+'use client';
+
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
+import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarSeparator,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/hooks/auth/useMe';
 import { useArtistNotifications } from '@/hooks/artists/useArtistNotifications';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Bell, CalendarDays, Compass, LayoutDashboard, Search, Ticket, UserRound, Users, Building2 } from 'lucide-react';
 
-export function MainNav() {
+type NavItem = {
+  label: string;
+  href: string;
+  icon: ComponentType<{ className?: string }>;
+};
+
+type NavSection = {
+  label: string;
+  items: NavItem[];
+};
+
+const navByRole: Record<string, NavSection[]> = {
+  VENUE: [
+    {
+      label: 'Principal',
+      items: [
+        { label: 'Dashboard', href: '/venues/dashboard', icon: LayoutDashboard },
+        { label: 'Bookings', href: '/venues/bookings', icon: Ticket },
+        { label: 'Artistas', href: '/venues/discover', icon: Users },
+        { label: 'Buscar', href: '/venues/search', icon: Building2 },
+        { label: 'Calendario', href: '/venues/calendar', icon: CalendarDays },
+      ],
+    },
+    {
+      label: 'Sistema',
+      items: [{ label: 'Configuración', href: '/settings', icon: UserRound }],
+    },
+  ],
+  ARTIST: [
+    {
+      label: 'Principal',
+      items: [
+        { label: 'Dashboard', href: '/artists/dashboard', icon: LayoutDashboard },
+        { label: 'Calendario', href: '/artists/calendar', icon: CalendarDays },
+        { label: 'Bookings', href: '/artists/bookings', icon: Ticket },
+        { label: 'Perfil', href: '/artists', icon: Users },
+      ],
+    },
+  ],
+  MANAGER: [
+    {
+      label: 'Principal',
+      items: [
+        { label: 'Dashboard', href: '/artists/dashboard', icon: LayoutDashboard },
+        { label: 'Bookings', href: '/bookings', icon: Ticket },
+      ],
+    },
+  ],
+  PROMOTER: [
+    {
+      label: 'Principal',
+      items: [
+        { label: 'Dashboard', href: '/promoter/dashboard', icon: LayoutDashboard },
+        { label: 'Eventos', href: '/promoter/events', icon: CalendarDays },
+        { label: 'Bookings', href: '/promoter/bookings', icon: Ticket },
+      ],
+    },
+  ],
+};
+
+export function MainNav({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const { role, loading, profileId } = useMe();
+  const { role, loading, profileId, profileName } = useMe();
   const [showDropdown, setShowDropdown] = useState(false);
   const bellRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+
+  const navSections = useMemo(() => navByRole[role ?? ''] ?? [], [role]);
+
+  const navSectionsWithProfile = useMemo(() => {
+    return navSections.map((section) => {
+      if (role === 'VENUE' && section.label === 'Principal') {
+        const venueProfileHref = '/venues/profile';
+        return {
+          ...section,
+          items: [...section.items, { label: 'Perfil', href: venueProfileHref, icon: UserRound }],
+        };
+      }
+      return section;
+    });
+  }, [navSections, role, profileId]);
+
+  const mainSections = useMemo(() => navSectionsWithProfile.filter((section) => section.label !== 'Sistema'), [navSectionsWithProfile]);
+  const systemSection = useMemo(() => navSectionsWithProfile.find((section) => section.label === 'Sistema'), [navSectionsWithProfile]);
 
   const { notifications, unreadCount, markAsRead } = useArtistNotifications({
     artistId: role === 'ARTIST' ? profileId : undefined,
@@ -36,152 +135,164 @@ export function MainNav() {
     };
   }, [showDropdown]);
 
-  if (!user || loading) return null;
+  const isActive = (href: string) => router.pathname === href || router.pathname.startsWith(`${href}/`);
+
+  if (!user || loading) {
+    return <>{children}</>;
+  }
 
   return (
-    <nav
-      style={{
-        borderBottom: '1px solid #ddd',
-        padding: '12px 24px',
-        display: 'flex',
-        gap: 32,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {role === 'VENUE' && (
-        <>
-          <Link href="/venues/discover">Discover</Link>
-          <Link href="/venues/search">Search</Link>
-          <Link href="/venues/bookings">Bookings</Link>
-          {/* <Link href="/venues">Dashboard</Link> */}
-          <Link href="/venues/dashboard">Dashboard</Link>
-        </>
-      )}
+    <SidebarProvider>
+      <div className="flex min-h-svh w-screen bg-background text-foreground">
+        <Sidebar collapsible="icon">
+          <SidebarHeader className="flex flex-row items-center gap-3 px-3 py-4 border-b border-sidebar-border/60 bg-[hsl(var(--sidebar-primary))]">
+            <Image src="/favicon.ico" alt="Artime" width={32} height={32} className="h-8 w-8 shrink-0 rounded-md object-contain" priority />
+            <div>
+              <div className="text-sm font-semibold leading-tight text-[hsl(var(--sidebar-foreground))]">ARTIME</div>
+              <div className="text-[11px] text-[hsl(var(--sidebar-foreground))]/70">Contratación artística</div>
+            </div>
+<SidebarTrigger />
+          </SidebarHeader>
+          
 
-      {role === 'ARTIST' && (
-        <>
-          <Link href="/artists/dashboard">Dashboard</Link>
-          <Link href="/artists/calendar">Calendario</Link>
-          <Link href="/artists/bookings">Bookings</Link>
-          <Link href="/artists">Perfil</Link>
-          <div style={{ position: 'relative' }} ref={bellRef}>
-            <button
-              onClick={() => setShowDropdown((s) => !s)}
-              style={{
-                position: 'relative',
-                border: '1px solid #ddd',
-                borderRadius: 16,
-                padding: '6px 10px',
-                background: '#fff',
-                cursor: 'pointer',
-              }}
-            >
-              🔔
-              {unreadCount > 0 && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: -6,
-                    right: -6,
-                    background: '#ff4d4f',
-                    color: '#fff',
-                    borderRadius: '50%',
-                    minWidth: 18,
-                    height: 18,
-                    fontSize: 12,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '0 4px',
-                  }}
-                >
-                  {unreadCount}
-                </span>
-              )}
-            </button>
 
-            {showDropdown && (
-              <div
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  marginTop: 8,
-                  width: 320,
-                  background: '#fff',
-                  border: '1px solid #ddd',
-                  boxShadow: '0 6px 18px rgba(0,0,0,0.08)',
-                  borderRadius: 8,
-                  zIndex: 20,
-                  padding: 8,
-                }}
-              >
-                <div style={{ fontWeight: 600, marginBottom: 8 }}>Notificaciones</div>
-                {latestNotifications.length === 0 && (
-                  <p style={{ color: '#666', fontSize: 14, margin: 0 }}>Sin notificaciones</p>
-                )}
-                <div style={{ display: 'grid', gap: 8 }}>
-                  {latestNotifications.map((n) => (
-                    <div
-                      key={n.id}
-                      onClick={async () => {
-                        if (n.status === 'UNREAD') {
-                          await markAsRead(n.id);
-                        }
-                        const callId = n.payload?.callId;
-                        if (callId) {
-                          const query = new URLSearchParams();
-                          if (n.payload?.city) query.set('city', n.payload.city);
-                          if (n.payload?.date) query.set('date', n.payload.date);
-                          if (n.payload?.offeredMaxPrice) query.set('price', String(n.payload.offeredMaxPrice));
-                          if (n.payload?.venueName) query.set('venueName', n.payload.venueName);
-                          router.push(`/artists/calls/${callId}?${query.toString()}`);
-                        }
-                        setShowDropdown(false);
-                      }}
-                      style={{
-                        border: '1px solid #eee',
-                        padding: 10,
-                        borderRadius: 6,
-                        background: n.status === 'UNREAD' ? '#f6fbff' : '#fff',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <div style={{ fontSize: 13, fontWeight: 600 }}>
-                        {n.type === 'ARTIST_CALL_CREATED'
-                          ? 'Nueva convocatoria'
-                          : n.type}
-                      </div>
-                      <div style={{ fontSize: 12, color: '#555' }}>
-                        {n.payload?.venueName ? `${n.payload.venueName} · ` : ''}
-                        {n.payload?.city ?? ''}
-                      </div>
-                      <div style={{ fontSize: 12, color: '#333' }}>
-                        {n.payload?.date ?? ''}
-                        {n.payload?.offeredMaxPrice ? ` · Oferta: €${n.payload.offeredMaxPrice}` : ''}
-                      </div>
-                    </div>
+          <SidebarContent className="px-2 py-3 bg-[hsl(var(--sidebar-primary))]">
+            <div className="space-y-2">
+              {mainSections.map((section) => (
+                <SidebarGroup key={section.label} className="px-2">
+                  <SidebarGroupLabel className="px-3 text-[11px] uppercase tracking-[0.08em] text-[hsl(var(--sidebar-foreground))]">
+                    {section.label}
+                  </SidebarGroupLabel>
+                  <SidebarMenu className="mt-1 space-y-1">
+                    {section.items.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.href)}
+                          className="group h-10 rounded-lg px-3 text-[15px] font-medium text-[hsl(var(--sidebar-foreground))]/70 transition-colors hover:bg-[hsl(var(--sidebar-foreground)_/_0.12)] data-[active=true]:bg-[hsl(var(--sidebar-foreground)_/_0.18)]"
+                        >
+                          <Link href={item.href} className="flex items-center gap-3">
+                            <span className="flex size-8 items-center justify-center rounded-lg bg-[hsl(var(--sidebar-foreground)_/_0.14)] text-[hsl(var(--sidebar-foreground))] transition-colors group-data-[active=true]:bg-[hsl(var(--sidebar-foreground)_/_0.22)]">
+                              <item.icon className="size-4" />
+                            </span>
+                            <span>{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroup>
+              ))}
+            </div>
+
+            <div className="flex-1" />
+
+            {systemSection ? (
+              <SidebarGroup key={systemSection.label} className="px-2 pt-2">
+                <SidebarGroupLabel className="px-3 text-[11px] uppercase tracking-[0.08em] text-[hsl(var(--sidebar-foreground))]">
+                  {systemSection.label}
+                </SidebarGroupLabel>
+                <SidebarMenu className="mt-1 space-y-1">
+                  {systemSection.items.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive(item.href)}
+                        className="group h-10 rounded-lg px-3 text-[15px] font-medium text-[hsl(var(--sidebar-foreground))]/70 transition-colors hover:bg-[hsl(var(--sidebar-foreground)_/_0.12)] data-[active=true]:bg-[hsl(var(--sidebar-foreground)_/_0.18)]"
+                      >
+                        <Link href={item.href} className="flex items-center gap-3">
+                          <span className="flex size-8 items-center justify-center rounded-lg bg-[hsl(var(--sidebar-foreground)_/_0.14)] text-[hsl(var(--sidebar-foreground))] transition-colors group-data-[active=true]:bg-[hsl(var(--sidebar-foreground)_/_0.22)]">
+                            <item.icon className="size-4" />
+                          </span>
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                   ))}
+                </SidebarMenu>
+              </SidebarGroup>
+            ) : null}
+          </SidebarContent>
+
+          <SidebarSeparator className="mx-3 bg-sidebar-border/60" />
+
+          <SidebarFooter className="p-3 pt-2 bg-[hsl(var(--sidebar-primary))] ">
+            <div className="text-sm font-semibold leading-tight text-[hsl(var(--sidebar-foreground))]">{profileName ?? 'Usuario'}</div>
+            <div className="text-[11px] text-sidebar-muted text-[hsl(var(--sidebar-foreground))]">{role ?? 'Sin rol'}</div>
+          </SidebarFooter>
+        </Sidebar>
+
+        <SidebarInset className="flex-1 w-full">
+          <header className="sticky top-0 z-20 flex items-center gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur">
+
+            <Separator orientation="vertical" className="h-6" />
+            <div className="text-sm text-muted-foreground">
+              {role ? `Rol: ${role}` : 'Sesión activa'}
+            </div>
+            <div className="relative ml-auto flex items-center gap-2" ref={bellRef}>
+              <Button variant="ghost" size="icon" className="relative" onClick={() => setShowDropdown((s) => !s)}>
+                <Bell className="size-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
+                    {unreadCount}
+                  </span>
+                )}
+                <span className="sr-only">Abrir notificaciones</span>
+              </Button>
+
+              {showDropdown && (
+                <div className="absolute right-4 top-14 w-80 rounded-lg border bg-popover p-3 text-sm shadow-lg">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="font-semibold">Notificaciones</span>
+                    <span className="text-xs text-muted-foreground">Últimas 5</span>
+                  </div>
+                  {latestNotifications.length === 0 ? (
+                    <p className="py-4 text-xs text-muted-foreground">Sin notificaciones</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {latestNotifications.map((n) => (
+                        <button
+                          key={n.id}
+                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-left transition hover:border-primary/40 hover:bg-muted"
+                          onClick={async () => {
+                            if (n.status === 'UNREAD') {
+                              await markAsRead(n.id);
+                            }
+                            const callId = n.payload?.callId;
+                            if (callId) {
+                              const query = new URLSearchParams();
+                              if (n.payload?.city) query.set('city', n.payload.city);
+                              if (n.payload?.date) query.set('date', n.payload.date);
+                              if (n.payload?.offeredMaxPrice) query.set('price', String(n.payload.offeredMaxPrice));
+                              if (n.payload?.venueName) query.set('venueName', n.payload.venueName);
+                              router.push(`/artists/calls/${callId}?${query.toString()}`);
+                            }
+                            setShowDropdown(false);
+                          }}
+                        >
+                          <div className="text-sm font-semibold">
+                            {n.type === 'ARTIST_CALL_CREATED' ? 'Nueva convocatoria' : n.type}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {n.payload?.venueName ? `${n.payload.venueName} · ` : ''}
+                            {n.payload?.city ?? ''}
+                          </div>
+                          <div className="text-xs text-foreground">
+                            {n.payload?.date ?? ''}
+                            {n.payload?.offeredMaxPrice ? ` · Oferta: €${n.payload?.offeredMaxPrice}` : ''}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
-        </>
-      )}
+              )}
+            </div>
+          </header>
 
-      {role === 'MANAGER' && (
-        <>
-          <Link href="/artists/dashboard">Dashboard</Link>
-          <Link href="/bookings">Bookings</Link>
-        </>
-      )}
-
-      {role === 'PROMOTER' && (
-        <>
-          <Link href="/events">Eventos</Link>
-          <Link href="/venues/bookings">Bookings</Link>
-        </>
-      )}
-    </nav>
+          <div className="flex-1 w-full p-4">{children}</div>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 }

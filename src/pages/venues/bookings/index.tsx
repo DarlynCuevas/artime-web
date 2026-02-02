@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { Filter } from 'lucide-react';
+
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 import { withRole } from '@/components/auth/withRole';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -95,12 +98,12 @@ function BookingsVenuePage() {
   }, [user?.token]);
 
   if (loading) {
-    return <p style={{ padding: 40 }}>Cargando contrataciones…</p>;
+    return <p className="p-10">Cargando contrataciones…</p>;
   }
 
   if (error) {
     return (
-      <p style={{ padding: 40, color: 'red' }}>
+      <p className="p-10 text-red-600">
         {error}
       </p>
     );
@@ -112,7 +115,10 @@ function BookingsVenuePage() {
       if (tab.key === 'INTERESTED') {
         map[tab.key] = interestedCalls.length;
       } else {
-        map[tab.key] = bookings.filter((b) => tab.statuses.includes(b.status)).length;
+        const base = bookings.filter((b) => tab.statuses.includes(b.status));
+        map[tab.key] = tab.key === 'CONFIRMED'
+          ? base.filter((b) => b.status !== 'PENDING').length
+          : base.length;
       }
     });
     return map;
@@ -121,190 +127,135 @@ function BookingsVenuePage() {
   const filteredBookings = useMemo(() => {
     const tab = TABS.find((t) => t.key === activeTab);
     if (!tab) return [] as BookingDto[];
-    return bookings.filter((b) => tab.statuses.includes(b.status));
+    const base = bookings.filter((b) => tab.statuses.includes(b.status));
+    return tab.key === 'CONFIRMED' ? base.filter((b) => b.status !== 'PENDING') : base;
   }, [bookings, activeTab]);
 
   const activeInterested = activeTab === 'INTERESTED';
 
   return (
-    <main
-      style={{
-        maxWidth: 1100,
-        margin: '0 auto',
-        padding: '32px 24px',
-      }}
-    >
-      <header style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, marginBottom: 8 }}>
-          Bookings
-        </h1>
-        <p style={{ color: '#555' }}>
-          Vista del venue con estado de contrataciones, fee y artista.
-        </p>
+    <main className="p-8 max-w-6xl mx-auto space-y-6">
+      <header className="flex flex-col gap-3">
+        <div>
+          <p className="text-sm font-medium text-slate-500">Bookings</p>
+          <h1 className="text-3xl font-semibold text-slate-900">Gestiona todas tus contrataciones</h1>
+          <p className="text-slate-600">Lista y estado de tus bookings como venue.</p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/venues/discover"
+            className="inline-flex items-center gap-2 rounded-lg bg-slate-900 text-white px-4 py-2 text-sm font-medium hover:bg-slate-800"
+          >
+            Nueva contratación
+          </Link>
+        </div>
       </header>
 
-      <section style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            style={{
-              padding: '10px 14px',
-              borderRadius: 8,
-              border: activeTab === tab.key ? '1px solid #0f172a' : '1px solid #ddd',
-              background: activeTab === tab.key ? '#0f172a' : '#fff',
-              color: activeTab === tab.key ? '#fff' : '#0f172a',
-              cursor: 'pointer',
-              minWidth: 160,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8,
-            }}
-          >
-            <span>{tab.label}</span>
-            <span
-              style={{
-                background: activeTab === tab.key ? 'rgba(255,255,255,0.2)' : '#f2f2f2',
-                color: activeTab === tab.key ? '#fff' : '#0f172a',
-                borderRadius: 20,
-                padding: '2px 10px',
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            >
-              {countsByTab[tab.key] ?? 0}
-            </span>
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium border transition ${activeTab === tab.key
+                  ? 'border-slate-900 bg-slate-900 text-white'
+                  : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'}`}
+              >
+                <span>{tab.label}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
+                  {countsByTab[tab.key] ?? 0}
+                </span>
+              </button>
+            ))}
+          </div>
+          <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">
+            <Filter className="h-4 w-4" />
+            Filtros
           </button>
-        ))}
-      </section>
+        </div>
 
-      {bookings.length === 0 && !activeInterested && (
-        <section
-          style={{
-            padding: 24,
-            border: '1px solid #ddd',
-            background: '#fafafa',
-          }}
-        >
-          <p>No hay bookings activos.</p>
-          <p style={{ color: '#666' }}>
-            Cuando tengas nuevas contrataciones aparecerán aquí.
-          </p>
-        </section>
-      )}
-
-      {(bookings.length > 0 || activeInterested) && (
-        <section style={{ border: '1px solid #ddd' }}>
-          <header
-            style={{
-              padding: '16px',
-              borderBottom: '1px solid #ddd',
-              background: '#f5f5f5',
-            }}
-          >
-            <h2 style={{ fontSize: 16, marginBottom: 4 }}>{TABS.find((t) => t.key === activeTab)?.label}</h2>
-            {!activeInterested && (
-              <p style={{ fontSize: 13, color: '#555' }}>
-                {filteredBookings.length}{' '}
-                {filteredBookings.length === 1 ? 'booking' : 'bookings'}
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <header className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900">{TABS.find((t) => t.key === activeTab)?.label}</h2>
+              <p className="text-sm text-slate-600">
+                {!activeInterested
+                  ? `${filteredBookings.length} ${filteredBookings.length === 1 ? 'booking' : 'bookings'}`
+                  : `${interestedCalls.length} ${interestedCalls.length === 1 ? 'artista interesado' : 'artistas interesados'}`}
               </p>
-            )}
-            {activeInterested && (
-              <p style={{ fontSize: 13, color: '#555' }}>
-                {interestedCalls.length}{' '}
-                {interestedCalls.length === 1 ? 'artista interesado' : 'artistas interesados'}
-              </p>
-            )}
+            </div>
           </header>
 
           {!activeInterested && (
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-              {filteredBookings.map((booking) => (
-                <li
+            <div className="divide-y divide-slate-100">
+              {filteredBookings.length === 0 && (
+                <div className="py-12 text-center text-slate-500">No hay bookings en esta sección.</div>
+              )}
+
+              {filteredBookings.map((booking, index) => (
+                <div
                   key={booking.id}
-                  style={{
-                    padding: 16,
-                    borderTop: '1px solid #eee',
-                    display: 'grid',
-                    gridTemplateColumns: '2fr 2fr 2fr 1fr',
-                    gap: 16,
-                    alignItems: 'center',
-                  }}
+                  className="grid grid-cols-1 md:grid-cols-4 gap-4 px-4 py-4 hover:bg-slate-50 transition"
+                  style={{ animationDelay: `${index * 40}ms` }}
                 >
                   <div>
-                    <strong>{booking.artistName || booking.artistId || 'Artista sin nombre'}</strong>
-                    <div style={{ color: '#666', fontSize: 13 }}>
-                      {booking.city ? booking.city : ''}
-                      {booking.city ? ` · Booking ${booking.id.slice(0, 8)}…` : `Booking ${booking.id.slice(0, 8)}…`}
-                    </div>
+                    <p className="font-medium text-slate-900 truncate">{booking.artistName || booking.artistId || 'Artista sin nombre'}</p>
+                    <p className="text-sm text-slate-500 truncate">{booking.city ? booking.city : ''}{booking.city ? ` · Booking ${booking.id.slice(0, 8)}…` : `Booking ${booking.id.slice(0, 8)}…`}</p>
                   </div>
-
-                  <div>
+                  <div className="text-sm text-slate-700">
                     Fecha: {booking.start_date ? formatDate(booking.start_date) : '—'}
                   </div>
-
-                  <div>
+                  <div className="text-sm text-slate-700">
                     Fee: {booking.totalAmount ? `${booking.totalAmount} ${booking.currency}` : '—'}
                   </div>
-
-                  <div style={{ textAlign: 'right' }}>
-                    <Link href={`/bookings/${booking.id}`}>
+                  <div className="flex flex-col items-end gap-2 text-right">
+                    <StatusBadge status={booking.status} />
+                    <Link href={`/bookings/${booking.id}`} className="text-sm font-medium text-slate-900 hover:underline">
                       Abrir booking
                     </Link>
                   </div>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
 
           {activeInterested && (
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-              {interestedCalls.map((item) => (
-                <li
+            <div className="divide-y divide-slate-100">
+              {interestedCalls.length === 0 && (
+                <div className="py-12 text-center text-slate-500">Todavía no hay artistas interesados.</div>
+              )}
+
+              {interestedCalls.map((item, index) => (
+                <div
                   key={`${item.callId}-${item.artistId ?? 'unknown'}`}
-                  style={{
-                    padding: 16,
-                    borderTop: '1px solid #eee',
-                    display: 'grid',
-                    gridTemplateColumns: '2fr 2fr 2fr 1fr',
-                    gap: 16,
-                    alignItems: 'center',
-                  }}
+                  className="grid grid-cols-1 md:grid-cols-4 gap-4 px-4 py-4 hover:bg-slate-50 transition"
+                  style={{ animationDelay: `${index * 40}ms` }}
                 >
                   <div>
-                    <strong>{item.artistName}</strong>
-                    <div style={{ color: '#666', fontSize: 13 }}>
-                      {item.artistCity ?? 'Ciudad no indicada'}
-                      {item.city ? ` · Convocatoria: ${item.city}` : ''}
-                    </div>
+                    <p className="font-medium text-slate-900 truncate">{item.artistName}</p>
+                    <p className="text-sm text-slate-500 truncate">{item.artistCity ?? 'Ciudad no indicada'}{item.city ? ` · Convocatoria: ${item.city}` : ''}</p>
                   </div>
-
-                  <div>
+                  <div className="text-sm text-slate-700">
                     Fecha interesada: {item.date ? formatDate(item.date) : '—'}
                   </div>
-
-                  <div>
+                  <div className="text-sm text-slate-700">
                     Oferta del venue: {item.offeredPrice ? `${item.offeredPrice} ${item.currency}` : '—'}
                   </div>
-
-                  <div style={{ textAlign: 'right' }}>
-                    <Link href={`/venues/bookings/new?artistId=${item.artistId ?? ''}&date=${item.date ?? ''}&amount=${item.offeredPrice ?? ''}`}>
+                  <div className="text-right">
+                    <Link
+                      href={`/venues/bookings/new?artistId=${item.artistId ?? ''}&date=${item.date ?? ''}&amount=${item.offeredPrice ?? ''}`}
+                      className="text-sm font-medium text-slate-900 hover:underline"
+                    >
                       Iniciar contratación
                     </Link>
                   </div>
-                </li>
+                </div>
               ))}
-
-              {interestedCalls.length === 0 && (
-                <li style={{ padding: 16 }}>
-                  <p style={{ color: '#666', margin: 0 }}>Todavía no hay artistas interesados.</p>
-                </li>
-              )}
-            </ul>
+            </div>
           )}
-        </section>
-      )}
+        </div>
+      </section>
     </main>
   );
 }

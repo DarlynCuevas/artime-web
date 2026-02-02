@@ -1,31 +1,180 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ARTIME Design System - Professional B2B Artistic Hiring Platform
+  Visual tone: Quiet authority - the system leads, but doesn't intimidate
+  All colors in HSL format */
 
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Core backgrounds */
+    --background: 220 20% 98%;
+    --foreground: 222 47% 11%;
+
+    /* Card surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Primary - Deep Navy for authority */
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
+
+    /* Secondary - Slate for subtle elements */
+    --secondary: 215 20% 95%;
+    --secondary-foreground: 222 47% 11%;
+
+    /* Muted - For secondary info */
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Accent - Warm Amber for actions and highlights */
+    --accent: 38 92% 50%;
+    --accent-foreground: 222 47% 11%;
+
+    /* Status colors */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    /* Booking status colors */
+    --status-pending: 38 92% 50%;
+    --status-confirmed: 142 76% 36%;
+    --status-negotiating: 217 91% 60%;
+    --status-cancelled: 0 84% 60%;
+    --status-completed: 215 16% 47%;
+
+    /* Borders and inputs */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 222 47% 11%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar - mismo color que botón "Nueva contratación" (slate-900) */
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 222 47% 11%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 222 40% 18%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 40% 18%;
+    --sidebar-ring: 222 47% 18%;
+    --sidebar-muted: 215 20% 70%;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 222 40% 15%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 222 40% 15%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 38 92% 50%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 40% 18%;
+    --input: 222 40% 18%;
+    --ring: 212 27% 84%;
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 222 47% 11%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 222 40% 16%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 40% 18%;
+    --sidebar-ring: 222 47% 18%;
   }
 }
 
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    @apply font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Contenedor centrado reutilizable */
+  .container-pro {
+    @apply w-full max-w-screen-xl mx-auto px-4 md:px-6;
+  }
+
+  /* Status badges */
+  .status-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .status-pending {
+    @apply bg-amber-100 text-amber-800;
+  }
+
+  .status-confirmed {
+    @apply bg-emerald-100 text-emerald-800;
+  }
+
+  .status-negotiating {
+    @apply bg-blue-100 text-blue-800;
+  }
+
+  .status-cancelled {
+    @apply bg-red-100 text-red-800;
+  }
+
+  .status-completed {
+    @apply bg-slate-100 text-slate-600;
+  }
+
+  /* Professional list row */
+  .list-row {
+    @apply flex items-center gap-4 p-4 transition-colors;
+    background-color: hsl(var(--card));
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  .list-row:hover {
+    background-color: hsl(var(--muted) / 0.5);
+  }
+
+  /* Action panel */
+  .action-panel {
+    @apply rounded-lg p-4;
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+  }
+}
+
+/* Heredamos algunos resets mínimos del antiguo globals para seguridad */
 html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -37,10 +186,4 @@ body {
 a {
   color: inherit;
   text-decoration: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
 }

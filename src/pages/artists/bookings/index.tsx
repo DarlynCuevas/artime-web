@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
+import { StatusBadge } from '@/components/ui/StatusBadge';
+
 import { withRole } from '@/components/auth/withRole';
 import { useAuth } from '@/hooks/auth/useAuth';
 
@@ -109,7 +111,10 @@ function ArtistBookingsPage() {
   const countsByTab = useMemo(() => {
     const map: Record<string, number> = {};
     TABS.forEach((tab) => {
-      map[tab.key] = bookings.filter((b) => tab.statuses.includes(b.status)).length;
+      const base = bookings.filter((b) => tab.statuses.includes(b.status));
+      map[tab.key] = tab.key === 'CONFIRMED'
+        ? base.filter((b) => b.status !== 'PENDING').length
+        : base.length;
     });
     return map;
   }, [bookings]);
@@ -117,7 +122,8 @@ function ArtistBookingsPage() {
   const filteredBookings = useMemo(() => {
     const tab = TABS.find((t) => t.key === activeTab);
     if (!tab) return [] as BookingDto[];
-    return bookings.filter((b) => tab.statuses.includes(b.status));
+    const base = bookings.filter((b) => tab.statuses.includes(b.status));
+    return tab.key === 'CONFIRMED' ? base.filter((b) => b.status !== 'PENDING') : base;
   }, [bookings, activeTab]);
 
   return (
@@ -230,7 +236,8 @@ function ArtistBookingsPage() {
                   Fee: {booking.totalAmount ? `${booking.totalAmount} ${booking.currency}` : '—'}
                 </div>
 
-                <div style={{ textAlign: 'right' }}>
+                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                  <StatusBadge status={booking.status} />
                   <Link href={`/bookings/${booking.id}`}>
                     Abrir booking
                   </Link>

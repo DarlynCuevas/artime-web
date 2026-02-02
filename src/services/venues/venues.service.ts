@@ -1,5 +1,18 @@
 import { DiscoverVenue } from "@/types/venues/DiscoverVenue";
 
+type VenueProfilePayload = {
+  name: string;
+  city?: string;
+  address?: string;
+  capacity?: number | null;
+  description?: string;
+  genres?: string[];
+  amenities?: string[];
+  website?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+};
+
 export async function getVenueById(
   venueId: string,
 ): Promise<{
@@ -18,6 +31,41 @@ export async function getVenueById(
 
   if (!res.ok) {
     throw new Error('VENUE_NOT_FOUND');
+  }
+
+  return res.json();
+}
+
+export async function getMyVenueProfile(token: string): Promise<any> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/venues/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    throw new Error('VENUE_PROFILE_NOT_FOUND');
+  }
+
+  return res.json();
+}
+
+export async function updateMyVenueProfile(payload: VenueProfilePayload, token: string): Promise<any> {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/venues/me`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error('VENUE_PROFILE_NOT_FOUND');
+    }
+    throw new Error('VENUE_PROFILE_UPDATE_FAILED');
   }
 
   return res.json();
