@@ -3,14 +3,22 @@ import { useAuth } from './useAuth';
 
 type Role = 'VENUE' | 'ARTIST' | 'MANAGER' | 'PROMOTER' | null;
 
-type MeResponse = {
-  profiles: {
-    artist: { id: string; name: string } | null;
-    venue: { id: string; name: string } | null;
-    promoter?: { id: string; name: string } | null;
-    manager?: { id: string; name: string } | null;
-  };
+type ProfileResponse = {
+  id?: string;
+  name?: string;
 };
+
+type RoleEndpoint = {
+  role: Exclude<Role, null>;
+  path: string;
+};
+
+const ROLE_ENDPOINTS: RoleEndpoint[] = [
+  { role: 'VENUE', path: '/venues/me' },
+  { role: 'ARTIST', path: '/artists/me' },
+  { role: 'MANAGER', path: '/managers/me' },
+  { role: 'PROMOTER', path: '/promoters/me' },
+];
 
 export function useMe() {
   const { user } = useAuth();
@@ -44,47 +52,35 @@ export function useMe() {
 
     (async () => {
       try {
-        const res = await fetch(`${baseUrl}/me`, {
-          headers: {
-            Authorization: `Bearer ${user.token}`,
-          },
-        });
+        const authHeaders = {
+          Authorization: `Bearer ${user.token}`,
+        };
+        let resolvedProfile: ProfileResponse | null = null;
+        let resolvedRole: Role = null;
 
-        if (!res.ok) {
-          throw new Error(`/me respondió ${res.status}`);
+        for (const endpoint of ROLE_ENDPOINTS) {
+          const res = await fetch(`${baseUrl}${endpoint.path}`, {
+            headers: authHeaders,
+          });
+
+          if (res.status === 404) {
+            continue;
+          }
+
+          if (!res.ok) {
+            throw new Error(`${endpoint.path} respondió ${res.status}`);
+          }
+
+          const data: ProfileResponse = await res.json();
+          resolvedProfile = data;
+          resolvedRole = endpoint.role;
+          break;
         }
 
-        const data: MeResponse = await res.json();
-        console.log('Respuesta /me', data);
-        const profiles = data?.profiles;
-
-        if (profiles?.venue) {
-          setRole('VENUE');
-          setProfileId(profiles.venue.id);
-          setProfileName(profiles.venue.name);
-          console.log('Set role VENUE');
-        } else if (profiles?.artist) {
-          setRole('ARTIST');
-          setProfileId(profiles.artist.id);
-          setProfileName(profiles.artist.name);
-          console.log('Set role ARTIST');
-        } else if (profiles?.manager) {
-          setRole('MANAGER');
-          setProfileId(profiles.manager.id);
-          setProfileName(profiles.manager.name);
-          console.log('Set role MANAGER');
-        } else if (profiles?.promoter) {
-          setRole('PROMOTER');
-          setProfileId(profiles.promoter.id);
-          setProfileName(profiles.promoter.name);
-          console.log('Set role PROMOTER');
-        } else {
-          setRole(null);
-          setProfileId(undefined);
-          setProfileName(undefined);
-          console.log('Set role null');
-        }
-        console.log('Role final:', profiles, role);
+        setRole(resolvedRole);
+        setProfileId(resolvedProfile?.id);
+        setProfileName(resolvedProfile?.name);
+        console.log('Role final:', resolvedRole, resolvedProfile);
       } catch (err) {
         console.error('[useMe] error', err);
         setRole(null);
