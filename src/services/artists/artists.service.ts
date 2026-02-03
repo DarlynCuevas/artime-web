@@ -36,6 +36,24 @@ export async function discoverArtists(token: string) {
   return res.json();
 }
 
+export async function getMyArtistProfile(token: string) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/artists/me`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'No se pudo obtener el perfil');
+  }
+
+  return res.json();
+}
+
 export type AvailabilityDay = {
   date: string;
   status: 'AVAILABLE' | 'BOOKED' | 'UNAVAILABLE';
@@ -92,6 +110,26 @@ export async function getArtistAvailability(
 
   if (!res.ok) {
     throw new Error('Failed to fetch artist availability');
+  }
+
+  return res.json();
+}
+
+export async function getArtistProfileById(
+  artistId: string,
+  token: string,
+) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/artists/${artistId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch artist profile');
   }
 
   return res.json();

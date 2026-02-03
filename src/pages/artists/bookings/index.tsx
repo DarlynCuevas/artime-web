@@ -15,6 +15,7 @@ type BookingDto = {
   venueId?: string | null;
   venueName?: string | null;
   city?: string | null;
+  createdAt?: string | null;
 };
 
 function groupByStatus(bookings: BookingDto[]) {
@@ -87,6 +88,7 @@ function ArtistBookingsPage() {
           venueId: b.venueId ?? null,
           venueName: b.venueName ?? null,
           city: b.city ?? null,
+          createdAt: b.createdAt ?? null,
         })) as BookingDto[];
         setBookings(normalized);
       })
@@ -123,7 +125,20 @@ function ArtistBookingsPage() {
     const tab = TABS.find((t) => t.key === activeTab);
     if (!tab) return [] as BookingDto[];
     const base = bookings.filter((b) => tab.statuses.includes(b.status));
-    return tab.key === 'CONFIRMED' ? base.filter((b) => b.status !== 'PENDING') : base;
+    const filtered =
+      tab.key === 'CONFIRMED'
+        ? base.filter((b) => b.status !== 'PENDING')
+        : base;
+
+    if (tab.key === 'PENDING') {
+      return [...filtered].sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
+      });
+    }
+
+    return filtered;
   }, [bookings, activeTab]);
 
   return (

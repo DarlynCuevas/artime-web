@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-type BookingStatusVariant = "pending" | "confirmed" | "negotiating" | "cancelled" | "completed";
+type BookingStatusVariant = "pending" | "confirmed" | "negotiating" | "cancelled" | "completed" | "rejected";
 
 interface StatusBadgeProps {
   status: string;
@@ -22,6 +22,10 @@ const statusConfig: Record<BookingStatusVariant, { label: string; className: str
   },
   cancelled: {
     label: "Cancelado",
+    className: "status-cancelled",
+  },
+  rejected: {
+    label: "Rechazado",
     className: "status-cancelled",
   },
   completed: {
@@ -47,6 +51,9 @@ function normalizeStatus(status: string | undefined | null): BookingStatusVarian
     case "cancelled":
     case "canceled":
       return "cancelled";
+    case "declined":
+    case "rejected":
+      return "rejected";
     case "completed":
     case "done":
       return "completed";

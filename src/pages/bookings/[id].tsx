@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { ArrowLeft, Calendar, MapPin, Clock, CreditCard, FileText, AlertTriangle, MessageSquare, HandCoins, CheckCircle2, XCircle } from 'lucide-react';
 
 import { CancelBookingModal } from '@/components/bookings/CancelBookingModal';
+import { NegotiationPanel } from '@/components/bookings/NegotiationPanel';
+import { SignContractModal } from '@/components/bookings/SignContractModal';
 import { useContract } from '@/hooks/bookings/contracts/useContract';
 import { useBooking } from '@/hooks/bookings/useBooking';
 import { useNegotiation } from '@/hooks/bookings/useNegotiation';
@@ -21,6 +23,7 @@ import {
   createPaymentIntentForMilestone,
   getMilestonesForBooking,
 } from '@/services/bookings/payments/payments.service.';
+import { signContract } from '@/services/contracts/contracts.service';
 
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
@@ -48,9 +51,10 @@ function BookingDetailPage() {
 
   const { messages: negotiationMessages, loading: negotiationLoading } = useNegotiation(bookingId);
 
-  const { contract } = useContract(bookingId);
+  const { contract, refresh: refreshContract } = useContract(bookingId);
 
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showSignContractModal, setShowSignContractModal] = useState(false);
 
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [milestoneId, setMilestoneId] = useState<string | null>(null);
@@ -76,8 +80,10 @@ function BookingDetailPage() {
   const venueId = (booking as any).venue?.id ?? booking.venueId;
   const artistName = (booking as any).artist?.name ?? (booking as any).artistName ?? null;
 
-  // Si lo maneja la otra parte, no es tu turno
-  const hasTurn = !isHandledByOther;
+  // Si el backend define el turno, úsalo como fuente principal.
+  const hasTurn = booking.handledByRole
+    ? booking.handledByRole === role
+    : !isHandledByOther;
 
   const statusMessage = getStatusMessage({
     bookingStatus: booking.status,
@@ -86,7 +92,28 @@ function BookingDetailPage() {
     hasTurn,
   });
 
+  const handledByLabel =
+    booking.handledByRole === 'PROMOTER'
+      ? 'promotor'
+      : booking.handledByRole === 'VENUE'
+        ? 'sala'
+        : booking.handledByRole === 'ARTIST'
+          ? 'artista'
+          : booking.handledByRole === 'MANAGER'
+            ? 'manager'
+            : null;
+
+  const actionTurnMessage = hasTurn
+    ? 'Es tu turno para responder o cancelar la propuesta.'
+    : handledByLabel
+      ? `Turno de ${handledByLabel}.`
+      : 'La otra parte estÃ¡ gestionando este booking.';
+
   const hasContract = Boolean(contract);
+  const canSignContract =
+    Boolean(contract) &&
+    contract?.status === 'DRAFT' &&
+    (role === 'ARTIST' || role === 'MANAGER');
   const backHref =
     role === 'VENUE' || role === 'PROMOTER'
       ? '/venues/bookings'
@@ -154,6 +181,7 @@ function BookingDetailPage() {
             <p className="font-medium text-foreground">Última actividad</p>
             <p>{lastActivity ? formatRelativeTime(lastActivity) : 'Sin actividad'}</p>
           </div>
+
         </div>
       </div>
 
@@ -254,7 +282,7 @@ function BookingDetailPage() {
             </div>
           </div>
 
-          {booking.status === 'CONTRACT_SIGNED' && (role === 'VENUE' || role === 'PROMOTER') && (
+          {contract?.status === 'SIGNED' && (role === 'VENUE' || role === 'PROMOTER') && (
             <div className="action-panel">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-semibold text-foreground">Pagos</h2>
@@ -362,6 +390,17 @@ function BookingDetailPage() {
               </div>
             )}
           </div>
+
+          <NegotiationPanel
+            bookingId={booking.id}
+            bookingStatus={booking.status}
+            userRole={role as any}
+            handledByRole={booking.handledByRole as any}
+            isHandledByOther={isHandledByOther}
+            onBookingUpdated={refresh}
+            refreshContract={refreshContract}
+            onCancelBooking={() => setShowCancelModal(true)}
+          />
         </div>
 
         <div className="space-y-6">
@@ -371,7 +410,7 @@ function BookingDetailPage() {
               <div>
                 <p className="font-medium text-foreground">Turno de acción</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {statusMessage ?? (hasTurn ? 'Es tu turno para avanzar en la negociación o firma.' : 'La otra parte está gestionando este booking.')}
+                  {actionTurnMessage}
                 </p>
               </div>
             </div>
@@ -385,6 +424,16 @@ function BookingDetailPage() {
             <p className="text-sm text-muted-foreground">
               {hasContract ? `Contrato ${contract?.status ?? 'en preparación'}` : 'Aún no hay contrato generado.'}
             </p>
+            {canSignContract && (
+              <div className="mt-3">
+                <Button
+                  onClick={() => setShowSignContractModal(true)}
+                  variant="default"
+                >
+                  Firmar contrato
+                </Button>
+              </div>
+            )}
           </div>
 
 
@@ -409,6 +458,19 @@ function BookingDetailPage() {
             token: user.token,
             initiator: role as any,
           });
+          await refresh();
+        }}
+      />
+
+      <SignContractModal
+        open={showSignContractModal}
+        title="Firmar contrato"
+        confirmLabel="Firmar contrato"
+        onClose={() => setShowSignContractModal(false)}
+        onConfirm={async () => {
+          if (!contract?.id) return;
+          await signContract(contract.id, user.token);
+          await refreshContract();
           await refresh();
         }}
       />

@@ -33,8 +33,8 @@ export type BookingDto = {
 };
 export interface CreateBookingPayload {
   artistId: string;
-  currency: string;
-  totalAmount: number;
+  currency?: string;
+  totalAmount?: number;
   eventId?: string;
   start_date?: string;
   message?: string;

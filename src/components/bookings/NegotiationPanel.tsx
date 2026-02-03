@@ -10,8 +10,10 @@ type Props = {
   isHandledByOther: boolean;
   bookingStatus: string;
   userRole: UserRole;
+  handledByRole?: UserRole | null;
   onBookingUpdated: () => void;
   refreshContract: () => void;
+  onCancelBooking: () => void;
 };
 
 export function NegotiationPanel({
@@ -19,8 +21,10 @@ export function NegotiationPanel({
   isHandledByOther,
   userRole,
   bookingStatus,
+  handledByRole,
   onBookingUpdated,
   refreshContract,
+  onCancelBooking,
 }: Props) {
   const {
     messages,
@@ -47,9 +51,24 @@ export function NegotiationPanel({
   const isVenueSide =
     userRole === 'VENUE' || userRole === 'PROMOTER';
 
-  // Si lo maneja la otra parte, no es tu turno
+  const lastSenderRole = lastMessage?.senderRole as UserRole | undefined;
+  const isLastFromArtistSide =
+    lastSenderRole === 'ARTIST' || lastSenderRole === 'MANAGER';
+  const isLastFromVenueSide =
+    lastSenderRole === 'VENUE' || lastSenderRole === 'PROMOTER';
+
+  const isMyTurnByMessages =
+    !lastSenderRole
+      ? true
+      : isArtistSide
+        ? isLastFromVenueSide
+        : isLastFromArtistSide;
+
+  // Si el backend define el turno, úsalo como fuente principal.
   const isMyTurn =
-    !isHandledByOther && (!lastMessage || lastMessage.senderUserId !== user?.id);
+    handledByRole
+      ? handledByRole === userRole
+      : !isHandledByOther && isMyTurnByMessages;
 
   const canWrite =
     ['PENDING', 'NEGOTIATING'].includes(bookingStatus) &&
@@ -88,49 +107,6 @@ export function NegotiationPanel({
             parte.
           </p>
         )}
-      </section>
-
-      {/* 2️⃣ HISTORIAL TRAZABLE */}
-      <section
-        style={{
-          border: '1px solid #ddd',
-          padding: 12,
-          marginBottom: 24,
-          maxHeight: 300,
-          overflowY: 'auto',
-        }}
-      >
-        {messages.length === 0 && (
-          <p style={{ color: '#666' }}>
-            No existen propuestas registradas.
-          </p>
-        )}
-
-        {messages.map((msg) => (
-          <div key={msg.id} style={{ marginBottom: 16 }}>
-            <div>
-              <strong>{msg.senderRole}</strong>
-              {typeof msg.proposedFee === 'number' && (
-                <strong> — {msg.proposedFee} €</strong>
-              )}
-              {msg.isFinalOffer && (
-                <span style={{ marginLeft: 8 }}>
-                  (OFERTA FINAL)
-                </span>
-              )}
-            </div>
-
-            {msg.message && (
-              <div style={{ marginTop: 4 }}>
-                {msg.message}
-              </div>
-            )}
-
-            <small style={{ color: '#999' }}>
-              {new Date(msg.createdAt).toLocaleString()}
-            </small>
-          </div>
-        ))}
       </section>
 
       {/* 3️⃣ ENVÍO DE PROPUESTA */}
@@ -193,6 +169,7 @@ export function NegotiationPanel({
                 });
               }
 
+              await onBookingUpdated();
               setText('');
               setFee('');
               setIsFinalOffer(false);
@@ -235,6 +212,18 @@ export function NegotiationPanel({
               Rechazar
             </button>
           </div>
+        </section>
+      )}
+
+      {!canWrite && !canAcceptOrReject && (
+        <section style={{ marginTop: 16 }}>
+          <button
+            type="button"
+            disabled={sending}
+            onClick={onCancelBooking}
+          >
+            Cancelar booking
+          </button>
         </section>
       )}
     </section>

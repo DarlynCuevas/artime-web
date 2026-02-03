@@ -87,6 +87,40 @@ console.log('EVENTS TOKEN:', token);
         if (!res.ok) throw new Error('Failed to start search');
     },
 
+    async getInvitations(eventId: string, token: string): Promise<
+        { invitationId: string; artistId: string; status: string }[]
+    > {
+        const res = await fetch(
+            `${BASE_URL}/events/${eventId}/invitations`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            },
+        );
+
+        if (!res.ok) {
+            throw new Error('Failed to fetch invitations');
+        }
+
+        return res.json();
+    },
+
+    async sendInvitation(eventId: string, artistId: string, token: string): Promise<void> {
+        const res = await fetch(`${BASE_URL}/events/${eventId}/invitations`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ artistId }),
+        });
+
+        if (!res.ok) {
+            throw new Error('Failed to send invitation');
+        }
+    },
+
     async getInterestedArtists(eventId: string, token: string): Promise<
         { invitationId: string; artistId: string }[]
     > {

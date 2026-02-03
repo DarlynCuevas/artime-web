@@ -112,7 +112,8 @@ export function MainNav({ children }: { children: ReactNode }) {
   const systemSection = useMemo(() => navSectionsWithProfile.find((section) => section.label === 'Sistema'), [navSectionsWithProfile]);
 
   const { notifications, unreadCount, markAsRead } = useArtistNotifications({
-    artistId: role === 'ARTIST' ? profileId : undefined,
+    userId: user?.id,
+    role: role ?? undefined,
     token: user?.token,
     limit: 5,
   });
@@ -266,16 +267,43 @@ export function MainNav({ children }: { children: ReactNode }) {
                               if (n.payload?.offeredMaxPrice) query.set('price', String(n.payload.offeredMaxPrice));
                               if (n.payload?.venueName) query.set('venueName', n.payload.venueName);
                               router.push(`/artists/calls/${callId}?${query.toString()}`);
+                              setShowDropdown(false);
+                              return;
+                            }
+
+                            const invitationId = n.payload?.invitationId;
+                            const eventId = n.payload?.eventId;
+                            if (n.type === 'EVENT_INVITATION_ACCEPTED' || n.type === 'EVENT_INVITATION_DECLINED') {
+                              if (eventId) {
+                                router.push(`/events/${eventId}#event-invitations`);
+                                setShowDropdown(false);
+                                return;
+                              }
+                            }
+
+                            if (invitationId) {
+                              router.push(`/artists/bookings/invitations?invitationId=${invitationId}`);
+                              setShowDropdown(false);
+                              return;
                             }
                             setShowDropdown(false);
                           }}
                         >
                           <div className="text-sm font-semibold">
-                            {n.type === 'ARTIST_CALL_CREATED' ? 'Nueva convocatoria' : n.type}
+                            {n.type === 'ARTIST_CALL_CREATED'
+                              ? 'Nueva convocatoria'
+                              : n.type === 'EVENT_INVITATION_CREATED'
+                                ? `${n.payload?.eventName ?? n.payload?.event?.name ?? 'Invitación a evento'}${n.payload?.eventName || n.payload?.event?.name ? ' te ha invitado a su evento' : ''}`
+                                : n.type === 'EVENT_INVITATION_ACCEPTED'
+                                  ? `${n.payload?.artistName ?? 'Un artista'} ha aceptado la invitación`
+                                  : n.type === 'EVENT_INVITATION_DECLINED'
+                                    ? `${n.payload?.artistName ?? 'Un artista'} ha rechazado la invitación`
+                                  : n.type}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {n.payload?.venueName ? `${n.payload.venueName} · ` : ''}
-                            {n.payload?.city ?? ''}
+                            {n.type === 'EVENT_INVITATION_ACCEPTED' || n.type === 'EVENT_INVITATION_DECLINED'
+                              ? n.payload?.eventName ?? ''
+                              : `${n.payload?.venueName ? `${n.payload.venueName} · ` : ''}${n.payload?.city ?? ''}`}
                           </div>
                           <div className="text-xs text-foreground">
                             {n.payload?.date ?? ''}

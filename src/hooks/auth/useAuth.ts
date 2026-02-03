@@ -7,6 +7,7 @@ import type {
 
 type AuthUser = {
   token: string;
+  id: string;
 };
 
 export function useAuth() {
@@ -23,6 +24,7 @@ export function useAuth() {
         if (session) {
           setUser({
             token: session.access_token,
+            id: session.user.id,
           });
         }
 
@@ -42,6 +44,7 @@ export function useAuth() {
 
         setUser({
           token: session.access_token,
+          id: session.user.id,
         });
       }
     );

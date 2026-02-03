@@ -6,10 +6,11 @@ import type { ArtistNotification } from '@/services/notifications/artist-notific
 
 export default function ArtistSolicitudesPage() {
   const { user } = useAuth();
-  const { role, profileId, loading: meLoading } = useMe();
+  const { role, loading: meLoading } = useMe();
 
   const { notifications, unreadCount, loading, markAsRead } = useArtistNotifications({
-    artistId: role === 'ARTIST' ? profileId : undefined,
+    userId: user?.id,
+    role: role ?? undefined,
     token: user?.token,
     limit: 100,
   });
@@ -51,7 +52,11 @@ export default function ArtistSolicitudesPage() {
             }}
           >
             <div style={{ fontSize: 14, fontWeight: 700 }}>
-              {n.type === 'ARTIST_CALL_CREATED' ? 'Nueva convocatoria' : n.type}
+              {n.type === 'ARTIST_CALL_CREATED'
+                ? 'Nueva convocatoria'
+                : n.type === 'EVENT_INVITATION_CREATED'
+                  ? `${n.payload?.eventName ?? n.payload?.event?.name ?? 'Invitación a evento'}${n.payload?.eventName || n.payload?.event?.name ? ' te ha invitado a su evento' : ''}`
+                  : n.type}
             </div>
             <div style={{ fontSize: 13, color: '#333' }}>
               {n.payload?.venueName ? `${n.payload.venueName} · ` : ''}

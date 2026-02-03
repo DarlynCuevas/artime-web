@@ -9,9 +9,10 @@ import { withRole } from '@/components/auth/withRole';
 function NewBookingPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { artistId: artistIdFromQuery, date: dateFromQuery } = router.query as {
+  const { artistId: artistIdFromQuery, date: dateFromQuery, eventId: eventIdFromQuery } = router.query as {
     artistId?: string;
     date?: string;
+    eventId?: string;
   };
 
   const [artists, setArtists] = useState<any[]>([]);
@@ -78,6 +79,7 @@ El contenido y el importe quedarán registrados en ARTIME como base de la negoci
           totalAmount: Number(amount),
           currency: 'EUR',
           message,
+          eventId: eventIdFromQuery,
         },
         user.token
       );

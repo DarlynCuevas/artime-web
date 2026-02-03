@@ -3,35 +3,37 @@ import { Calendar, ArrowRight } from 'lucide-react';
 
 import { withRole } from '@/components/auth/withRole';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { usePromoterDashboard } from '@/hooks/promoter/usePromoterDashboard';
+import { usePromoterEvents } from '@/hooks/promoter/usePromoterEvents';
 
 function PromoterEventsPage() {
-  const { data, loading } = usePromoterDashboard();
-
-  if (loading) {
-    return <div className="p-8">Cargando eventos…</div>;
-  }
-
-  if (!data) {
-    return <div className="p-8">No hay datos disponibles</div>;
-  }
-
-  const { events } = data;
+  const { events, loading } = usePromoterEvents();
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <header className="space-y-2">
         <p className="text-sm font-medium text-slate-500">Eventos</p>
-        <h1 className="text-2xl font-semibold text-slate-900">
-          Todos mis eventos
-        </h1>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold text-slate-900">
+            Todos mis eventos
+          </h1>
+          <Link
+            href="/events/new"
+            className="inline-flex items-center gap-2 rounded-md border border-slate-900 px-4 py-2 text-sm font-medium text-slate-900 transition hover:bg-slate-900 hover:text-white"
+          >
+            Crear evento
+          </Link>
+        </div>
         <p className="text-slate-600">
           Gestiona el estado y progreso de tus eventos.
         </p>
       </header>
 
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        {events.length === 0 ? (
+        {loading ? (
+          <div className="p-6 text-sm text-slate-500">
+            Cargando eventos…
+          </div>
+        ) : events.length === 0 ? (
           <div className="p-6 text-sm text-slate-500">
             No has creado ningún evento todavía.
           </div>

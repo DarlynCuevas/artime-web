@@ -1,15 +1,21 @@
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 export const invitationsService = {
-  async accept(invitationId: string) {
-    await fetch(`/invitations/${invitationId}/accept`, {
+  async accept(invitationId: string, token: string) {
+    await fetch(`${BASE_URL}/event-invitations/${invitationId}/accept`, {
       method: 'POST',
-      credentials: 'include',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
   },
 
-  async decline(invitationId: string) {
-    await fetch(`/invitations/${invitationId}/decline`, {
+  async decline(invitationId: string, token: string) {
+    await fetch(`${BASE_URL}/event-invitations/${invitationId}/decline`, {
       method: 'POST',
-      credentials: 'include',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
   },
 };
