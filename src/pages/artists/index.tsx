@@ -83,6 +83,9 @@ export default function ArtistProfilePage() {
         city: artist.city,
         genres: artist.genres,
         bio: artist.bio,
+        basePrice: artist.basePrice,
+        currency: artist.currency,
+        isNegotiable: artist.isNegotiable,
       };
       const updated = await updateMyArtistProfile(payload, user.token);
       setArtist(updated);
@@ -166,7 +169,10 @@ export default function ArtistProfilePage() {
           ) : null}
         </div>
         <p style={{ color: '#666', marginBottom: 8 }}>
-          {artist.format || 'Formato no definido'} â€¢ {artist.city}
+          {artist.format || 'Formato no definido'} - {artist.city}
+        </p>
+        <p style={{ color: '#666', fontSize: 14, marginBottom: 8 }}>
+          Cache: {artist.basePrice ?? '--'} {artist.currency ?? ''} - {artist.isNegotiable ? 'Negociable' : 'No negociable'}
         </p>
         <p style={{ color: '#666', fontSize: 14 }}>
           {artist.bio}
@@ -239,6 +245,46 @@ export default function ArtistProfilePage() {
                 }
                 style={{ padding: 10, border: '1px solid #ddd' }}
               />
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span style={{ fontSize: 13, color: '#666' }}>
+                Cache base
+              </span>
+              <input
+                type="number"
+                value={artist.basePrice ?? ''}
+                onChange={(e) =>
+                  setArtist({
+                    ...artist,
+                    basePrice: e.target.value === '' ? undefined : Number(e.target.value),
+                  })
+                }
+                style={{ padding: 10, border: '1px solid #ddd' }}
+              />
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span style={{ fontSize: 13, color: '#666' }}>
+                Moneda
+              </span>
+              <input
+                value={artist.currency ?? ''}
+                onChange={(e) =>
+                  setArtist({ ...artist, currency: e.target.value })
+                }
+                style={{ padding: 10, border: '1px solid #ddd' }}
+              />
+            </label>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={Boolean(artist.isNegotiable)}
+                onChange={(e) =>
+                  setArtist({ ...artist, isNegotiable: e.target.checked })
+                }
+              />
+              <span style={{ fontSize: 13, color: '#666' }}>
+                Cache negociable
+              </span>
             </label>
             <label style={{ display: 'grid', gap: 6 }}>
               <span style={{ fontSize: 13, color: '#666' }}>

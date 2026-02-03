@@ -81,6 +81,7 @@ const navByRole: Record<string, NavSection[]> = {
         { label: 'Dashboard', href: '/promoter/dashboard', icon: LayoutDashboard },
         { label: 'Eventos', href: '/promoter/events', icon: CalendarDays },
         { label: 'Bookings', href: '/promoter/bookings', icon: Ticket },
+        { label: 'Perfil', href: '/promoter/profile', icon: UserRound },
       ],
     },
   ],

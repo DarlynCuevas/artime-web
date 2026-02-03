@@ -276,22 +276,35 @@ export default function EventSearchArtistsPage() {
                     {profilesById[artist.id].currency ?? ''}
                   </div>
                 )}
-                <button
-                  onClick={() => handleInvite(artist.id)}
-                  disabled={sendingId === artist.id}
-                  style={{
-                    marginTop: 12,
-                    padding: '8px 12px',
-                    background: '#000',
-                    color: '#fff',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {sendingId === artist.id
-                    ? 'Enviando…'
-                    : 'Invitar artista'}
-                </button>
+                <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                  <a
+                    href={`/artists/profile/${artist.id}`}
+                    style={{
+                      padding: '8px 12px',
+                      border: '1px solid #ddd',
+                      color: '#111',
+                      textDecoration: 'none',
+                      fontSize: 12,
+                    }}
+                  >
+                    Ver perfil
+                  </a>
+                  <button
+                    onClick={() => handleInvite(artist.id)}
+                    disabled={sendingId === artist.id}
+                    style={{
+                      padding: '8px 12px',
+                      background: '#000',
+                      color: '#fff',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {sendingId === artist.id
+                      ? 'Enviando…'
+                      : 'Invitar artista'}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

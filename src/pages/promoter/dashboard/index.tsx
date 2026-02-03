@@ -5,7 +5,6 @@ import { withRole } from '@/components/auth/withRole';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
 import { usePromoterDashboard } from '@/hooks/promoter/usePromoterDashboard';
-import { useMe } from '@/context/MeContext';
 
 function Kpi({ title, value }: { title: string; value: string | number }) {
   return (
@@ -22,9 +21,6 @@ function formatDate(value: string) {
 
 function PromoterDashboardPage() {
   const { data, loading } = usePromoterDashboard();
-  const me = useMe();
-  console.log('[PromoterDashboardPage] useMe', me);
-
 
   if (loading) {
     return <div className="p-8">Cargando dashboard…</div>;
@@ -34,10 +30,15 @@ function PromoterDashboardPage() {
   if (!data) {
     return <div className="p-8">No hay datos disponibles</div>;
   }
-  // Log para ver el estado de useMe cuando hay datos
-  console.log('[PromoterDashboardPage] useMe (con datos)', me);
-
-  const { profile, metrics, events } = data;
+  const profile = data.profile ?? { name: 'Promotor', id: '—' };
+  const metrics = data.metrics ?? {
+    totalEvents: 0,
+    activeEvents: 0,
+    draftEvents: 0,
+    confirmedEvents: 0,
+    confirmedArtists: 0,
+  };
+  const events = data.events ?? [];
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -56,7 +57,7 @@ function PromoterDashboardPage() {
         <Kpi title="Eventos creados" value={metrics.totalEvents} />
         <Kpi title="Eventos activos" value={metrics.activeEvents} />
         <Kpi title="En borrador" value={metrics.draftEvents} />
-        <Kpi title="Artistas confirmados" value="—" />
+        <Kpi title="Artistas confirmados" value={metrics.confirmedArtists ?? 0} />
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

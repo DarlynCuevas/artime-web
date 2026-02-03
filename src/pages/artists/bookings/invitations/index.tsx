@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { withRole } from '@/components/auth/withRole';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -84,6 +85,14 @@ function ArtistEventInvitationsPage() {
                       ? new Date(inv.event.startDate).toLocaleDateString()
                       : 'Fecha por definir'}
                   </p>
+                  {inv.event.organizerPromoterId && (
+                    <Link
+                      href={`/promoter/profile/${inv.event.organizerPromoterId}`}
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      Ver perfil del promotor
+                    </Link>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-3">

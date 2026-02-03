@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Calendar, MapPin, Clock, CreditCard, FileText, AlertTriangle, MessageSquare, HandCoins, CheckCircle2, XCircle } from 'lucide-react';
 
 import { CancelBookingModal } from '@/components/bookings/CancelBookingModal';
@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
 import { cancelBooking } from '@/services/bookings/cancellations.service';
+import { eventsService } from '@/services/events/events.service';
 import { confirmPaymentForMilestone } from '@/services/bookings/payments/confirmPayment.service';
 import {
   createPaymentIntentForMilestone,
@@ -55,10 +56,23 @@ function BookingDetailPage() {
 
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSignContractModal, setShowSignContractModal] = useState(false);
+  const [eventName, setEventName] = useState<string | null>(null);
 
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [milestoneId, setMilestoneId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!booking?.eventId || !user?.token) {
+      setEventName(null);
+      return;
+    }
+
+    eventsService
+      .getEvent(booking.eventId, user.token)
+      .then((event) => setEventName(event.name ?? null))
+      .catch(() => setEventName(null));
+  }, [booking?.eventId, user?.token]);
 
   if (loading || meLoading) return <p style={{ padding: 24 }}>Cargando contratación…</p>;
   if (!booking) return <p>No se pudo cargar la contratación.</p>;
@@ -78,6 +92,7 @@ function BookingDetailPage() {
   const venueName = (booking as any).venue?.name ?? (booking as any).venueName ?? 'Sala';
   const venueCity = (booking as any).venue?.city ?? null;
   const venueId = (booking as any).venue?.id ?? booking.venueId;
+  const promoterId = (booking as any).promoter?.id ?? booking.promoterId ?? null;
   const artistName = (booking as any).artist?.name ?? (booking as any).artistName ?? null;
 
   // Si el backend define el turno, úsalo como fuente principal.
@@ -152,6 +167,12 @@ function BookingDetailPage() {
     },
   };
 
+
+
+  const headerTargetName = eventName ?? venueName;
+  const headerTargetMeta = eventName ? null : venueCity;
+
+
   return (
     <main className="p-8 max-w-5xl mx-auto space-y-6">
       <Link
@@ -173,8 +194,8 @@ function BookingDetailPage() {
               <StatusBadge status={booking.status} />
             </div>
             <p className="text-muted-foreground">
-              {artistName ?? 'Artista'} → {venueName}
-              {venueCity ? ` · ${venueCity}` : ''}
+              {artistName ?? 'Artista'} → {headerTargetName}
+              {headerTargetMeta ? ` · ${headerTargetMeta}` : ''}
             </p>
           </div>
           <div className="text-right text-sm text-muted-foreground">
@@ -232,6 +253,16 @@ function BookingDetailPage() {
                   className="text-sm font-medium text-primary hover:underline"
                 >
                   Ver sala
+                </Link>
+              </div>
+            )}
+            {promoterId && role !== 'PROMOTER' && (
+              <div className="mt-2">
+                <Link
+                  href={`/promoter/profile/${promoterId}`}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Ver perfil del promotor
                 </Link>
               </div>
             )}
@@ -613,3 +644,6 @@ function formatCurrency(amount: number | null, currency: string) {
   if (amount === null || amount === undefined) return '—';
   return new Intl.NumberFormat('es-ES', { style: 'currency', currency }).format(amount);
 }
+
+
+
