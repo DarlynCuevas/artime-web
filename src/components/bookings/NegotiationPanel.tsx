@@ -26,6 +26,13 @@ export function NegotiationPanel({
   refreshContract,
   onCancelBooking,
 }: Props) {
+  const isClosed = ['PAID_PARTIAL', 'PAID_FULL', 'COMPLETED'].includes(
+    bookingStatus
+  );
+  if (isClosed) {
+    return null;
+  }
+
   const {
     messages,
     loading,

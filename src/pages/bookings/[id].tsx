@@ -368,7 +368,9 @@ function BookingDetailPage() {
             </div>
           </div>
 
-          {contract?.status === 'SIGNED' && (role === 'VENUE' || role === 'PROMOTER') && (
+          {contract?.status === 'SIGNED' &&
+            (role === 'VENUE' || role === 'PROMOTER') &&
+            !['PAID_FULL', 'COMPLETED'].includes(booking.status) && (
             <div className="action-panel">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-semibold text-foreground">Pagos</h2>
@@ -461,57 +463,57 @@ function BookingDetailPage() {
        
 
           <div className="action-panel">
-            <h2 className="font-semibold text-foreground mb-4">Historial de negociación</h2>
-            {negotiationLoading ? (
-              <p className="text-sm text-muted-foreground">Cargando historial…</p>
-            ) : timelineEvents.length === 0 ? (
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p>Sin actividad de negociación.</p>
-                {statusMessage && <p className="text-foreground">{statusMessage}</p>}
-              </div>
-            ) : (
-              <div className="relative">
-                {!hasArtistResponse && statusMessage && (
-                  <div className="mb-4 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                    {statusMessage}
-                  </div>
-                )}
-                <div className="absolute left-[19px] top-2 bottom-2 w-px bg-border" />
-                <div className="space-y-4">
-                  {timelineEvents.map((event, index) => (
-                    <div
-                      key={event.id}
-                      className="relative flex items-start gap-4"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center ${getTimelineColor(event)}`}>
-                        {getTimelineIcon(event)}
-                      </div>
-                      <div className="flex-1 min-w-0 pt-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-foreground">
-                            {event.isFinal ? 'Oferta final' : event.amount ? 'Propuesta' : 'Mensaje'}
-                          </p>
-                          {typeof event.amount === 'number' && (
-                            <p className="font-medium text-foreground">
-                              {formatCurrency(event.amount, bookingCurrency)}
-                            </p>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground capitalize">{event.role.toLowerCase()}</p>
-                        {event.note && (
-                          <p className="text-sm text-muted-foreground mt-1">{event.note}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatShortDate(event.createdAt)} · {formatShortTime(event.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+              <h2 className="font-semibold text-foreground mb-4">Historial de negociación</h2>
+              {negotiationLoading ? (
+                <p className="text-sm text-muted-foreground">Cargando historial…</p>
+              ) : timelineEvents.length === 0 ? (
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p>Sin actividad de negociación.</p>
+                  {statusMessage && <p className="text-foreground">{statusMessage}</p>}
                 </div>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="relative">
+                  {!hasArtistResponse && statusMessage && (
+                    <div className="mb-4 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                      {statusMessage}
+                    </div>
+                  )}
+                  <div className="absolute left-[19px] top-2 bottom-2 w-px bg-border" />
+                  <div className="space-y-4">
+                    {timelineEvents.map((event, index) => (
+                      <div
+                        key={event.id}
+                        className="relative flex items-start gap-4"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center ${getTimelineColor(event)}`}>
+                          {getTimelineIcon(event)}
+                        </div>
+                        <div className="flex-1 min-w-0 pt-1">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-foreground">
+                              {event.isFinal ? 'Oferta final' : event.amount ? 'Propuesta' : 'Mensaje'}
+                            </p>
+                            {typeof event.amount === 'number' && (
+                              <p className="font-medium text-foreground">
+                                {formatCurrency(event.amount, bookingCurrency)}
+                              </p>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground capitalize">{event.role.toLowerCase()}</p>
+                          {event.note && (
+                            <p className="text-sm text-muted-foreground mt-1">{event.note}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {formatShortDate(event.createdAt)} · {formatShortTime(event.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
           <NegotiationPanel
             bookingId={booking.id}
@@ -526,17 +528,6 @@ function BookingDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <div className="action-panel border-l-4 border-l-amber-400 bg-amber-50">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
-              <div>
-                <p className="font-medium text-foreground">Turno de acción</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {actionTurnMessage}
-                </p>
-              </div>
-            </div>
-          </div>
 
           <div className="action-panel">
             <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">

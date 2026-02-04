@@ -1,6 +1,6 @@
 
 import Link from 'next/link';
-import { ArrowRight, Calendar, AlertCircle } from 'lucide-react';
+import { ArrowRight, Calendar, AlertCircle, Clock, CreditCard, FileText } from 'lucide-react';
 import { withRole } from '@/components/auth/withRole';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
@@ -37,6 +37,10 @@ function PromoterDashboardPage() {
     draftEvents: 0,
     confirmedEvents: 0,
     confirmedArtists: 0,
+    pendingContractsCount: 0,
+    pendingPaymentsCount: 0,
+    pendingResponsesCount: 0,
+    pendingActionsCount: 0,
   };
   const events = data.events ?? [];
 
@@ -120,11 +124,32 @@ function PromoterDashboardPage() {
           <section className="rounded-xl border border-amber-200 bg-amber-50/80 shadow-sm p-5">
             <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-amber-600" />
-              Estado del sistema
+              Acciones pendientes
             </h3>
-            <p className="text-sm text-slate-700">
-              Todas las contrataciones y pagos se gestionan desde ARTIME.
-            </p>
+            {metrics.pendingActionsCount === 0 ? (
+              <p className="text-sm text-slate-700">No tienes acciones pendientes.</p>
+            ) : (
+              <div className="space-y-2 text-sm text-slate-700">
+                {metrics.pendingContractsCount > 0 && (
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-amber-700" />
+                    <span>Contratos por firmar: {metrics.pendingContractsCount}</span>
+                  </div>
+                )}
+                {metrics.pendingPaymentsCount > 0 && (
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-amber-700" />
+                    <span>Pagos pendientes: {metrics.pendingPaymentsCount}</span>
+                  </div>
+                )}
+                {metrics.pendingResponsesCount > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-amber-700" />
+                    <span>Respuestas pendientes: {metrics.pendingResponsesCount}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </section>
 
           <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">

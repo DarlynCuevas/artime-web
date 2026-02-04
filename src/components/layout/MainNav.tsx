@@ -20,6 +20,7 @@ import {
   SidebarSeparator,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+import { BottomNav } from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -147,6 +148,7 @@ export function MainNav({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
       <div className="flex min-h-svh w-screen bg-background text-foreground">
+        <div className="hidden md:block">
         <Sidebar collapsible="icon">
           <SidebarHeader className="flex flex-row items-center gap-3 px-3 py-4 border-b border-sidebar-border/60 bg-[hsl(var(--sidebar-primary))]">
             <Image src="/favicon.ico" alt="Artime" width={32} height={32} className="h-8 w-8 shrink-0 rounded-md object-contain" priority />
@@ -154,7 +156,7 @@ export function MainNav({ children }: { children: ReactNode }) {
               <div className="text-sm font-semibold leading-tight text-[hsl(var(--sidebar-foreground))]">ARTIME</div>
               <div className="text-[11px] text-[hsl(var(--sidebar-foreground))]/70">Contratación artística</div>
             </div>
-            <SidebarTrigger className="ml-auto h-8 w-8 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-foreground)_/_0.16)]" />
+            <SidebarTrigger className="ml-auto hidden h-8 w-8 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-foreground)_/_0.16)] md:inline-flex" />
           </SidebarHeader>
           
 
@@ -225,12 +227,17 @@ export function MainNav({ children }: { children: ReactNode }) {
           </SidebarFooter>
           <SidebarRail className="bg-[hsl(var(--sidebar-primary))]/70 after:bg-[hsl(var(--sidebar-foreground))]/30 hover:after:bg-[hsl(var(--sidebar-foreground))]/60" />
         </Sidebar>
+        </div>
 
-        <SidebarInset className="flex-1 w-full">
+        <SidebarInset className="flex-1 w-full pb-16 md:pb-0">
           <header className="sticky top-0 z-20 flex items-center gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur">
-            <SidebarTrigger className="h-8 w-8 text-slate-700 hover:bg-slate-200/60" />
-            <Separator orientation="vertical" className="h-6" />
-            <div className="text-sm text-muted-foreground">
+            <SidebarTrigger className="hidden h-8 w-8 text-slate-700 hover:bg-slate-200/60 md:inline-flex" />
+            <Separator orientation="vertical" className="hidden h-6 md:block" />
+            <div className="flex items-center gap-2 md:hidden">
+              <Image src="/favicon.ico" alt="Artime" width={28} height={28} className="h-7 w-7 rounded-md" />
+              <span className="text-sm font-semibold text-foreground">ARTIME</span>
+            </div>
+            <div className="hidden text-sm text-muted-foreground md:block">
               {role ? `Rol: ${role}` : 'Sesión activa'}
             </div>
             <div className="relative ml-auto flex items-center gap-2" ref={bellRef}>
@@ -324,6 +331,7 @@ export function MainNav({ children }: { children: ReactNode }) {
           <div className="flex-1 w-full p-4">{children}</div>
         </SidebarInset>
       </div>
+      <BottomNav items={mainSections.flatMap((section) => section.items)} />
     </SidebarProvider>
   );
 }
