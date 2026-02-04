@@ -16,6 +16,8 @@ type BookingDto = {
   venueName?: string | null;
   city?: string | null;
   createdAt?: string | null;
+  paidPercent?: number | null;
+  eventName?: string | null;
 };
 
 function groupByStatus(bookings: BookingDto[]) {
@@ -40,7 +42,12 @@ const TABS = [
   {
     key: 'CONFIRMED',
     label: 'Confirmadas',
-    statuses: ['ACCEPTED', 'CONTRACT_SIGNED', 'PAID', 'PAID_50', 'PAID_75', 'PAID_100', 'PAID_BALANCE'],
+    statuses: ['ACCEPTED', 'CONTRACT_SIGNED'],
+  },
+  {
+    key: 'PAID',
+    label: 'Pagadas',
+    statuses: ['PAID_PARTIAL', 'PAID_FULL', 'PAID', 'PAID_50', 'PAID_75', 'PAID_100', 'PAID_BALANCE'],
   },
   {
     key: 'HISTORIC',
@@ -89,6 +96,8 @@ function ArtistBookingsPage() {
           venueName: b.venueName ?? null,
           city: b.city ?? null,
           createdAt: b.createdAt ?? null,
+          paidPercent: b.paidPercent ?? null,
+          eventName: b.eventName ?? null,
         })) as BookingDto[];
         setBookings(normalized);
       })
@@ -237,7 +246,14 @@ function ArtistBookingsPage() {
                 }}
               >
                 <div>
-                  <strong>{booking.venueName || booking.venueId || 'Venue sin nombre'}</strong>
+                  <strong>
+                    {booking.eventName || booking.venueName || booking.venueId || 'Venue sin nombre'}
+                  </strong>
+                  {booking.eventName && (
+                    <div style={{ color: '#666', fontSize: 13 }}>
+                      Sala: {booking.venueName || booking.venueId || 'Sala sin nombre'}
+                    </div>
+                  )}
                   <div style={{ color: '#666', fontSize: 13 }}>
                     {booking.city ? `Ciudad: ${booking.city}` : 'Ciudad no indicada'}
                   </div>
@@ -252,7 +268,9 @@ function ArtistBookingsPage() {
                 </div>
 
                 <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                  <StatusBadge status={booking.status} />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                    <StatusBadge status={booking.status} paidPercent={booking.paidPercent} />
+                  </div>
                   <Link href={`/bookings/${booking.id}`}>
                     Abrir booking
                   </Link>

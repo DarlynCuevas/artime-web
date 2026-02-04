@@ -14,8 +14,11 @@ type BookingDto = {
   currency: string;
   artistId?: string | null;
   artistName?: string | null;
+  venueName?: string | null;
+  eventName?: string | null;
   city?: string | null;
   createdAt?: string | null;
+  paidPercent?: number | null;
 };
 
 const TABS = [
@@ -32,7 +35,12 @@ const TABS = [
   {
     key: 'CONFIRMED',
     label: 'Confirmadas',
-    statuses: ['ACCEPTED', 'CONTRACT_SIGNED', 'PAID', 'PAID_50', 'PAID_75', 'PAID_100', 'PAID_BALANCE'],
+    statuses: ['ACCEPTED', 'CONTRACT_SIGNED'],
+  },
+  {
+    key: 'PAID',
+    label: 'Pagadas',
+    statuses: ['PAID_PARTIAL', 'PAID_FULL', 'PAID', 'PAID_50', 'PAID_75', 'PAID_100', 'PAID_BALANCE'],
   },
   {
     key: 'HISTORIC',
@@ -79,8 +87,11 @@ function PromoterBookingsPage() {
           currency: b.currency ?? 'EUR',
           artistId: b.artistId ?? null,
           artistName: b.artistName ?? null,
+          venueName: b.venueName ?? null,
+          eventName: b.eventName ?? null,
           city: b.artistCity ?? b.city ?? null,
           createdAt: b.createdAt ?? null,
+          paidPercent: b.paidPercent ?? null,
         })) as BookingDto[];
         setBookings(normalized);
       })
@@ -188,7 +199,14 @@ function PromoterBookingsPage() {
               >
                 <div>
                   <p className="font-medium text-slate-900 truncate">{booking.artistName || booking.artistId || 'Artista sin nombre'}</p>
-                  <p className="text-sm text-slate-500 truncate">{booking.city ? booking.city : ''}{booking.city ? ` · Booking ${booking.id.slice(0, 8)}…` : `Booking ${booking.id.slice(0, 8)}…`}</p>
+                  <p className="text-sm text-slate-500 truncate">
+                    {booking.eventName
+                      ? `Evento: ${booking.eventName}`
+                      : booking.venueName
+                        ? `Sala: ${booking.venueName}`
+                        : 'Evento/Sala no indicado'}
+                    {` · Booking ${booking.id.slice(0, 8)}…`}
+                  </p>
                 </div>
                 <div className="text-sm text-slate-700">
                   Fecha: {booking.start_date ? formatDate(booking.start_date) : '—'}
@@ -197,7 +215,9 @@ function PromoterBookingsPage() {
                   Fee: {booking.totalAmount ? `${booking.totalAmount} ${booking.currency}` : '—'}
                 </div>
                 <div className="flex flex-col items-end gap-2 text-right">
-                  <StatusBadge status={booking.status} />
+                  <div className="flex flex-col items-end gap-1">
+                    <StatusBadge status={booking.status} paidPercent={booking.paidPercent} />
+                  </div>
                   <Link href={`/bookings/${booking.id}`} className="text-sm font-medium text-slate-900 hover:underline">
                     Abrir booking
                   </Link>

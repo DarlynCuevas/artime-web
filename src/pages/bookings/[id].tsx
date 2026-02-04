@@ -61,6 +61,12 @@ function BookingDetailPage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [milestoneId, setMilestoneId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentInfo, setPaymentInfo] = useState<string | null>(null);
+  const [paymentSummary, setPaymentSummary] = useState<{
+    paidAmount: number;
+    totalAmount: number;
+    percent: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!booking?.eventId || !user?.token) {
@@ -73,6 +79,37 @@ function BookingDetailPage() {
       .then((event) => setEventName(event.name ?? null))
       .catch(() => setEventName(null));
   }, [booking?.eventId, user?.token]);
+
+  useEffect(() => {
+    if (!bookingId || !user?.token || !booking?.totalAmount) {
+      setPaymentSummary(null);
+      return;
+    }
+
+    getMilestonesForBooking(bookingId, user.token)
+      .then((milestones) => {
+        const paidAmount = (milestones ?? [])
+          .filter((m: any) => {
+            const status = m?.props?.status ?? m?.status;
+            return status === 'PAID' || status === 'FINALIZED';
+          })
+          .reduce((sum: number, m: any) => {
+            const amount = m?.props?.amount ?? m?.amount ?? 0;
+            return sum + amount;
+          }, 0);
+
+        const totalAmount = booking.totalAmount ?? 0;
+        const percent =
+          totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
+
+        setPaymentSummary({
+          paidAmount,
+          totalAmount,
+          percent,
+        });
+      })
+      .catch(() => setPaymentSummary(null));
+  }, [bookingId, booking?.totalAmount, user?.token]);
 
   if (loading || meLoading) return <p style={{ padding: 24 }}>Cargando contratación…</p>;
   if (!booking) return <p>No se pudo cargar la contratación.</p>;
@@ -244,6 +281,22 @@ function BookingDetailPage() {
                   <p className="text-foreground">{formatCurrency(bookingAmount, bookingCurrency)}</p>
                 </div>
               </div>
+              {paymentSummary && (
+                <div className="flex items-start gap-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pago</p>
+                    <p className="text-foreground">
+                      {paymentSummary.percent >= 100
+                        ? 'Pagado completo'
+                        : `Pagado ${paymentSummary.percent}%`}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatCurrency(paymentSummary.paidAmount, bookingCurrency)} de{' '}
+                      {formatCurrency(paymentSummary.totalAmount, bookingCurrency)}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {venueId && (
@@ -324,27 +377,56 @@ function BookingDetailPage() {
                 <Button
                   variant="default"
                   onClick={async () => {
-                    const milestones = await getMilestonesForBooking(
-                      booking.id,
-                      user.token
-                    );
+                    try {
+                      setPaymentError(null);
+                      setPaymentInfo(null);
+                      const milestones = await getMilestonesForBooking(
+                        booking.id,
+                        user.token
+                      );
 
-                    const pending = milestones.find(
-                      (m: any) => m.props?.status === 'PENDING'
-                    );
+                      const pending = milestones.find(
+                        (m: any) => m.props?.status === 'PENDING'
+                      );
 
-                    if (!pending) {
-                      setPaymentError('No hay milestones pendientes');
-                      return;
+                      if (!pending) {
+                        setPaymentError('No hay milestones pendientes');
+                        return;
+                      }
+
+                      const result = await createPaymentIntentForMilestone(
+                        pending.props.id,
+                        user.token
+                      );
+
+                      if (result.status === 'succeeded') {
+                        setPaymentInfo(
+                          'Pago confirmado en Stripe. Actualizando booking...'
+                        );
+                        await confirmPaymentForMilestone({
+                          bookingId: booking.id,
+                          milestoneId: pending.props.id,
+                          token: user.token,
+                        });
+                        await refresh();
+                        return;
+                      }
+
+                      if (result.status) {
+                        setPaymentInfo(
+                          `Estado del PaymentIntent: ${result.status}`
+                        );
+                      }
+
+                      setMilestoneId(pending.props.id);
+                      setClientSecret(result.clientSecret);
+                    } catch (err) {
+                      setPaymentError(
+                        err instanceof Error
+                          ? err.message
+                          : 'Error creando PaymentIntent'
+                      );
                     }
-
-                    const result = await createPaymentIntentForMilestone(
-                      pending.props.id,
-                      user.token
-                    );
-
-                    setMilestoneId(pending.props.id);
-                    setClientSecret(result.clientSecret);
                   }}
                 >
                   Proceder al pago
@@ -363,7 +445,14 @@ function BookingDetailPage() {
                 </Elements>
               )}
 
-              {paymentError && <p className="mt-2 text-sm text-red-600">{paymentError}</p>}
+              {paymentInfo && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {paymentInfo}
+                </p>
+              )}
+              {paymentError && (
+                <p className="mt-2 text-sm text-red-600">{paymentError}</p>
+              )}
             </div>
           )}
 

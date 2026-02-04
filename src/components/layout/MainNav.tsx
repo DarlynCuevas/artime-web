@@ -16,6 +16,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
+  SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
@@ -153,7 +154,7 @@ export function MainNav({ children }: { children: ReactNode }) {
               <div className="text-sm font-semibold leading-tight text-[hsl(var(--sidebar-foreground))]">ARTIME</div>
               <div className="text-[11px] text-[hsl(var(--sidebar-foreground))]/70">Contratación artística</div>
             </div>
-<SidebarTrigger />
+            <SidebarTrigger className="ml-auto h-8 w-8 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-foreground)_/_0.16)]" />
           </SidebarHeader>
           
 
@@ -222,11 +223,12 @@ export function MainNav({ children }: { children: ReactNode }) {
             <div className="text-sm font-semibold leading-tight text-[hsl(var(--sidebar-foreground))]">{profileName ?? 'Usuario'}</div>
             <div className="text-[11px] text-sidebar-muted text-[hsl(var(--sidebar-foreground))]">{role ?? 'Sin rol'}</div>
           </SidebarFooter>
+          <SidebarRail className="bg-[hsl(var(--sidebar-primary))]/70 after:bg-[hsl(var(--sidebar-foreground))]/30 hover:after:bg-[hsl(var(--sidebar-foreground))]/60" />
         </Sidebar>
 
         <SidebarInset className="flex-1 w-full">
           <header className="sticky top-0 z-20 flex items-center gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur">
-
+            <SidebarTrigger className="h-8 w-8 text-slate-700 hover:bg-slate-200/60" />
             <Separator orientation="vertical" className="h-6" />
             <div className="text-sm text-muted-foreground">
               {role ? `Rol: ${role}` : 'Sesión activa'}

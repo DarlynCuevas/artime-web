@@ -20,6 +20,23 @@ export async function confirmPaymentForMilestone({
   )
 
   if (!res.ok) {
-    throw new Error('Error confirmando el pago en ARTIME')
+    let detail = ''
+    try {
+      const contentType = res.headers.get('content-type') ?? ''
+      if (contentType.includes('application/json')) {
+        const data = await res.json().catch(() => null)
+        detail =
+          (data && (data.message ?? data.error ?? JSON.stringify(data))) || ''
+      } else {
+        detail = await res.text().catch(() => '')
+      }
+    } catch {
+      detail = ''
+    }
+
+    const suffix = detail ? `: ${detail}` : ''
+    throw new Error(
+      `Error confirmando el pago en ARTIME (${res.status})${suffix}`
+    )
   }
 }

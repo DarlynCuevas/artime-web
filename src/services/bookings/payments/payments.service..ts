@@ -97,7 +97,7 @@ export async function getMilestonesForBooking(
 export async function createPaymentIntentForMilestone(
   milestoneId: string,
   token: string
-) {
+): Promise<{ clientSecret: string; status?: string }> {
   const res = await fetch(
     `${API_URL}/payments/create-payment-intent/${milestoneId}`,
     {
@@ -110,7 +110,22 @@ export async function createPaymentIntentForMilestone(
   );
 
   if (!res.ok) {
-    throw new Error("Error creando PaymentIntent");
+    let detail = "";
+    try {
+      const contentType = res.headers.get("content-type") ?? "";
+      if (contentType.includes("application/json")) {
+        const data = await res.json().catch(() => null);
+        detail =
+          (data && (data.message ?? data.error ?? JSON.stringify(data))) || "";
+      } else {
+        detail = await res.text().catch(() => "");
+      }
+    } catch {
+      detail = "";
+    }
+
+    const suffix = detail ? `: ${detail}` : "";
+    throw new Error(`Error creando PaymentIntent (${res.status})${suffix}`);
   }
 
   return res.json(); // { clientSecret }

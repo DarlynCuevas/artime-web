@@ -1,9 +1,10 @@
 import { cn } from "@/lib/utils";
 
-type BookingStatusVariant = "pending" | "confirmed" | "negotiating" | "cancelled" | "completed" | "rejected";
+type BookingStatusVariant = "pending" | "confirmed" | "paid" | "negotiating" | "cancelled" | "completed" | "rejected";
 
 interface StatusBadgeProps {
   status: string;
+  paidPercent?: number | null;
   className?: string;
 }
 
@@ -14,6 +15,10 @@ const statusConfig: Record<BookingStatusVariant, { label: string; className: str
   },
   confirmed: {
     label: "Confirmado",
+    className: "status-confirmed",
+  },
+  paid: {
+    label: "Pagado",
     className: "status-confirmed",
   },
   negotiating: {
@@ -38,11 +43,14 @@ function normalizeStatus(status: string | undefined | null): BookingStatusVarian
   const value = status?.toLowerCase();
   switch (value) {
     case "contract_signed":
+    case "paid_partial":
+    case "paid_full":
     case "paid":
     case "paid_50":
     case "paid_75":
     case "paid_100":
     case "paid_balance":
+      return "paid";
     case "accepted":
     case "confirmed":
       return "confirmed";
@@ -65,13 +73,18 @@ function normalizeStatus(status: string | undefined | null): BookingStatusVarian
   }
 }
 
-export function StatusBadge({ status, className }: StatusBadgeProps) {
+export function StatusBadge({ status, paidPercent, className }: StatusBadgeProps) {
   const variant = normalizeStatus(status);
   const config = statusConfig[variant];
+  const showPaidPercent =
+    variant === "paid" &&
+    typeof paidPercent === "number" &&
+    paidPercent > 0 &&
+    paidPercent < 100;
 
   return (
     <span className={cn("status-badge", config.className, className)}>
-      {config.label}
+      {showPaidPercent ? `Pagado ${paidPercent}%` : config.label}
     </span>
   );
 }
