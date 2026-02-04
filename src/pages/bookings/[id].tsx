@@ -167,11 +167,13 @@ function BookingDetailPage() {
     contract?.status === 'DRAFT' &&
     (role === 'ARTIST' || role === 'MANAGER');
   const backHref =
-    role === 'VENUE' || role === 'PROMOTER'
+    role === 'VENUE'
       ? '/venues/bookings'
-      : role === 'ARTIST'
-        ? '/artists/bookings'
-        : '/bookings';
+      : role === 'PROMOTER'
+        ? '/promoter/bookings'
+        : role === 'ARTIST'
+          ? '/artists/bookings'
+          : '/bookings';
 
   const lastActivity = booking.handledAt ?? (booking as any).updatedAt ?? (booking as any).createdAt ?? null;
   const bookingAmount = (booking as any).totalAmount ?? (booking as any).amount ?? null;

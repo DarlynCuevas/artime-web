@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/hooks/auth/useMe';
@@ -11,14 +12,6 @@ export default function IndexPage() {
 
   useEffect(() => {
     if (authLoading || meLoading) {
-      return;
-    }
-
-    // Si loading terminó y no hay usuario, login
-
-    // Solo redirigir a login si loading terminó y user es null
-    if (!user && !authLoading && !meLoading) {
-      router.replace('/login');
       return;
     }
 
@@ -36,13 +29,61 @@ export default function IndexPage() {
       return;
     }
 
-    // Si loading terminó y no hay usuario, login
     // Si user existe pero role es null, NO redirigir (esperar a que role se actualice)
   }, [user, role, authLoading, meLoading, router]);
 
+  if (authLoading || meLoading) {
+    return (
+      <main style={{ padding: 32 }}>
+        <p>Cargando…</p>
+      </main>
+    );
+  }
+
+  if (user) {
+    return (
+      <main style={{ padding: 32 }}>
+        <p>Cargando…</p>
+      </main>
+    );
+  }
+
   return (
-    <main style={{ padding: 32 }}>
-      <p>Cargando…</p>
+    <main style={{ minHeight: '100svh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+      <section style={{ maxWidth: 520, width: '100%', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div>
+          <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>ARTIME</h1>
+          <p style={{ color: '#555' }}>
+            Gestiona contrataciones artísticas con trazabilidad y claridad.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link
+            href="/login"
+            style={{
+              padding: '10px 16px',
+              borderRadius: 8,
+              background: '#0f172a',
+              color: '#fff',
+              fontWeight: 600,
+            }}
+          >
+            Iniciar sesión
+          </Link>
+          <Link
+            href="/register"
+            style={{
+              padding: '10px 16px',
+              borderRadius: 8,
+              border: '1px solid #0f172a',
+              color: '#0f172a',
+              fontWeight: 600,
+            }}
+          >
+            Registrarme
+          </Link>
+        </div>
+      </section>
     </main>
   );
 }

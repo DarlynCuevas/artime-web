@@ -7,7 +7,7 @@ import { MeProvider } from '../context/MeContext';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const hideNav = router.pathname === '/login';
+  const hideNav = router.pathname === '/' || router.pathname === '/login' || router.pathname === '/register';
 
 
   if (hideNav) {
