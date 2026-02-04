@@ -74,6 +74,7 @@ const navByRole: Record<string, NavSection[]> = {
       label: 'Principal',
       items: [
         { label: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
+        { label: 'Artistas', href: '/manager/artists', icon: Users },
         { label: 'Perfil', href: '/manager/profile', icon: UserRound },
       ],
     },

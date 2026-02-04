@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { AlertCircle, ArrowLeft, Calendar as CalendarIcon, Clock, Link2, MapPin, Music, ShieldCheck, Sparkles, Ticket, Wallet } from 'lucide-react';
 
 import { useAuth } from '@/hooks/auth/useAuth';
+import { useMe } from '@/hooks/auth/useMe';
 import { useArtistAvailability } from '@/hooks/artists/useArtistAvailability';
 import { getPublicArtistCalendarBlocks } from '@/services/artists/calendar.service';
 import { createRepresentationRequest } from '@/services/representations/representations.service';
@@ -33,6 +34,9 @@ export default function ArtistProfilePage() {
   const router = useRouter();
   const { id, date, eventId } = router.query as { id: string; date?: string; eventId?: string };
   const { user } = useAuth();
+  const { role } = useMe();
+  const roleKnown = Boolean(role);
+  const isManager = role === 'MANAGER';
 
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,6 +98,10 @@ export default function ArtistProfilePage() {
   const monthLabel = month.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
 
   const handleBooking = (bookingDate?: string) => {
+    if (!roleKnown || isManager) {
+      setShowRepModal(true);
+      return;
+    }
     router.push(
       bookingDate
         ? `/bookings/new?artistId=${id}&date=${bookingDate}${eventId ? `&eventId=${eventId}` : ''}`
@@ -105,7 +113,7 @@ export default function ArtistProfilePage() {
     setMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
   };
 
-  const canRequestRepresentation = Boolean(user?.role === 'MANAGER' && artist?.canRequestRepresentation);
+  const canRequestRepresentation = Boolean(isManager && artist?.canRequestRepresentation);
   const representationStatus: 'NONE' | 'PENDING' | 'ACTIVE' | 'REJECTED' =
     artist?.representationStatus ?? (artist?.managerId ? 'ACTIVE' : 'NONE');
 
@@ -180,10 +188,21 @@ export default function ArtistProfilePage() {
             </div>
           </div>
           <div className="hidden md:flex flex-col items-end gap-2 text-sm text-slate-600">
-            <p className="text-xs text-slate-500">Preparado para contratación</p>
-            <div className="inline-flex items-center gap-1 rounded-lg bg-slate-900 text-white px-3 py-2 text-sm font-medium">
-              <Ticket className="h-4 w-4" /> Iniciar booking
-            </div>
+            {isManager || !roleKnown ? (
+              <button
+                type="button"
+                onClick={() => setShowRepModal(true)}
+                disabled={!canRequestRepresentation || requestState === 'PENDING' || representationStatus === 'PENDING'}
+                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                <ShieldCheck className="h-4 w-4" />
+                {requestState === 'PENDING' || representationStatus === 'PENDING' ? 'Solicitud pendiente' : 'Solicitar representación'}
+              </button>
+            ) : (
+              <div className="inline-flex items-center gap-1 rounded-lg bg-slate-900 text-white px-3 py-2 text-sm font-medium">
+                <Ticket className="h-4 w-4" /> Iniciar booking
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -359,20 +378,41 @@ export default function ArtistProfilePage() {
             <p className="text-sm text-slate-600">Comparte links clave (EPK, tech rider, redes) al iniciar la propuesta.</p>
           </Card>
 
-          <Card title="Iniciar contratación" icon={<Ticket className="h-4 w-4 text-slate-600" />}>
-            <p className="text-sm text-slate-600">
-              {isFromEvent
-                ? 'La fecha del evento ya está definida. Solo puedes iniciar la contratación para ese día.'
-                : 'Selecciona una fecha disponible para continuar con la propuesta.'}
-            </p>
-            <button
-              type="button"
-              onClick={() => handleBooking(eventDate)}
-              className="w-full inline-flex items-center justify-center rounded-lg bg-slate-900 text-white px-4 py-2 text-sm font-medium hover:bg-slate-800 disabled:opacity-60"
-              disabled={isFromEvent && !eventDate}
-            >
-              Iniciar contratación
-            </button>
+          <Card
+            title={isManager || !roleKnown ? 'Solicitar representación' : 'Iniciar contratación'}
+            icon={isManager || !roleKnown ? <ShieldCheck className="h-4 w-4 text-slate-600" /> : <Ticket className="h-4 w-4 text-slate-600" />}
+          >
+            {isManager || !roleKnown ? (
+              <>
+                <p className="text-sm text-slate-600">
+                  La representación solo se activará si el artista acepta. Hasta entonces no podrás actuar en su nombre.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowRepModal(true)}
+                  className="w-full inline-flex items-center justify-center rounded-lg bg-slate-900 text-white px-4 py-2 text-sm font-medium hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                  disabled={!canRequestRepresentation || requestState === 'PENDING' || representationStatus === 'PENDING'}
+                >
+                  {requestState === 'PENDING' || representationStatus === 'PENDING' ? 'Solicitud pendiente' : 'Solicitar representación'}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-slate-600">
+                  {isFromEvent
+                    ? 'La fecha del evento ya está definida. Solo puedes iniciar la contratación para ese día.'
+                    : 'Selecciona una fecha disponible para continuar con la propuesta.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleBooking(eventDate)}
+                  className="w-full inline-flex items-center justify-center rounded-lg bg-slate-900 text-white px-4 py-2 text-sm font-medium hover:bg-slate-800 disabled:opacity-60"
+                  disabled={isFromEvent && !eventDate}
+                >
+                  Iniciar contratación
+                </button>
+              </>
+            )}
           </Card>
         </div>
       </div>
