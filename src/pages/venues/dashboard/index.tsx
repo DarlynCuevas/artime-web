@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { AlertCircle, ArrowRight, Calendar, Clock, CreditCard } from 'lucide-react';
+import { AlertCircle, ArrowRight, Calendar, Clock, CreditCard, FileText } from 'lucide-react';
 
 import { useVenueDashboard } from '@/hooks/venues/useVenueDashboard';
 import { withRole } from '@/components/auth/withRole';
@@ -34,17 +34,38 @@ function VenueDashboardPage() {
     ? [{ id: 'pending', message: 'Tienes acciones pendientes que requieren tu atención.' }]
     : [];
 
-  const pendingActions: PendingAction[] = metrics.pendingActionsCount > 0
-    ? [{
-      id: 'action-1',
-      title: 'Revisa tus contrataciones pendientes',
-      description: 'Completa los pasos para avanzar con tus bookings.',
-      dueDate: new Date().toISOString(),
-      type: 'response',
-      urgent: metrics.pendingActionsCount > 2,
-      amount: undefined,
-    }]
-    : [];
+  const pendingActions: PendingAction[] = [
+    ...(metrics.pendingContractsCount > 0
+      ? [{
+        id: 'pending-contracts',
+        title: 'Contratos por firmar',
+        description: 'Hay contrataciones aceptadas pendientes de firma.',
+        dueDate: new Date().toISOString(),
+        type: 'document',
+        urgent: metrics.pendingContractsCount > 2,
+      }]
+      : []),
+    ...(metrics.pendingPaymentsCount > 0
+      ? [{
+        id: 'pending-payments',
+        title: 'Pagos pendientes',
+        description: 'Tienes bookings con pagos por completar.',
+        dueDate: new Date().toISOString(),
+        type: 'payment',
+        urgent: metrics.pendingPaymentsCount > 2,
+      }]
+      : []),
+    ...(metrics.pendingResponsesCount > 0
+      ? [{
+        id: 'pending-responses',
+        title: 'Respuestas pendientes',
+        description: 'Hay negociaciones que requieren tu respuesta.',
+        dueDate: new Date().toISOString(),
+        type: 'response',
+        urgent: metrics.pendingResponsesCount > 2,
+      }]
+      : []),
+  ];
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -153,7 +174,7 @@ function VenueDashboardPage() {
                       <Clock className={`h-4 w-4 ${action.urgent ? 'text-red-600' : 'text-slate-500'}`} />
                     )}
                     {action.type === 'document' && (
-                      <AlertCircle className={`h-4 w-4 ${action.urgent ? 'text-red-600' : 'text-slate-500'}`} />
+                      <FileText className={`h-4 w-4 ${action.urgent ? 'text-red-600' : 'text-slate-500'}`} />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
