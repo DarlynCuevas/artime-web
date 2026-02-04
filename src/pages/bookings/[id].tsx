@@ -167,6 +167,9 @@ function BookingDetailPage() {
     Boolean(contract) &&
     contract?.status === 'DRAFT' &&
     (role === 'ARTIST' || role === 'MANAGER');
+
+  const canCancelBooking =
+    booking.status !== 'CANCELLED' && booking.status !== 'CANCELLED_PENDING_REVIEW';
   const backHref =
     role === 'VENUE'
       ? '/venues/bookings'
@@ -530,7 +533,9 @@ function BookingDetailPage() {
             isHandledByOther={isHandledByOther}
             onBookingUpdated={refresh}
             refreshContract={refreshContract}
-            onCancelBooking={() => setShowCancelModal(true)}
+            onCancelBooking={() => {
+              if (canCancelBooking) setShowCancelModal(true);
+            }}
           />
         </div>
 
@@ -565,24 +570,26 @@ function BookingDetailPage() {
 
       <Separator />
 
-      <CancelBookingModal
-        open={showCancelModal}
-        title="Cancelar booking"
-        confirmLabel="Cancelar booking"
-        onClose={() => setShowCancelModal(false)}
-        onConfirm={async ({ reason, description }) => {
-          await cancelBooking({
-            bookingId: booking.id,
-            reason,
-            description,
-            token: user.token,
-            initiator: role as any,
-            bookingStatus: booking.status,
-            hasPayments: Boolean(paymentSummary && paymentSummary.paidAmount > 0),
-          });
-          await refresh();
-        }}
-      />
+      {canCancelBooking && (
+        <CancelBookingModal
+          open={showCancelModal}
+          title="Cancelar booking"
+          confirmLabel="Cancelar booking"
+          onClose={() => setShowCancelModal(false)}
+          onConfirm={async ({ reason, description }) => {
+            await cancelBooking({
+              bookingId: booking.id,
+              reason,
+              description,
+              token: user.token,
+              initiator: role as any,
+              bookingStatus: booking.status,
+              hasPayments: Boolean(paymentSummary && paymentSummary.paidAmount > 0),
+            });
+            await refresh();
+          }}
+        />
+      )}
 
       <SignContractModal
         open={showSignContractModal}

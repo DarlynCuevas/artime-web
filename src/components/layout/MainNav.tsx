@@ -26,7 +26,8 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/hooks/auth/useMe';
 import { useArtistNotifications } from '@/hooks/artists/useArtistNotifications';
-import { Bell, CalendarDays, Compass, LayoutDashboard, Search, Ticket, UserRound, Users } from 'lucide-react';
+import { Bell, CalendarDays, Compass, LayoutDashboard, Search, Settings, Ticket, UserRound, Users } from 'lucide-react';
+import { supabase } from '@/services/supabase/supabaseClient';
 
 type NavItem = {
   label: string;
@@ -92,10 +93,13 @@ export function MainNav({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { role, loading, profileId, profileName } = useMe();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const bellRef = useRef<HTMLDivElement | null>(null);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
 
   const navSections = useMemo(() => navByRole[role ?? ''] ?? [], [role]);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const navSectionsWithProfile = useMemo(() => {
     return navSections.map((section) => {
@@ -124,19 +128,21 @@ export function MainNav({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     function handleClickOutside(evt: MouseEvent) {
-      if (!bellRef.current) return;
-      if (bellRef.current.contains(evt.target as Node)) return;
+      const target = evt.target as Node;
+      if (bellRef.current && bellRef.current.contains(target)) return;
+      if (userMenuRef.current && userMenuRef.current.contains(target)) return;
       setShowDropdown(false);
+      setShowUserMenu(false);
     }
 
-    if (showDropdown) {
+    if (showDropdown || showUserMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showDropdown]);
+  }, [showDropdown, showUserMenu]);
 
   const isActive = (href: string) => router.pathname === href || router.pathname.startsWith(`${href}/`);
 
@@ -239,8 +245,14 @@ export function MainNav({ children }: { children: ReactNode }) {
             <div className="hidden text-sm text-muted-foreground md:block">
               {role ? `Rol: ${role}` : 'Sesión activa'}
             </div>
-            <div className="relative ml-auto flex items-center gap-2" ref={bellRef}>
-              <Button variant="ghost" size="icon" className="relative" onClick={() => setShowDropdown((s) => !s)}>
+            <div className="relative ml-auto flex items-center gap-2">
+              <Button
+                ref={bellRef}
+                variant="ghost"
+                size="icon"
+                className="relative"
+                onClick={() => setShowDropdown((s) => !s)}
+              >
                 <Bell className="size-5" />
                 {unreadCount > 0 && (
                   <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
@@ -316,7 +328,14 @@ export function MainNav({ children }: { children: ReactNode }) {
                           </div>
                           <div className="text-xs text-foreground">
                             {n.payload?.date ?? ''}
-                            {n.payload?.offeredMaxPrice ? ` · Oferta: €${n.payload?.offeredMaxPrice}` : ''}
+                            {(() => {
+                              const minP = n.payload?.offeredMinPrice;
+                              const maxP = n.payload?.offeredMaxPrice;
+                              if (minP && maxP) return ` · Presupuesto: ${formatCurrency(minP, 'EUR')} - ${formatCurrency(maxP, 'EUR')}`;
+                              if (maxP) return ` · Presupuesto hasta ${formatCurrency(maxP, 'EUR')}`;
+                              if (minP) return ` · Presupuesto desde ${formatCurrency(minP, 'EUR')}`;
+                              return '';
+                            })()}
                           </div>
                         </button>
                       ))}
@@ -324,6 +343,48 @@ export function MainNav({ children }: { children: ReactNode }) {
                   )}
                 </div>
               )}
+
+              <div className="relative" ref={userMenuRef}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative"
+                  onClick={() => setShowUserMenu((s) => !s)}
+                >
+                  <Settings className="size-5" />
+                  <span className="sr-only">Abrir menú de usuario</span>
+                </Button>
+
+                {showUserMenu && (
+                  <div className="absolute right-0 top-12 w-48 rounded-lg border bg-popover p-2 text-sm shadow-lg">
+                    <Link
+                      href="/settings"
+                      className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted"
+                      onClick={() => setShowUserMenu(false)}
+                    >
+                      Ajustes
+                    </Link>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left hover:bg-muted"
+                      onClick={async () => {
+                        if (loggingOut) return;
+                        setLoggingOut(true);
+                        try {
+                          await supabase.auth.signOut();
+                          router.push('/login');
+                        } finally {
+                          setLoggingOut(false);
+                          setShowUserMenu(false);
+                        }
+                      }}
+                      disabled={loggingOut}
+                    >
+                      {loggingOut ? 'Cerrando…' : 'Cerrar sesión'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </header>
 

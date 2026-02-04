@@ -3,6 +3,7 @@ import { useMe } from '@/hooks/auth/useMe';
 import { useArtistNotifications } from '@/hooks/artists/useArtistNotifications';
 import { useEffect } from 'react';
 import type { ArtistNotification } from '@/services/notifications/artist-notifications.service';
+import { formatCurrency } from '@/lib/utils';
 
 export default function ArtistSolicitudesPage() {
   const { user } = useAuth();
@@ -64,7 +65,14 @@ export default function ArtistSolicitudesPage() {
             </div>
             <div style={{ fontSize: 13, color: '#333' }}>
               {n.payload?.date ?? ''}
-              {n.payload?.offeredMaxPrice ? ` · Oferta: €${n.payload.offeredMaxPrice}` : ''}
+              {(() => {
+                const minP = n.payload?.offeredMinPrice;
+                const maxP = n.payload?.offeredMaxPrice;
+                if (minP && maxP) return ` · Presupuesto: ${formatCurrency(minP, 'EUR')} - ${formatCurrency(maxP, 'EUR')}`;
+                if (maxP) return ` · Presupuesto hasta ${formatCurrency(maxP, 'EUR')}`;
+                if (minP) return ` · Presupuesto desde ${formatCurrency(minP, 'EUR')}`;
+                return '';
+              })()}
             </div>
             {n.status === 'UNREAD' && (
               <button

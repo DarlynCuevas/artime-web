@@ -26,9 +26,13 @@ export function NegotiationPanel({
   refreshContract,
   onCancelBooking,
 }: Props) {
-  const isClosed = ['PAID_PARTIAL', 'PAID_FULL', 'COMPLETED'].includes(
-    bookingStatus
-  );
+  const isClosed = [
+    'PAID_PARTIAL',
+    'PAID_FULL',
+    'COMPLETED',
+    'CANCELLED',
+    'CANCELLED_PENDING_REVIEW',
+  ].includes(bookingStatus);
   if (isClosed) {
     return null;
   }
@@ -222,7 +226,7 @@ export function NegotiationPanel({
         </section>
       )}
 
-      {!canWrite && !canAcceptOrReject && (
+      {!canWrite && !canAcceptOrReject && !['CANCELLED', 'CANCELLED_PENDING_REVIEW'].includes(bookingStatus) && (
         <section style={{ marginTop: 16 }}>
           <button
             type="button"
