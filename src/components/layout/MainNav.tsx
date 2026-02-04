@@ -28,6 +28,7 @@ import { useMe } from '@/hooks/auth/useMe';
 import { useArtistNotifications } from '@/hooks/artists/useArtistNotifications';
 import { Bell, CalendarDays, Compass, LayoutDashboard, Search, Settings, Ticket, UserRound, Users } from 'lucide-react';
 import { supabase } from '@/services/supabase/supabaseClient';
+import { formatCurrency } from '@/lib/utils';
 
 type NavItem = {
   label: string;
@@ -73,6 +74,7 @@ const navByRole: Record<string, NavSection[]> = {
       items: [
         { label: 'Dashboard', href: '/artists/dashboard', icon: LayoutDashboard },
         { label: 'Bookings', href: '/bookings', icon: Ticket },
+        { label: 'Perfil', href: '/manager/profile', icon: UserRound },
       ],
     },
   ],
