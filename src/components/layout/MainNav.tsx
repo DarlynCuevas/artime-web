@@ -26,7 +26,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/hooks/auth/useMe';
 import { useArtistNotifications } from '@/hooks/artists/useArtistNotifications';
-import { Bell, CalendarDays, Compass, LayoutDashboard, Search, Ticket, UserRound, Users, Building2 } from 'lucide-react';
+import { Bell, CalendarDays, Compass, LayoutDashboard, Search, Ticket, UserRound, Users } from 'lucide-react';
 
 type NavItem = {
   label: string;
@@ -47,7 +47,6 @@ const navByRole: Record<string, NavSection[]> = {
         { label: 'Dashboard', href: '/venues/dashboard', icon: LayoutDashboard },
         { label: 'Bookings', href: '/venues/bookings', icon: Ticket },
         { label: 'Artistas', href: '/venues/discover', icon: Users },
-        { label: 'Buscar', href: '/venues/search', icon: Building2 },
         { label: 'Calendario', href: '/venues/calendar', icon: CalendarDays },
       ],
     },

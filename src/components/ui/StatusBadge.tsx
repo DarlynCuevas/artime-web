@@ -43,6 +43,7 @@ function normalizeStatus(status: string | undefined | null): BookingStatusVarian
   const value = status?.toLowerCase();
   switch (value) {
     case "contract_signed":
+      return "confirmed";
     case "paid_partial":
     case "paid_full":
     case "paid":

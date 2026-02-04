@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 import { Filter, Search, MapPin, Music, ArrowRight } from 'lucide-react';
 
 import { discoverArtists } from '@/services/artists/discoverArtists.service';
+import { createArtistCall } from '@/services/venues/artist-calls.service';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { formatCurrency } from '@/lib/utils';
 
 type DiscoverArtist = {
   id: string;
@@ -19,15 +20,19 @@ type DiscoverArtist = {
 };
 
 export default function VenueDiscoverArtistsPage() {
-  const router = useRouter();
-
   const [artists, setArtists] = useState<DiscoverArtist[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-const {user} = useAuth();
+  const { user } = useAuth();
   const [city, setCity] = useState('');
   const [genre, setGenre] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [date, setDate] = useState('');
+  const [minPrice, setMinPrice] = useState<number | undefined>();
+  const [maxPrice, setMaxPrice] = useState<number | undefined>();
+  const [callLoading, setCallLoading] = useState(false);
+  const [callMessage, setCallMessage] = useState<string | null>(null);
+  const [callError, setCallError] = useState<string | null>(null);
 
   const loadArtists = async () => {
     setLoading(true);
@@ -37,7 +42,10 @@ const {user} = useAuth();
       const data = await discoverArtists(token, {
         city,
         genre,
-        date: new Date().toISOString(), // Puedes ajustar la fecha si es necesario
+        date: date || new Date().toISOString(),
+        minPrice,
+        maxPrice,
+        search: searchTerm || undefined,
       });
       const normalized = (data ?? [])
         .map((a: any) => ({
@@ -56,6 +64,54 @@ const {user} = useAuth();
   useEffect(() => {
     loadArtists();
   }, []);
+
+  const handleNotify = useCallback(async () => {
+    if (!user?.token) {
+      setCallError('Debes iniciar sesión para notificar.');
+      return;
+    }
+
+    if (!date) {
+      setCallError('Indica la fecha del evento.');
+      return;
+    }
+
+    if (maxPrice === undefined || Number.isNaN(maxPrice)) {
+      setCallError('Indica un precio máximo válido.');
+      return;
+    }
+
+    const trimmedCity = city.trim();
+    const trimmedGenre = genre.trim();
+    const trimmedSearch = searchTerm.trim();
+    const filters: Record<string, any> = {};
+
+    if (trimmedGenre) filters.genre = trimmedGenre;
+    if (minPrice !== undefined) filters.minPrice = minPrice;
+    if (maxPrice !== undefined) filters.maxPrice = maxPrice;
+    if (trimmedSearch) filters.search = trimmedSearch;
+
+    setCallLoading(true);
+    setCallError(null);
+    setCallMessage(null);
+
+    try {
+      const res = await createArtistCall(
+        {
+          date,
+          city: trimmedCity || undefined,
+          filters: Object.keys(filters).length ? filters : undefined,
+        },
+        user.token,
+      );
+
+      setCallMessage(`Convocatoria creada. Artistas notificados: ${res.notifiedArtists ?? res.notified ?? 0}`);
+    } catch (err: any) {
+      setCallError(err?.message || 'No se pudo notificar a los artistas');
+    } finally {
+      setCallLoading(false);
+    }
+  }, [city, date, genre, maxPrice, minPrice, searchTerm, user?.token]);
 
   const filteredArtists = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -76,7 +132,7 @@ const {user} = useAuth();
           <Filter className="h-4 w-4 text-slate-500" />
           <span className="text-sm font-medium text-slate-900">Filtros</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
           <label className="space-y-1 md:col-span-2">
             <span className="text-sm text-slate-600">Buscar por nombre</span>
             <div className="relative">
@@ -119,6 +175,44 @@ const {user} = useAuth();
             </div>
           </label>
 
+          <label className="space-y-1">
+            <span className="text-sm text-slate-600">Fecha</span>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
+            />
+          </label>
+
+          <label className="space-y-1">
+            <span className="text-sm text-slate-600">Precio mínimo (€)</span>
+            <input
+              type="number"
+              value={minPrice ?? ''}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setMinPrice(Number.isFinite(val) ? val : undefined);
+              }}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
+              placeholder="Ej. 500"
+            />
+          </label>
+
+          <label className="space-y-1">
+            <span className="text-sm text-slate-600">Precio máximo (€)</span>
+            <input
+              type="number"
+              value={maxPrice ?? ''}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setMaxPrice(Number.isFinite(val) ? val : undefined);
+              }}
+              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
+              placeholder="Ej. 2000"
+            />
+          </label>
+
           <div className="flex gap-2 md:col-span-1">
             <button
               type="button"
@@ -129,6 +223,28 @@ const {user} = useAuth();
             </button>
           </div>
         </div>
+
+        <div className="flex flex-col md:flex-row md:items-center gap-3">
+          <button
+            type="button"
+            disabled={
+              callLoading ||
+              !user?.token ||
+              !date ||
+              maxPrice === undefined ||
+              Number.isNaN(maxPrice)
+            }
+            onClick={handleNotify}
+            className="inline-flex items-center justify-center rounded-lg bg-slate-900 text-white px-4 py-2 text-sm font-medium hover:bg-slate-800 w-full md:w-auto"
+          >
+            {callLoading ? 'Notificando…' : 'Notificar artistas'}
+          </button>
+          <span className="text-xs text-slate-600">
+            Requiere fecha y precio máximo. Usa los filtros actuales.
+          </span>
+        </div>
+        {callMessage && <p className="text-sm text-emerald-600">{callMessage}</p>}
+        {callError && <p className="text-sm text-red-600">{callError}</p>}
       </section>
 
       {loading && <p className="text-sm text-slate-600">Cargando artistas…</p>}
@@ -189,8 +305,4 @@ const {user} = useAuth();
       )}
     </main>
   );
-}
-
-function formatCurrency(amount: number, currency: string) {
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency }).format(amount);
 }

@@ -87,6 +87,21 @@ console.log('EVENTS TOKEN:', token);
         if (!res.ok) throw new Error('Failed to start search');
     },
 
+    async duplicateEvent(id: string, token: string): Promise<Event> {
+        const res = await fetch(`${BASE_URL}/events/${id}/duplicate`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (!res.ok) {
+            throw new Error('Failed to duplicate event');
+        }
+
+        return res.json();
+    },
+
     async getInvitations(eventId: string, token: string): Promise<
         { invitationId: string; artistId: string; status: string }[]
     > {

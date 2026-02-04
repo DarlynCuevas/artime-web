@@ -26,7 +26,11 @@ export function useNegotiation(bookingId?: string) {
 
     try {
       const data = await getNegotiationMessages(bookingId, user.token);
-      setMessages(data);
+      // Ordenar descendente por fecha para mostrar lo más reciente primero
+      const sorted = [...data].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setMessages(sorted);
     } catch {
       setError('No se pudieron cargar los mensajes');
     } finally {

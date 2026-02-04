@@ -24,7 +24,7 @@ type DayStatus = 'AVAILABLE' | 'BOOKED' | 'UNAVAILABLE';
 
 export default function ArtistProfilePage() {
   const router = useRouter();
-  const { id, date } = router.query as { id: string; date?: string };
+  const { id, date, eventId } = router.query as { id: string; date?: string; eventId?: string };
   const { user } = useAuth();
 
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
@@ -70,18 +70,21 @@ export default function ArtistProfilePage() {
     return <p className="p-8">Artista no encontrado</p>;
   }
 
+  const isFromEvent = Boolean(eventId);
+  const eventDate = date;
+
   const handleBooking = (bookingDate?: string) => {
     router.push(
       bookingDate
-        ? `/bookings/new?artistId=${id}&date=${bookingDate}`
-        : `/bookings/new?artistId=${id}`,
+        ? `/bookings/new?artistId=${id}&date=${bookingDate}${eventId ? `&eventId=${eventId}` : ''}`
+        : `/bookings/new?artistId=${id}${eventId ? `&eventId=${eventId}` : ''}`,
     );
   };
 
   return (
     <main className="p-8 max-w-5xl mx-auto space-y-6">
       <Link
-        href="/venues/discover"
+        href={eventId ? `/events/${eventId}/search-artists` : '/venues/discover'}
         className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -128,6 +131,11 @@ export default function ArtistProfilePage() {
               <CalendarIcon className="h-4 w-4" />
               Disponibilidad
             </h2>
+            {isFromEvent && (
+              <p className="text-xs text-slate-500 mb-3">
+                Fecha del evento fija. El calendario es solo informativo.
+              </p>
+            )}
 
             {availabilityLoading && (
               <p className="text-sm text-slate-500">Cargando disponibilidad…</p>
@@ -157,6 +165,7 @@ export default function ArtistProfilePage() {
                         className={`${baseClasses} ${statusClasses}`}
                         onClick={() => {
                           if (status !== 'AVAILABLE') return;
+                          if (isFromEvent) return;
                           handleBooking(day.date);
                         }}
                       >
@@ -220,11 +229,16 @@ export default function ArtistProfilePage() {
 
           <section className="action-panel space-y-3">
             <h2 className="font-semibold text-slate-900">Iniciar contratación</h2>
-            <p className="text-sm text-slate-600">Selecciona una fecha disponible para continuar con la propuesta.</p>
+            <p className="text-sm text-slate-600">
+              {isFromEvent
+                ? 'La fecha del evento ya está definida. Solo puedes iniciar la contratación para ese día.'
+                : 'Selecciona una fecha disponible para continuar con la propuesta.'}
+            </p>
             <button
               type="button"
-              onClick={() => handleBooking(date)}
+              onClick={() => handleBooking(eventDate)}
               className="w-full inline-flex items-center justify-center rounded-lg bg-slate-900 text-white px-4 py-2 text-sm font-medium hover:bg-slate-800"
+              disabled={isFromEvent && !eventDate}
             >
               Iniciar contratación
             </button>

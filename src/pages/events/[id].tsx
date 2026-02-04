@@ -30,6 +30,9 @@ export default function EventDetailPage() {
 
   const canSearchArtists =
     event?.status === 'DRAFT' || event?.status === 'SEARCHING';
+  const eventDateForQuery = event?.start_date
+    ? new Date(event.start_date).toISOString().slice(0, 10)
+    : '';
 
   useEffect(() => {
     if (!id || typeof id !== 'string') return;
@@ -70,6 +73,12 @@ export default function EventDetailPage() {
     }
 
     router.push(`/events/${event.id}/search-artists`);
+  };
+
+  const handleDuplicateEvent = async () => {
+    if (!event || !user?.token) return;
+    const duplicated = await eventsService.duplicateEvent(event.id, user.token);
+    router.push(`/events/${duplicated.id}`);
   };
 
   const handleCreateBooking = (artistId: string) => {
@@ -212,6 +221,20 @@ export default function EventDetailPage() {
             ? 'Hacer evento visible'
             : 'Ocultar evento'}
         </button>
+
+        <button
+          onClick={handleDuplicateEvent}
+          style={{
+            marginTop: 8,
+            marginLeft: 8,
+            padding: '6px 10px',
+            border: '1px solid #000',
+            background: '#fff',
+            cursor: 'pointer',
+          }}
+        >
+          Duplicar evento
+        </button>
       </section>
 
       {/* CTA: BUSCAR ARTISTAS */}
@@ -333,7 +356,7 @@ export default function EventDetailPage() {
                         </button>
                       )}
                       <a
-                        href={`/artists/profile/${inv.artistId}`}
+                        href={`/artists/profile/${inv.artistId}?eventId=${event?.id ?? ''}&date=${eventDateForQuery}`}
                         style={{ fontSize: 12, border: '1px solid #ddd', padding: '4px 8px' }}
                       >
                         Ver perfil

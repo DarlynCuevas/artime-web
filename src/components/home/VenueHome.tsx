@@ -49,8 +49,8 @@ export default function VenueHome() {
           </div>
         </Link>
 
-        {/* SEARCH */}
-        <Link href="/venues/search" style={{ textDecoration: 'none' }}>
+        {/* CALENDARIO */}
+        <Link href="/venues/calendar" style={{ textDecoration: 'none' }}>
           <div
             style={{
               border: '1px solid #ddd',
@@ -59,11 +59,11 @@ export default function VenueHome() {
             }}
           >
             <h2 style={{ fontSize: 18, marginBottom: 8 }}>
-              Buscar por fecha
+              Calendario de fechas
             </h2>
             <p style={{ color: '#666', fontSize: 14 }}>
-              Selecciona una fecha y encuentra artistas
-              disponibles para iniciar una contratación.
+              Revisa tus fechas reservadas y agenda nuevas
+              oportunidades desde un solo lugar.
             </p>
           </div>
         </Link>

@@ -32,12 +32,12 @@ const TABS = [
   {
     key: 'PENDING',
     label: 'Pendientes',
-    statuses: ['PENDING', 'FINAL_OFFER_SENT'],
+    statuses: ['PENDING'],
   },
   {
     key: 'NEGOTIATING',
     label: 'En negociación',
-    statuses: ['NEGOTIATING'],
+    statuses: ['NEGOTIATING', 'FINAL_OFFER_SENT'],
   },
   {
     key: 'CONFIRMED',

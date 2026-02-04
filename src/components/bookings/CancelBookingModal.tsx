@@ -45,10 +45,10 @@ export function CancelBookingModal({
               style={{ display: 'block', width: '100%', marginTop: 4 }}
             >
               <option value="">Selecciona un motivo</option>
-              <option value="ARTIST_DECISION">Decisión del artista</option>
-              <option value="VENUE_DECISION">Decisión de la sala</option>
-              <option value="SCHEDULING_ISSUE">Problema de agenda</option>
-              <option value="OTHER">Otro</option>
+              <option value="ARTIST_UNJUSTIFIED">Cancelación del artista (no justificada)</option>
+              <option value="ARTIST_JUSTIFIED">Cancelación del artista (causa mayor)</option>
+              <option value="VENUE">Cancelación de la sala/promotor</option>
+              <option value="FORCE_MAJEURE">Fuerza mayor</option>
             </select>
           </label>
         </div>

@@ -12,6 +12,8 @@ import type { Event } from '@/types/event';
 type Filters = {
   date?: string;
   budget?: string;
+  genre?: string;
+  city?: string;
 };
 
 export default function EventSearchArtistsPage() {
@@ -51,6 +53,8 @@ export default function EventSearchArtistsPage() {
             data.estimatedBudget !== undefined
               ? String(data.estimatedBudget)
               : '',
+          genre: '',
+          city: '',
         });
       })
       .finally(() => setLoadingEvent(false));
@@ -127,6 +131,8 @@ export default function EventSearchArtistsPage() {
       const budget = filters.budget
         ? Number(filters.budget)
         : null;
+      const genre = filters.genre?.trim().toLowerCase() ?? '';
+      const city = filters.city?.trim().toLowerCase() ?? '';
 
       if (budget !== null && !Number.isNaN(budget)) {
         current = current.filter((artist) => {
@@ -135,6 +141,24 @@ export default function EventSearchArtistsPage() {
             return false;
           }
           return Number(profile.basePrice) <= budget;
+        });
+      }
+
+      if (genre) {
+        current = current.filter((artist) => {
+          const profile = profilesById[artist.id];
+          if (!profile || !Array.isArray(profile.genres)) return false;
+          return profile.genres.some((g: string) =>
+            String(g).toLowerCase().includes(genre)
+          );
+        });
+      }
+
+      if (city) {
+        current = current.filter((artist) => {
+          const profile = profilesById[artist.id];
+          if (!profile || !profile.city) return false;
+          return String(profile.city).toLowerCase().includes(city);
         });
       }
 
@@ -220,9 +244,7 @@ export default function EventSearchArtistsPage() {
               <input
                 type="date"
                 value={filters.date ?? ''}
-                onChange={(e) =>
-                  setFilters({ ...filters, date: e.target.value })
-                }
+                disabled
                 style={{ padding: 8, border: '1px solid #ddd' }}
               />
             </label>
@@ -235,6 +257,32 @@ export default function EventSearchArtistsPage() {
                 value={filters.budget ?? ''}
                 onChange={(e) =>
                   setFilters({ ...filters, budget: e.target.value })
+                }
+                style={{ padding: 8, border: '1px solid #ddd' }}
+              />
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span style={{ fontSize: 12, color: '#666' }}>
+                Género
+              </span>
+              <input
+                placeholder="Ej: rock, pop, jazz"
+                value={filters.genre ?? ''}
+                onChange={(e) =>
+                  setFilters({ ...filters, genre: e.target.value })
+                }
+                style={{ padding: 8, border: '1px solid #ddd' }}
+              />
+            </label>
+            <label style={{ display: 'grid', gap: 6 }}>
+              <span style={{ fontSize: 12, color: '#666' }}>
+                Ciudad
+              </span>
+              <input
+                placeholder="Ej: Madrid"
+                value={filters.city ?? ''}
+                onChange={(e) =>
+                  setFilters({ ...filters, city: e.target.value })
                 }
                 style={{ padding: 8, border: '1px solid #ddd' }}
               />
@@ -302,7 +350,7 @@ export default function EventSearchArtistsPage() {
                 )}
                 <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                   <a
-                    href={`/artists/profile/${artist.id}`}
+                    href={`/artists/profile/${artist.id}?eventId=${id ?? ''}&date=${filters.date ?? ''}`}
                     style={{
                       padding: '8px 12px',
                       border: '1px solid #ddd',

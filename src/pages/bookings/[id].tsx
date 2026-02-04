@@ -129,6 +129,7 @@ function BookingDetailPage() {
   const venueName = (booking as any).venue?.name ?? (booking as any).venueName ?? 'Sala';
   const venueCity = (booking as any).venue?.city ?? null;
   const venueId = (booking as any).venue?.id ?? booking.venueId;
+  const artistId = booking.artistId ?? (booking as any).artistId ?? null;
   const promoterId = (booking as any).promoter?.id ?? booking.promoterId ?? null;
   const artistName = (booking as any).artist?.name ?? (booking as any).artistName ?? null;
 
@@ -188,7 +189,7 @@ function BookingDetailPage() {
       isFinal: m.isFinalOffer,
       note: m.message,
     }))
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const hasArtistResponse = timelineEvents.some((event) => event.role === 'ARTIST');
   const firstVenueOffer = timelineEvents.find(
     (event) => event.role === 'VENUE' && typeof event.amount === 'number'
@@ -210,6 +211,12 @@ function BookingDetailPage() {
 
   const headerTargetName = eventName ?? venueName;
   const headerTargetMeta = eventName ? null : venueCity;
+
+  const isArtistSideViewer = role === 'ARTIST' || role === 'MANAGER';
+  const counterpartyHref = isArtistSideViewer
+    ? (venueId ? `/venues/profile/${venueId}` : null)
+    : (artistId ? `/artists/profile/${artistId}` : null);
+  const counterpartyLabel = isArtistSideViewer ? 'Ver sala' : 'Ver artista';
 
 
   return (
@@ -301,13 +308,13 @@ function BookingDetailPage() {
               )}
             </div>
 
-            {venueId && (
+            {counterpartyHref && (
               <div className="mt-4">
                 <Link
-                  href={`/venues/${venueId}${artistName ? `?artistName=${encodeURIComponent(artistName)}` : ''}`}
+                  href={counterpartyHref}
                   className="text-sm font-medium text-primary hover:underline"
                 >
-                  Ver sala
+                  {counterpartyLabel}
                 </Link>
               </div>
             )}
@@ -570,6 +577,8 @@ function BookingDetailPage() {
             description,
             token: user.token,
             initiator: role as any,
+            bookingStatus: booking.status,
+            hasPayments: Boolean(paymentSummary && paymentSummary.paidAmount > 0),
           });
           await refresh();
         }}
