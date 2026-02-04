@@ -26,9 +26,10 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/hooks/auth/useMe';
 import { useArtistNotifications } from '@/hooks/artists/useArtistNotifications';
-import { Bell, CalendarDays, Compass, LayoutDashboard, Search, Settings, Ticket, UserRound, Users } from 'lucide-react';
+import { AlertCircle, Bell, CalendarDays, CheckCircle2, CircleDot, Compass, LayoutDashboard, Search, Settings, Ticket, UserRound, Users } from 'lucide-react';
 import { supabase } from '@/services/supabase/supabaseClient';
 import { formatCurrency } from '@/lib/utils';
+
 
 type NavItem = {
   label: string;
@@ -72,8 +73,7 @@ const navByRole: Record<string, NavSection[]> = {
     {
       label: 'Principal',
       items: [
-        { label: 'Dashboard', href: '/artists/dashboard', icon: LayoutDashboard },
-        { label: 'Bookings', href: '/bookings', icon: Ticket },
+        { label: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
         { label: 'Perfil', href: '/manager/profile', icon: UserRound },
       ],
     },
@@ -96,6 +96,7 @@ export function MainNav({ children }: { children: ReactNode }) {
   const { role, loading, profileId, profileName } = useMe();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [markingAll, setMarkingAll] = useState(false);
   const bellRef = useRef<HTMLDivElement | null>(null);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
@@ -244,15 +245,13 @@ export function MainNav({ children }: { children: ReactNode }) {
               <Image src="/favicon.ico" alt="Artime" width={28} height={28} className="h-7 w-7 rounded-md" />
               <span className="text-sm font-semibold text-foreground">ARTIME</span>
             </div>
-            <div className="hidden text-sm text-muted-foreground md:block">
-              {role ? `Rol: ${role}` : 'Sesión activa'}
-            </div>
+            <RoleBadge role={role} profileName={profileName} />
             <div className="relative ml-auto flex items-center gap-2">
               <Button
                 ref={bellRef}
                 variant="ghost"
                 size="icon"
-                className="relative"
+                className="relative rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm hover:bg-slate-50"
                 onClick={() => setShowDropdown((s) => !s)}
               >
                 <Bell className="size-5" />
@@ -265,19 +264,44 @@ export function MainNav({ children }: { children: ReactNode }) {
               </Button>
 
               {showDropdown && (
-                <div className="absolute right-4 top-14 w-80 rounded-lg border bg-popover p-3 text-sm shadow-lg">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="font-semibold">Notificaciones</span>
-                    <span className="text-xs text-muted-foreground">Últimas 5</span>
+                <div className="absolute right-0 top-14 w-[360px] rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-xl ring-1 ring-slate-200/80">
+                  <div className="mb-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-slate-500">Centro de alertas</p>
+                      <p className="text-base font-semibold text-slate-900">Notificaciones</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">{unreadCount} nuevas</span>
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-slate-700 hover:text-slate-900 disabled:text-slate-400"
+                        disabled={markingAll || unreadCount === 0}
+                        onClick={async () => {
+                          if (unreadCount === 0) return;
+                          setMarkingAll(true);
+                          try {
+                            const unread = latestNotifications.filter((n) => n.status === 'UNREAD');
+                            await Promise.all(unread.map((n) => markAsRead(n.id)));
+                          } finally {
+                            setMarkingAll(false);
+                          }
+                        }}
+                      >
+                        Marcar todo leído
+                      </button>
+                    </div>
                   </div>
                   {latestNotifications.length === 0 ? (
-                    <p className="py-4 text-xs text-muted-foreground">Sin notificaciones</p>
+                    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-center text-slate-500">
+                      <p className="text-sm font-semibold">Sin notificaciones</p>
+                      <p className="text-xs text-slate-500">Te avisaremos cuando llegue algo nuevo.</p>
+                    </div>
                   ) : (
                     <div className="space-y-2">
                       {latestNotifications.map((n) => (
-                        <button
+                        <NotificationItem
                           key={n.id}
-                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-left transition hover:border-primary/40 hover:bg-muted"
+                          notification={n}
                           onClick={async () => {
                             if (n.status === 'UNREAD') {
                               await markAsRead(n.id);
@@ -311,35 +335,7 @@ export function MainNav({ children }: { children: ReactNode }) {
                             }
                             setShowDropdown(false);
                           }}
-                        >
-                          <div className="text-sm font-semibold">
-                            {n.type === 'ARTIST_CALL_CREATED'
-                              ? 'Nueva convocatoria'
-                              : n.type === 'EVENT_INVITATION_CREATED'
-                                ? `${n.payload?.eventName ?? n.payload?.event?.name ?? 'Invitación a evento'}${n.payload?.eventName || n.payload?.event?.name ? ' te ha invitado a su evento' : ''}`
-                                : n.type === 'EVENT_INVITATION_ACCEPTED'
-                                  ? `${n.payload?.artistName ?? 'Un artista'} ha aceptado la invitación`
-                                  : n.type === 'EVENT_INVITATION_DECLINED'
-                                    ? `${n.payload?.artistName ?? 'Un artista'} ha rechazado la invitación`
-                                  : n.type}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {n.type === 'EVENT_INVITATION_ACCEPTED' || n.type === 'EVENT_INVITATION_DECLINED'
-                              ? n.payload?.eventName ?? ''
-                              : `${n.payload?.venueName ? `${n.payload.venueName} · ` : ''}${n.payload?.city ?? ''}`}
-                          </div>
-                          <div className="text-xs text-foreground">
-                            {n.payload?.date ?? ''}
-                            {(() => {
-                              const minP = n.payload?.offeredMinPrice;
-                              const maxP = n.payload?.offeredMaxPrice;
-                              if (minP && maxP) return ` · Presupuesto: ${formatCurrency(minP, 'EUR')} - ${formatCurrency(maxP, 'EUR')}`;
-                              if (maxP) return ` · Presupuesto hasta ${formatCurrency(maxP, 'EUR')}`;
-                              if (minP) return ` · Presupuesto desde ${formatCurrency(minP, 'EUR')}`;
-                              return '';
-                            })()}
-                          </div>
-                        </button>
+                        />
                       ))}
                     </div>
                   )}
@@ -395,5 +391,88 @@ export function MainNav({ children }: { children: ReactNode }) {
       </div>
       <BottomNav items={mainSections.flatMap((section) => section.items)} />
     </SidebarProvider>
+  );
+}
+
+function RoleBadge({ role, profileName }: { role?: string | null; profileName?: string | null }) {
+  if (!role) return null;
+  return (
+    <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm md:inline-flex">
+      <CircleDot className="h-3.5 w-3.5 text-slate-500" />
+      <span>{role}</span>
+      {profileName && <span className="text-slate-400">·</span>}
+      {profileName && <span className="text-slate-600">{profileName}</span>}
+    </div>
+  );
+}
+
+function NotificationItem({ notification, onClick }: { notification: any; onClick: () => void }) {
+  const isUnread = notification.status === 'UNREAD';
+  const requesterName = notification.payload?.eventName ?? notification.payload?.venueName;
+  const title =
+    notification.type === 'ARTIST_CALL_CREATED'
+      ? 'Nueva convocatoria'
+      : notification.type === 'EVENT_INVITATION_CREATED'
+        ? `${notification.payload?.eventName ?? notification.payload?.event?.name ?? 'Invitación a evento'}${notification.payload?.eventName || notification.payload?.event?.name ? ' te ha invitado a su evento' : ''}`
+        : notification.type === 'EVENT_INVITATION_ACCEPTED'
+          ? `${notification.payload?.artistName ?? 'Un artista'} ha aceptado la invitación`
+          : notification.type === 'EVENT_INVITATION_DECLINED'
+            ? `${notification.payload?.artistName ?? 'Un artista'} ha rechazado la invitación`
+            : notification.type === 'BOOKING_REQUEST'
+              ? `${requesterName ?? 'Un organizador'} te ha enviado una solicitud de contratación`
+              : notification.type === 'REPRESENTATION_REQUEST_CREATED'
+                ? 'Solicitud de representación'
+                : notification.type === 'REPRESENTATION_REQUEST_RESOLVED'
+                  ? `Respuesta a tu solicitud: ${notification.payload?.result ?? ''}`
+                  : notification.type;
+
+  const location =
+    notification.type === 'EVENT_INVITATION_ACCEPTED' || notification.type === 'EVENT_INVITATION_DECLINED'
+      ? notification.payload?.eventName ?? ''
+      : notification.type === 'BOOKING_REQUEST'
+        ? `${notification.payload?.eventName ?? notification.payload?.venueName ?? ''}`
+        : notification.type === 'REPRESENTATION_REQUEST_CREATED'
+          ? `${notification.payload?.managerName ?? 'Manager'} propone ${notification.payload?.commissionPercentage ?? '—'}%`
+          : `${notification.payload?.venueName ? `${notification.payload.venueName} · ` : ''}${notification.payload?.city ?? ''}`;
+
+  const budget = (() => {
+    const minP = notification.payload?.offeredMinPrice;
+    const maxP = notification.payload?.offeredMaxPrice;
+    if (minP && maxP) return `Presupuesto: ${formatCurrency(minP, 'EUR')} - ${formatCurrency(maxP, 'EUR')}`;
+    if (maxP) return `Presupuesto hasta ${formatCurrency(maxP, 'EUR')}`;
+    if (minP) return `Presupuesto desde ${formatCurrency(minP, 'EUR')}`;
+    return '';
+  })();
+
+  return (
+    <button
+      className={`w-full rounded-lg border px-3 py-3 text-left transition ${
+        isUnread
+          ? 'border-slate-300 bg-slate-50 hover:border-slate-400'
+          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+      }`}
+      onClick={onClick}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            {notification.type === 'EVENT_INVITATION_ACCEPTED' ? (
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            ) : notification.type === 'EVENT_INVITATION_DECLINED' ? (
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+            ) : (
+              <Bell className="h-4 w-4 text-slate-500" />
+            )}
+            <span className="text-sm font-semibold text-slate-900">{title}</span>
+          </div>
+          <p className="text-xs text-slate-600">{location}</p>
+          <p className="text-xs text-slate-500">
+            {notification.payload?.date ?? ''}
+            {budget ? ` · ${budget}` : ''}
+          </p>
+        </div>
+        {isUnread && <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-emerald-500" />}
+      </div>
+    </button>
   );
 }

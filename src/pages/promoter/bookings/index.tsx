@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Filter } from 'lucide-react';
+import { ArrowRight, Calendar, Filter, LayoutList, MapPin, Search, Ticket } from 'lucide-react';
 
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { withRole } from '@/components/auth/withRole';
@@ -49,6 +49,14 @@ const TABS = [
   },
 ];
 
+function groupByStatus(bookings: BookingDto[]) {
+  return bookings.reduce<Record<string, BookingDto[]>>((acc, booking) => {
+    if (!acc[booking.status]) acc[booking.status] = [];
+    acc[booking.status].push(booking);
+    return acc;
+  }, {});
+}
+
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString();
 }
@@ -59,6 +67,7 @@ function PromoterBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('PENDING');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     if (!user?.token) {
@@ -112,14 +121,11 @@ function PromoterBookingsPage() {
   }
 
   const countsByTab = useMemo(() => {
-    const map: Record<string, number> = {};
-    TABS.forEach((tab) => {
-      const base = bookings.filter((b) => tab.statuses.includes(b.status));
-      map[tab.key] = tab.key === 'CONFIRMED'
-        ? base.filter((b) => b.status !== 'PENDING').length
-        : base.length;
-    });
-    return map;
+    const grouped = groupByStatus(bookings);
+    return TABS.reduce<Record<string, number>>((acc, tab) => {
+      acc[tab.key] = tab.statuses.reduce((sum, status) => sum + (grouped[status]?.length ?? 0), 0);
+      return acc;
+    }, {});
   }, [bookings]);
 
   const filteredBookings = useMemo(() => {
@@ -139,96 +145,159 @@ function PromoterBookingsPage() {
       });
     }
 
-    return filtered;
-  }, [bookings, activeTab]);
+    if (!query.trim()) return filtered;
+
+    const q = query.toLowerCase();
+    return filtered.filter((b) => {
+      const name = b.eventName || b.artistName || b.venueName || b.artistId || '';
+      return name.toLowerCase().includes(q) || (b.city ?? '').toLowerCase().includes(q);
+    });
+  }, [bookings, activeTab, query]);
 
   return (
-    <main className="p-8 max-w-6xl mx-auto space-y-6">
-      <header className="flex flex-col gap-3">
-        <div>
-          <p className="text-sm font-medium text-slate-500">Bookings</p>
-          <h1 className="text-3xl font-semibold text-slate-900">Contrataciones del promotor</h1>
-          <p className="text-slate-600">Lista y estado de tus bookings como promotor.</p>
-        </div>
+    <main className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
+      <header className="space-y-2">
+        <p className="text-sm font-medium text-slate-500">Bookings</p>
+        <h1 className="text-3xl font-semibold text-slate-900">Contrataciones del promotor</h1>
+        <p className="text-slate-600">Estados claros, sin ruido.</p>
       </header>
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
-            {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium border transition ${activeTab === tab.key
-                  ? 'border-slate-900 bg-slate-900 text-white'
-                  : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'}`}
-              >
-                <span>{tab.label}</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'}`}>
-                  {countsByTab[tab.key] ?? 0}
-                </span>
-              </button>
-            ))}
-          </div>
-          <button className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50">
-            <Filter className="h-4 w-4" />
-            Filtros
-          </button>
+      <section className="flex flex-wrap items-center gap-3">
+        {TABS.map((tab) => (
+          <FilterChip
+            key={tab.key}
+            label={tab.label}
+            count={countsByTab[tab.key] ?? 0}
+            active={activeTab === tab.key}
+            onClick={() => setActiveTab(tab.key)}
+          />
+        ))}
+      </section>
+
+      <section className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm w-full sm:w-auto">
+          <Search className="h-4 w-4 text-slate-500" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por evento, artista o ciudad"
+            className="w-full sm:w-72 text-sm outline-none placeholder:text-slate-400"
+          />
         </div>
+        <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 shadow-sm">
+          <Filter className="h-4 w-4 text-slate-500" />
+          <span>{bookings.length} totales</span>
+          <span className="text-slate-400">•</span>
+          <span>{filteredBookings.length} en esta vista</span>
+        </div>
+      </section>
 
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <header className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
-            <div>
-              <h2 className="text-base font-semibold text-slate-900">{TABS.find((t) => t.key === activeTab)?.label}</h2>
-              <p className="text-sm text-slate-600">
-                {filteredBookings.length} {filteredBookings.length === 1 ? 'booking' : 'bookings'}
-              </p>
-            </div>
-          </header>
+      {bookings.length === 0 && (
+        <Card
+          title="Sin bookings"
+          subtitle="Cuando haya nuevas contrataciones aparecerán aquí"
+          icon={<LayoutList className="h-4 w-4 text-slate-600" />}
+        >
+          <p className="text-sm text-slate-600">Aún no tienes contrataciones activas.</p>
+        </Card>
+      )}
 
+      {bookings.length > 0 && (
+        <Card
+          title={TABS.find((t) => t.key === activeTab)?.label ?? 'Bookings'}
+          subtitle={`${filteredBookings.length} ${filteredBookings.length === 1 ? 'booking' : 'bookings'}`}
+          icon={<Ticket className="h-4 w-4 text-slate-600" />}
+        >
           <div className="divide-y divide-slate-100">
-            {filteredBookings.length === 0 && (
-              <div className="py-12 text-center text-slate-500">No hay bookings en esta sección.</div>
-            )}
-
-            {filteredBookings.map((booking, index) => (
-              <div
-                key={booking.id}
-                className="grid grid-cols-1 md:grid-cols-4 gap-4 px-4 py-4 hover:bg-slate-50 transition"
-                style={{ animationDelay: `${index * 40}ms` }}
-              >
-                <div>
-                  <p className="font-medium text-slate-900 truncate">{booking.artistName || booking.artistId || 'Artista sin nombre'}</p>
-                  <p className="text-sm text-slate-500 truncate">
-                    {booking.eventName
-                      ? `Evento: ${booking.eventName}`
-                      : booking.venueName
-                        ? `Sala: ${booking.venueName}`
-                        : 'Evento/Sala no indicado'}
-                    {` · Booking ${booking.id.slice(0, 8)}…`}
+            {filteredBookings.map((booking) => (
+              <div key={booking.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 py-4">
+                <div className="md:col-span-5">
+                  <p className="font-semibold text-slate-900">{booking.artistName || booking.artistId || 'Artista sin nombre'}</p>
+                  <p className="text-xs text-slate-500">Evento: {booking.eventName || 'Sin nombre'}</p>
+                  <p className="flex items-center gap-1 text-xs text-slate-500">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {booking.city ? `Ciudad: ${booking.city}` : 'Ciudad no indicada'}
                   </p>
                 </div>
-                <div className="text-sm text-slate-700">
-                  Fecha: {booking.start_date ? formatDate(booking.start_date) : '—'}
-                </div>
-                <div className="text-sm text-slate-700">
-                  Fee: {booking.totalAmount ? `${booking.totalAmount} ${booking.currency}` : '—'}
-                </div>
-                <div className="flex flex-col items-end gap-2 text-right">
-                  <div className="flex flex-col items-end gap-1">
-                    <StatusBadge status={booking.status} paidPercent={booking.paidPercent} />
+                <div className="md:col-span-3 text-sm text-slate-600 space-y-1">
+                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Fecha: {booking.start_date ? formatDate(booking.start_date) : 'No definida'}</span>
                   </div>
-                  <Link href={`/bookings/${booking.id}`} className="text-sm font-medium text-slate-900 hover:underline">
-                    Abrir booking
+                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Creado: {booking.createdAt ? formatDate(booking.createdAt) : '—'}</span>
+                  </div>
+                </div>
+                <div className="md:col-span-2 flex flex-col gap-2">
+                  <StatusBadge status={booking.status} paidPercent={booking.paidPercent ?? undefined} />
+                  <p className="text-xs text-slate-500">Fee: {booking.totalAmount ? `${booking.totalAmount} ${booking.currency}` : 'No definido'}</p>
+                </div>
+                <div className="md:col-span-2 text-right">
+                  <Link href={`/bookings/${booking.id}`} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 hover:text-slate-900">
+                    Ver booking
+                    <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </Card>
+      )}
     </main>
   );
 }
 
 export default withRole(PromoterBookingsPage, ['PROMOTER']);
+
+function Card({
+  title,
+  subtitle,
+  icon,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-4">
+      <header className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          {icon && <div className="rounded-lg bg-slate-100 p-2 text-slate-600">{icon}</div>}
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+            {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
+          </div>
+        </div>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function FilterChip({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition shadow-sm ${
+        active ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'
+      }`}
+    >
+      <span>{label}</span>
+      <span className={`text-xs ${active ? 'text-white/80' : 'text-slate-500'}`}>{count}</span>
+    </button>
+  );
+}

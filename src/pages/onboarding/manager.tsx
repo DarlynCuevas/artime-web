@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { useRouter } from 'next/router';
+import { BadgeCheck, CheckCircle2, HandCoins, Loader2, ShieldPlus } from 'lucide-react';
+
 import { useAuth } from '@/hooks/auth/useAuth';
+import { useMe } from '@/context/MeContext';
 
 export default function ManagerOnboardingPage() {
   const { user } = useAuth();
+  const { refresh } = useMe();
   const router = useRouter();
   const [name, setName] = useState('');
   const [commissionPercent, setCommissionPercent] = useState('');
@@ -16,7 +20,7 @@ export default function ManagerOnboardingPage() {
     e.preventDefault();
     setError(null);
     if (!user?.token) {
-      setError('Inicia sesion para continuar.');
+      setError('Inicia sesión para continuar.');
       return;
     }
     const percent = Number(commissionPercent);
@@ -45,6 +49,7 @@ export default function ManagerOnboardingPage() {
       });
       if (!res.ok) throw new Error('No se pudo completar el onboarding.');
 
+      refresh();
       await router.push('/manager/dashboard');
     } catch (err: any) {
       setError(err?.message ?? 'Error al guardar el perfil.');
@@ -54,50 +59,70 @@ export default function ManagerOnboardingPage() {
   };
 
   return (
-    <main className="p-8 max-w-2xl mx-auto space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">Onboarding Manager</h1>
-        <p className="text-slate-600">Completa tu perfil minimo para operar en ARTIME.</p>
-      </header>
-
-      <form onSubmit={onSubmit} className="space-y-6">
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium">Identidad</h2>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Nombre / agencia</label>
-            <input className="w-full rounded-md border border-slate-300 px-3 py-2" value={name} onChange={(e) => setName(e.target.value)} />
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-2xl space-y-8">
+        <header className="space-y-2 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg">
+            <ShieldPlus className="h-6 w-6" />
           </div>
+          <h1 className="text-3xl font-semibold text-slate-900">Onboarding Manager</h1>
+          <p className="text-sm text-slate-600">Configura tus términos antes de operar.</p>
+        </header>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
+          {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
+
+          <form onSubmit={onSubmit} className="space-y-6">
+            <Card title="Datos básicos" icon={<BadgeCheck className="h-4 w-4 text-slate-600" />}>
+              <Field label="Nombre">
+                <input className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Laura García" />
+              </Field>
+            </Card>
+
+            <Card title="Comisión" icon={<HandCoins className="h-4 w-4 text-slate-600" />}>
+              <Field label="Porcentaje (%)">
+                <input type="number" className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none" value={commissionPercent} onChange={(e) => setCommissionPercent(e.target.value)} placeholder="Ej. 12" />
+              </Field>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" checked={commissionAccepted} onChange={(e) => setCommissionAccepted(e.target.checked)} />
+                Confirmo que aplicaré este % de comisión
+              </label>
+            </Card>
+
+            {!hasToken && <p className="text-sm text-slate-500">Cargando sesión…</p>}
+
+            <button
+              type="submit"
+              disabled={loading || !hasToken}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-70"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {loading ? 'Guardando…' : 'Finalizar onboarding'}
+            </button>
+          </form>
         </section>
-
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium">Comisión</h2>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">% comision fija</label>
-            <input
-              type="number"
-              min="1"
-              className="w-full rounded-md border border-slate-300 px-3 py-2"
-              value={commissionPercent}
-              onChange={(e) => setCommissionPercent(e.target.value)}
-            />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" checked={commissionAccepted} onChange={(e) => setCommissionAccepted(e.target.checked)} />
-            Confirmo esta comisión
-          </label>
-        </section>
-
-        {!hasToken && <p className="text-sm text-slate-500">Cargando sesion...</p>}
-        {error && <p className="text-sm text-red-600">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading || !hasToken}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-        >
-          {loading ? 'Guardando...' : 'Finalizar onboarding'}
-        </button>
-      </form>
+      </div>
     </main>
+  );
+}
+
+function Card({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
+      <header className="flex items-center gap-2 text-slate-900 font-semibold">
+        {icon}
+        <h2>{title}</h2>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="space-y-1 text-sm text-slate-700 block">
+      <span className="font-medium text-slate-800">{label}</span>
+      {children}
+    </label>
   );
 }

@@ -1,26 +1,16 @@
 import Link from 'next/link';
-import { AlertCircle, ArrowRight, Calendar, Clock, CreditCard } from 'lucide-react';
+import { AlertCircle, ArrowRight, Calendar, ClipboardList, Coins, Clock, CreditCard, LayoutDashboard } from 'lucide-react';
 
 import { withRole } from '@/components/auth/withRole';
 import { useArtistDashboard } from '@/hooks/artists/useArtistDashboard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-
-type PendingActionType = 'payment' | 'response' | 'document';
-type PendingAction = {
-  id: string;
-  title: string;
-  description: string;
-  dueDate: string;
-  type: PendingActionType;
-  urgent: boolean;
-  amount?: number;
-};
+import { formatCurrency } from '@/lib/utils';
 
 function ArtistDashboardPage() {
   const { data, loading, error } = useArtistDashboard();
 
   if (loading) {
-    return <div className="p-8">Cargando dashboard…</div>;
+    return <div className="p-8 text-slate-700">Cargando dashboard…</div>;
   }
 
   if (error) {
@@ -28,56 +18,36 @@ function ArtistDashboardPage() {
   }
 
   if (!data) {
-    return <div className="p-8">No hay datos disponibles</div>;
+    return <div className="p-8 text-slate-700">No hay datos disponibles</div>;
   }
 
   const { metrics, upcomingBookings } = data;
-  const alerts = metrics.pendingActionsCount > 0
-    ? [{ id: 'pending', message: 'Tienes acciones pendientes que requieren tu atención.' }]
-    : [];
-
-  const pendingActions: PendingAction[] = metrics.pendingActionsCount > 0
-    ? [{
-      id: 'action-artist-1',
-      title: 'Revisa tus acciones pendientes',
-      description: 'Responde propuestas o sube documentos para avanzar.',
-      dueDate: new Date().toISOString(),
-      type: 'response',
-      urgent: metrics.pendingActionsCount > 2,
-      amount: undefined,
-    }]
-    : [];
+  const hasPending = metrics.pendingActionsCount > 0;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <main className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
       <header className="space-y-2">
         <p className="text-sm font-medium text-slate-500">Dashboard</p>
         <h1 className="text-3xl font-semibold text-slate-900">Control operativo del artista</h1>
-        <p className="text-slate-600">Gestiona tus bookings, ingresos y próximas fechas.</p>
+        <p className="text-slate-600">Sin métricas de ego, solo lo que necesitas para actuar.</p>
       </header>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Kpi title="Bookings activos" value={metrics.activeBookingsCount} />
-        <Kpi title="Próximos shows" value={metrics.upcomingBookingsCount} />
-        <Kpi title="Ingresos previstos" value={formatCurrency(metrics.expectedIncome, 'EUR')} />
-        <Kpi title="Ingresos confirmados" value={formatCurrency(metrics.confirmedIncome, 'EUR')} />
-        <Kpi title="Acciones pendientes" value={metrics.pendingActionsCount} />
-        <Kpi title="Ocupación mes" value={`${Math.round((metrics.occupancyRate ?? 0) * 100)}%`} />
-        <Kpi title="Días reservados" value={metrics.reservedDaysCount} />
-        <Kpi title="Días bloqueados" value={metrics.blockedDaysCount} />
-        <Kpi title="Ingreso total previsto" value={formatCurrency(metrics.forecastIncome, 'EUR')} />
+        <KpiCard icon={<LayoutDashboard className="h-4 w-4" />} label="Bookings activos" value={metrics.activeBookingsCount} />
+        <KpiCard icon={<Calendar className="h-4 w-4" />} label="Próximos shows" value={metrics.upcomingBookingsCount} />
+        <KpiCard icon={<Coins className="h-4 w-4" />} label="Ingresos previstos" value={formatCurrencySafe(metrics.expectedIncome)} />
+        <KpiCard icon={<Coins className="h-4 w-4" />} label="Ingresos confirmados" value={formatCurrencySafe(metrics.confirmedIncome)} tone="emerald" />
+        <KpiCard icon={<ClipboardList className="h-4 w-4" />} label="Acciones pendientes" value={metrics.pendingActionsCount} tone="amber" />
+        <KpiCard icon={<ClipboardList className="h-4 w-4" />} label="Ocupación mes" value={`${Math.round((metrics.occupancyRate ?? 0) * 100)}%`} />
+        <KpiCard icon={<ClipboardList className="h-4 w-4" />} label="Días reservados" value={metrics.reservedDaysCount} />
+        <KpiCard icon={<ClipboardList className="h-4 w-4" />} label="Ingreso total previsto" value={formatCurrencySafe(metrics.forecastIncome)} />
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-slate-900">Próximos shows</h2>
-              <span className="text-sm text-slate-500">{upcomingBookings.length} fechas</span>
-            </div>
-
+          <Card title="Próximos shows" subtitle={`${upcomingBookings.length} fechas`}>
             {upcomingBookings.length === 0 ? (
-              <div className="text-sm text-slate-500">No hay shows próximos.</div>
+              <p className="text-sm text-slate-500">No hay shows próximos.</p>
             ) : (
               <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 overflow-hidden">
                 {upcomingBookings.map((booking, index) => (
@@ -85,7 +55,7 @@ function ArtistDashboardPage() {
                     key={booking.bookingId}
                     href={`/bookings/${booking.bookingId}`}
                     className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50 transition group"
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    style={{ animationDelay: `${index * 40}ms` }}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3">
@@ -100,9 +70,7 @@ function ArtistDashboardPage() {
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="font-medium text-slate-900">
-                        {formatCurrency(booking.totalAmount, booking.currency)}
-                      </p>
+                      <p className="font-medium text-slate-900">{formatCurrency(booking.totalAmount, booking.currency)}</p>
                       <p className="text-xs text-slate-500">caché base</p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors shrink-0" />
@@ -119,105 +87,108 @@ function ArtistDashboardPage() {
                 Ver todos los bookings
               </Link>
             </div>
-          </section>
+          </Card>
         </div>
 
         <div className="space-y-6">
-          {alerts.length > 0 && (
-            <section className="rounded-xl border border-amber-200 bg-amber-50/80 shadow-sm p-5">
-              <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-amber-600" />
-                Alertas
-              </h3>
-              <div className="space-y-3">
-                {alerts.map((alert) => (
-                  <div key={alert.id} className="text-sm text-slate-700">
-                    {alert.message}
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+          <Card title="Acciones pendientes" subtitle={hasPending ? 'Requieren atención' : 'Sin pendientes'} tone={hasPending ? 'amber' : 'slate'}>
+            {hasPending ? (
+              <PendingActionItem
+                title="Revisa tus acciones"
+                description="Responde propuestas, firma o sube documentos para avanzar."
+                dueDate={new Date().toISOString()}
+                urgent={metrics.pendingActionsCount > 2}
+              />
+            ) : (
+              <p className="text-sm text-slate-500">No tienes acciones pendientes.</p>
+            )}
+          </Card>
 
-          <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
-            <h3 className="font-semibold text-slate-900 mb-4">Acciones pendientes</h3>
-            <div className="space-y-4">
-              {pendingActions.length === 0 && (
-                <p className="text-sm text-slate-500">No tienes acciones pendientes.</p>
-              )}
-
-              {pendingActions.map((action, index) => (
-                <div
-                  key={action.id}
-                  className="flex items-start gap-3 animate-[fadeIn_0.2s_ease]"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <div className={`p-2 rounded-lg ${action.urgent ? 'bg-red-50' : 'bg-slate-100'}`}>
-                    {action.type === 'payment' && (
-                      <CreditCard className={`h-4 w-4 ${action.urgent ? 'text-red-600' : 'text-slate-500'}`} />
-                    )}
-                    {action.type === 'response' && (
-                      <Clock className={`h-4 w-4 ${action.urgent ? 'text-red-600' : 'text-slate-500'}`} />
-                    )}
-                    {action.type === 'document' && (
-                      <AlertCircle className={`h-4 w-4 ${action.urgent ? 'text-red-600' : 'text-slate-500'}`} />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900">{action.title}</p>
-                    <p className="text-sm text-slate-500 truncate">{action.description}</p>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                      <span>Vence: {formatDate(action.dueDate)}</span>
-                      {action.amount && (
-                        <span className="font-medium text-slate-800">{formatCurrency(action.amount, 'EUR')}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+          <Card title="Resumen rápido" subtitle="Este mes" tone="slate">
+            <div className="space-y-3 text-sm text-slate-700">
+              <StatLine label="Bookings activos" value={metrics.activeBookingsCount} />
+              <StatLine label="Próximos shows" value={metrics.upcomingBookingsCount} />
+              <StatLine label="Volumen previsto" value={formatCurrencySafe(metrics.expectedIncome)} />
+              <StatLine label="Volumen confirmado" value={formatCurrencySafe(metrics.confirmedIncome)} />
+              <StatLine label="Días bloqueados" value={metrics.blockedDaysCount} />
             </div>
-          </section>
+          </Card>
+        </div>
+      </section>
+    </main>
+  );
+}
 
-          <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
-            <h3 className="font-semibold text-slate-900 mb-4">Resumen del mes</h3>
-            <div className="space-y-3 text-sm text-slate-600">
-              <StatRow label="Bookings activos" value={metrics.activeBookingsCount} />
-              <StatRow label="Próximos shows" value={metrics.upcomingBookingsCount} />
-              <StatRow label="Volumen previsto" value={formatCurrency(metrics.expectedIncome, 'EUR')} />
-              <StatRow label="Volumen confirmado" value={formatCurrency(metrics.confirmedIncome, 'EUR')} />
-            </div>
-          </section>
+export default withRole(ArtistDashboardPage, ['ARTIST']);
+
+function KpiCard({ icon, label, value, tone = 'slate' }: { icon: React.ReactNode; label: string; value: string | number; tone?: 'slate' | 'emerald' | 'amber' }) {
+  const toneClass = {
+    slate: 'bg-slate-900 text-white',
+    emerald: 'bg-emerald-600 text-white',
+    amber: 'bg-amber-500 text-white',
+  }[tone];
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="px-4 py-3 flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <div className={`px-4 py-4 ${toneClass}`}>
+        <p className="text-2xl font-semibold">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function Card({ title, subtitle, children, tone = 'slate' }: { title: string; subtitle?: string; children: React.ReactNode; tone?: 'slate' | 'amber' }) {
+  const borderClass = tone === 'amber' ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200 bg-white';
+  return (
+    <section className={`rounded-xl ${borderClass} shadow-sm p-5 space-y-4`}>
+      <header className="flex items-center justify-between gap-2">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+          {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+        </div>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function PendingActionItem({ title, description, dueDate, urgent }: { title: string; description: string; dueDate: string; urgent: boolean }) {
+  const toneIcon = urgent ? 'text-red-600' : 'text-slate-500';
+  const toneBg = urgent ? 'bg-red-50' : 'bg-slate-100';
+  return (
+    <div className="flex items-start gap-3">
+      <div className={`p-2 rounded-lg ${toneBg}`}>
+        <Clock className={`h-4 w-4 ${toneIcon}`} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-slate-900">{title}</p>
+        <p className="text-sm text-slate-500">{description}</p>
+        <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+          <span>Vence: {formatDate(dueDate)}</span>
         </div>
       </div>
     </div>
   );
 }
 
-export default withRole(ArtistDashboardPage, ['ARTIST']);
-
-function Kpi({ title, value }: { title: string; value: string | number }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm px-4 py-3">
-      <p className="text-sm text-slate-500">{title}</p>
-      <p className="text-2xl font-semibold text-slate-900 mt-1">{value}</p>
-    </div>
-  );
-}
-
-function StatRow({ label, value }: { label: string; value: string | number }) {
+function StatLine({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="flex items-center justify-between">
-      <span>{label}</span>
+      <span className="text-slate-600">{label}</span>
       <span className="font-medium text-slate-900">{value}</span>
     </div>
   );
 }
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleDateString();
+  return new Date(value).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-function formatCurrency(amount: number, currency: string) {
-  if (!amount && amount !== 0) return '—';
-  return new Intl.NumberFormat('es-ES', { style: 'currency', currency }).format(amount);
+function formatCurrencySafe(amount?: number | null, currency: string = 'EUR') {
+  if (amount === null || amount === undefined) return '—';
+  return formatCurrency(amount, currency);
 }

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
-import { ArrowLeft, Calendar, MapPin, Clock, CreditCard, FileText, AlertTriangle, MessageSquare, HandCoins, CheckCircle2, XCircle } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { ArrowLeft, ArrowRight, Calendar, MapPin, Clock, CreditCard, FileText, AlertTriangle, MessageSquare, HandCoins, CheckCircle2, XCircle } from 'lucide-react';
 
 import { CancelBookingModal } from '@/components/bookings/CancelBookingModal';
 import { NegotiationPanel } from '@/components/bookings/NegotiationPanel';
@@ -14,7 +14,6 @@ import { useMe } from '@/hooks/auth/useMe';
 import { Role } from '@/types/booking';
 import { withRole } from '@/components/auth/withRole';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
 import { cancelBooking } from '@/services/bookings/cancellations.service';
@@ -223,141 +222,84 @@ function BookingDetailPage() {
 
 
   return (
-    <main className="p-8 max-w-5xl mx-auto space-y-6">
-      <Link
-        href={backHref}
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
+    <main className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
+      <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors">
         <ArrowLeft className="h-4 w-4" />
         Volver a bookings
       </Link>
 
-      <div className="action-panel">
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
               <div>
-                <h1 className="text-2xl font-semibold text-foreground tracking-tight">{artistName ?? 'Artista'}</h1>
-                <p className="text-xs text-muted-foreground">Booking #{booking.id}</p>
+                <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{artistName ?? 'Artista'}</h1>
+                <p className="text-xs text-slate-500">Booking #{booking.id}</p>
               </div>
               <StatusBadge status={booking.status} />
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-slate-600">
               {artistName ?? 'Artista'} → {headerTargetName}
               {headerTargetMeta ? ` · ${headerTargetMeta}` : ''}
             </p>
           </div>
-          <div className="text-right text-sm text-muted-foreground">
-            <p className="font-medium text-foreground">Última actividad</p>
+          <div className="text-right text-sm text-slate-600">
+            <p className="font-medium text-slate-900">Última actividad</p>
             <p>{lastActivity ? formatRelativeTime(lastActivity) : 'Sin actividad'}</p>
           </div>
-
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+          <KpiCard label="Estado" value={booking.status} />
+          <KpiCard label="Importe" value={formatCurrency(bookingAmount, bookingCurrency)} />
+          <KpiCard
+            label="Pago"
+            value={paymentSummary ? (paymentSummary.percent >= 100 ? 'Pagado completo' : `Pagado ${paymentSummary.percent}%`) : '—'}
+            helper={paymentSummary ? `${formatCurrency(paymentSummary.paidAmount, bookingCurrency)} de ${formatCurrency(paymentSummary.totalAmount, bookingCurrency)}` : undefined}
+          />
+          <KpiCard label="Turno" value={hasTurn ? 'Tu turno' : handledByLabel ? `Turno de ${handledByLabel}` : 'En gestión'} />
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-       
-
-          <div className="action-panel">
-            <h2 className="font-semibold text-foreground mb-4">Detalles del evento</h2>
+          <Card title="Evento y condiciones" subtitle="Fuente: backend" icon={<Calendar className="h-4 w-4 text-slate-600" />}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Fecha</p>
-                  <p className="text-foreground">{formatDate(eventDate)}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Turno</p>
-                  <p className="text-foreground">{booking.handledByRole ?? '—'}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Sala</p>
-                  <p className="text-foreground">
-                    {venueName}
-                    {venueCity ? `, ${venueCity}` : ''}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <CreditCard className="h-5 w-5 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Importe</p>
-                  <p className="text-foreground">{formatCurrency(bookingAmount, bookingCurrency)}</p>
-                </div>
-              </div>
-              {paymentSummary && (
-                <div className="flex items-start gap-3">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Pago</p>
-                    <p className="text-foreground">
-                      {paymentSummary.percent >= 100
-                        ? 'Pagado completo'
-                        : `Pagado ${paymentSummary.percent}%`}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatCurrency(paymentSummary.paidAmount, bookingCurrency)} de{' '}
-                      {formatCurrency(paymentSummary.totalAmount, bookingCurrency)}
-                    </p>
-                  </div>
-                </div>
-              )}
+              <InfoRow label="Fecha" value={formatDate(eventDate)} icon={<Calendar className="h-4 w-4 text-slate-500" />} />
+              <InfoRow label="Turno" value={booking.handledByRole ?? '—'} icon={<Clock className="h-4 w-4 text-slate-500" />} />
+              <InfoRow label="Sala" value={`${venueName}${venueCity ? `, ${venueCity}` : ''}`} icon={<MapPin className="h-4 w-4 text-slate-500" />} />
+              <InfoRow label="Importe" value={formatCurrency(bookingAmount, bookingCurrency)} icon={<CreditCard className="h-4 w-4 text-slate-500" />} />
             </div>
 
-            {counterpartyHref && (
-              <div className="mt-4">
-                <Link
-                  href={counterpartyHref}
-                  className="text-sm font-medium text-primary hover:underline"
-                >
-                  {counterpartyLabel}
-                </Link>
+            {(counterpartyHref || promoterId) && (
+              <div className="flex flex-wrap gap-3 pt-4">
+                {counterpartyHref && (
+                  <Link href={counterpartyHref} className="inline-flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-slate-900">
+                    {counterpartyLabel}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                )}
+                {promoterId && role !== 'PROMOTER' && (
+                  <Link href={`/promoter/profile/${promoterId}`} className="inline-flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-slate-900">
+                    Ver promotor
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                )}
               </div>
             )}
-            {promoterId && role !== 'PROMOTER' && (
-              <div className="mt-2">
-                <Link
-                  href={`/promoter/profile/${promoterId}`}
-                  className="text-sm font-medium text-primary hover:underline"
-                >
-                  Ver perfil del promotor
-                </Link>
-              </div>
-            )}
-          </div>
+          </Card>
 
-          <div className="action-panel">
-            <h2 className="font-semibold text-foreground mb-4">Condiciones en negociación</h2>
+          <Card title="Condiciones en negociación" subtitle="Incluido / no incluido" icon={<CreditCard className="h-4 w-4 text-slate-600" />}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Propuesta inicial</p>
-                <p className="text-lg text-muted-foreground line-through">
-                  {formatCurrency(bookingData.conditions.originalPrice, bookingData.conditions.currency)}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Oferta actual</p>
-                <p className="text-2xl font-semibold text-foreground">
-                  {formatCurrency(bookingData.conditions.currentOffer, bookingData.conditions.currency)}
-                </p>
-              </div>
+              <InfoRow label="Propuesta inicial" value={formatCurrency(bookingData.conditions.originalPrice, bookingData.conditions.currency)} muted strike />
+              <InfoRow label="Oferta actual" value={formatCurrency(bookingData.conditions.currentOffer, bookingData.conditions.currency)} strong />
             </div>
-
-            <Separator className="my-4" />
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <p className="text-sm font-medium text-foreground mb-2">Incluido</p>
+                <p className="text-sm font-medium text-slate-800 mb-2">Incluido</p>
                 <ul className="space-y-1">
                   {bookingData.conditions.includes.map((item) => (
-                    <li key={item} className="text-sm text-muted-foreground flex items-center gap-2">
+                    <li key={item} className="text-sm text-slate-600 flex items-center gap-2">
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                       {item}
                     </li>
@@ -365,10 +307,10 @@ function BookingDetailPage() {
                 </ul>
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground mb-2">No incluido</p>
+                <p className="text-sm font-medium text-slate-800 mb-2">No incluido</p>
                 <ul className="space-y-1">
                   {bookingData.conditions.excludes.map((item) => (
-                    <li key={item} className="text-sm text-muted-foreground flex items-center gap-2">
+                    <li key={item} className="text-sm text-slate-600 flex items-center gap-2">
                       <XCircle className="h-3.5 w-3.5 text-red-500" />
                       {item}
                     </li>
@@ -376,17 +318,10 @@ function BookingDetailPage() {
                 </ul>
               </div>
             </div>
-          </div>
+          </Card>
 
-          {contract?.status === 'SIGNED' &&
-            (role === 'VENUE' || role === 'PROMOTER') &&
-            !['PAID_FULL', 'COMPLETED'].includes(booking.status) && (
-            <div className="action-panel">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold text-foreground">Pagos</h2>
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
-              </div>
-
+          {contract?.status === 'SIGNED' && (role === 'VENUE' || role === 'PROMOTER') && !['PAID_FULL', 'COMPLETED'].includes(booking.status) && (
+            <Card title="Pagos" subtitle="Procesa milestones pendientes" icon={<CreditCard className="h-4 w-4 text-slate-600" />}>
               {!clientSecret && (
                 <Button
                   variant="default"
@@ -394,52 +329,26 @@ function BookingDetailPage() {
                     try {
                       setPaymentError(null);
                       setPaymentInfo(null);
-                      const milestones = await getMilestonesForBooking(
-                        booking.id,
-                        user.token
-                      );
-
-                      const pending = milestones.find(
-                        (m: any) => m.props?.status === 'PENDING'
-                      );
-
+                      const milestones = await getMilestonesForBooking(booking.id, user.token);
+                      const pending = milestones.find((m: any) => m.props?.status === 'PENDING');
                       if (!pending) {
                         setPaymentError('No hay milestones pendientes');
                         return;
                       }
-
-                      const result = await createPaymentIntentForMilestone(
-                        pending.props.id,
-                        user.token
-                      );
-
+                      const result = await createPaymentIntentForMilestone(pending.props.id, user.token);
                       if (result.status === 'succeeded') {
-                        setPaymentInfo(
-                          'Pago confirmado en Stripe. Actualizando booking...'
-                        );
-                        await confirmPaymentForMilestone({
-                          bookingId: booking.id,
-                          milestoneId: pending.props.id,
-                          token: user.token,
-                        });
+                        setPaymentInfo('Pago confirmado en Stripe. Actualizando booking...');
+                        await confirmPaymentForMilestone({ bookingId: booking.id, milestoneId: pending.props.id, token: user.token });
                         await refresh();
                         return;
                       }
-
                       if (result.status) {
-                        setPaymentInfo(
-                          `Estado del PaymentIntent: ${result.status}`
-                        );
+                        setPaymentInfo(`Estado del PaymentIntent: ${result.status}`);
                       }
-
                       setMilestoneId(pending.props.id);
                       setClientSecret(result.clientSecret);
                     } catch (err) {
-                      setPaymentError(
-                        err instanceof Error
-                          ? err.message
-                          : 'Error creando PaymentIntent'
-                      );
+                      setPaymentError(err instanceof Error ? err.message : 'Error creando PaymentIntent');
                     }
                   }}
                 >
@@ -459,116 +368,88 @@ function BookingDetailPage() {
                 </Elements>
               )}
 
-              {paymentInfo && (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {paymentInfo}
-                </p>
-              )}
-              {paymentError && (
-                <p className="mt-2 text-sm text-red-600">{paymentError}</p>
-              )}
-            </div>
+              {paymentInfo && <p className="mt-2 text-sm text-slate-600">{paymentInfo}</p>}
+              {paymentError && <p className="mt-2 text-sm text-red-600">{paymentError}</p>}
+            </Card>
           )}
 
-       
-
-          <div className="action-panel">
-              <h2 className="font-semibold text-foreground mb-4">Historial de negociación</h2>
-              {negotiationLoading ? (
-                <p className="text-sm text-muted-foreground">Cargando historial…</p>
-              ) : timelineEvents.length === 0 ? (
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>Sin actividad de negociación.</p>
-                  {statusMessage && <p className="text-foreground">{statusMessage}</p>}
-                </div>
-              ) : (
-                <div className="relative">
-                  {!hasArtistResponse && statusMessage && (
-                    <div className="mb-4 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                      {statusMessage}
-                    </div>
-                  )}
-                  <div className="absolute left-[19px] top-2 bottom-2 w-px bg-border" />
-                  <div className="space-y-4">
-                    {timelineEvents.map((event, index) => (
-                      <div
-                        key={event.id}
-                        className="relative flex items-start gap-4"
-                        style={{ animationDelay: `${index * 50}ms` }}
-                      >
-                        <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center ${getTimelineColor(event)}`}>
-                          {getTimelineIcon(event)}
-                        </div>
-                        <div className="flex-1 min-w-0 pt-1">
-                          <div className="flex items-center justify-between">
-                            <p className="font-medium text-foreground">
-                              {event.isFinal ? 'Oferta final' : event.amount ? 'Propuesta' : 'Mensaje'}
-                            </p>
-                            {typeof event.amount === 'number' && (
-                              <p className="font-medium text-foreground">
-                                {formatCurrency(event.amount, bookingCurrency)}
-                              </p>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground capitalize">{event.role.toLowerCase()}</p>
-                          {event.note && (
-                            <p className="text-sm text-muted-foreground mt-1">{event.note}</p>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {formatShortDate(event.createdAt)} · {formatShortTime(event.createdAt)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+          <Card title="Historial de negociación" subtitle="Lo más reciente primero" icon={<MessageSquare className="h-4 w-4 text-slate-600" />}>
+            {negotiationLoading ? (
+              <p className="text-sm text-slate-500">Cargando historial…</p>
+            ) : timelineEvents.length === 0 ? (
+              <div className="space-y-2 text-sm text-slate-600">
+                <p>Sin actividad de negociación.</p>
+                {statusMessage && <p className="text-slate-900">{statusMessage}</p>}
+              </div>
+            ) : (
+              <div className="relative">
+                {!hasArtistResponse && statusMessage && (
+                  <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                    {statusMessage}
                   </div>
+                )}
+                <div className="absolute left-[19px] top-2 bottom-2 w-px bg-slate-200" />
+                <div className="space-y-4">
+                  {timelineEvents.map((event, index) => (
+                    <div key={event.id} className="relative flex items-start gap-4" style={{ animationDelay: `${index * 40}ms` }}>
+                      <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center ${getTimelineColor(event)}`}>
+                        {getTimelineIcon(event)}
+                      </div>
+                      <div className="flex-1 min-w-0 pt-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-slate-900">{event.isFinal ? 'Oferta final' : event.amount ? 'Propuesta' : 'Mensaje'}</p>
+                          {typeof event.amount === 'number' && (
+                            <p className="font-medium text-slate-900">{formatCurrency(event.amount, bookingCurrency)}</p>
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-500 capitalize">{event.role.toLowerCase()}</p>
+                        {event.note && <p className="text-sm text-slate-600 mt-1">{event.note}</p>}
+                        <p className="text-xs text-slate-500 mt-1">{formatShortDate(event.createdAt)} · {formatShortTime(event.createdAt)}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+          </Card>
 
-          <NegotiationPanel
-            bookingId={booking.id}
-            bookingStatus={booking.status}
-            userRole={role as any}
-            handledByRole={booking.handledByRole as any}
-            isHandledByOther={isHandledByOther}
-            onBookingUpdated={refresh}
-            refreshContract={refreshContract}
-            onCancelBooking={() => {
-              if (canCancelBooking) setShowCancelModal(true);
-            }}
-          />
+          <Card title="Acciones" subtitle="Turno y cancelación" icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}>
+            <p className="text-sm text-slate-700 mb-3">{actionTurnMessage}</p>
+            <NegotiationPanel
+              bookingId={booking.id}
+              bookingStatus={booking.status}
+              userRole={role as any}
+              handledByRole={booking.handledByRole as any}
+              isHandledByOther={isHandledByOther}
+              onBookingUpdated={refresh}
+              refreshContract={refreshContract}
+              onCancelBooking={() => {
+                if (canCancelBooking) setShowCancelModal(true);
+              }}
+            />
+          </Card>
         </div>
 
         <div className="space-y-6">
-
-          <div className="action-panel">
-            <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Estado contractual
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {hasContract ? `Contrato ${contract?.status ?? 'en preparación'}` : 'Aún no hay contrato generado.'}
-            </p>
+          <Card title="Contrato" subtitle="Estado contractual" icon={<FileText className="h-4 w-4 text-slate-600" />}>
+            <p className="text-sm text-slate-600">{hasContract ? `Contrato ${contract?.status ?? 'en preparación'}` : 'Aún no hay contrato generado.'}</p>
             {canSignContract && (
               <div className="mt-3">
-                <Button
-                  onClick={() => setShowSignContractModal(true)}
-                  variant="default"
-                >
+                <Button onClick={() => setShowSignContractModal(true)} variant="default">
                   Firmar contrato
                 </Button>
               </div>
             )}
-          </div>
+          </Card>
 
-
-          <div className="text-xs text-muted-foreground text-center">
-            Booking ID: {booking.id}
-          </div>
+          <Card title="Metadatos" subtitle="Auditoría" icon={<HandCoins className="h-4 w-4 text-slate-600" />}>
+            <div className="space-y-2 text-sm text-slate-700">
+              <InfoRow label="Booking ID" value={booking.id} />
+              <InfoRow label="Última actividad" value={lastActivity ? formatDateTime(lastActivity) : '—'} />
+            </div>
+          </Card>
         </div>
-      </div>
-
-      <Separator />
+      </section>
 
       {canCancelBooking && (
         <CancelBookingModal
@@ -608,6 +489,48 @@ function BookingDetailPage() {
 }
 
 export default withRole(BookingDetailPage, ['VENUE', 'PROMOTER', 'ARTIST', 'MANAGER']);
+
+function Card({ title, subtitle, icon, children, tone = 'slate' }: { title: string; subtitle?: string; icon?: ReactNode; children: ReactNode; tone?: 'slate' | 'amber' }) {
+  const borderClass = tone === 'amber' ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200 bg-white';
+  return (
+    <section className={`rounded-xl ${borderClass} shadow-sm p-5 space-y-3`}>
+      <header className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {icon}
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+            {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+          </div>
+        </div>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function KpiCard({ label, value, helper }: { label: string; value: string | number; helper?: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm px-4 py-3">
+      <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">{label}</p>
+      <p className="text-xl font-semibold text-slate-900">{value}</p>
+      {helper && <p className="text-xs text-slate-500 mt-0.5">{helper}</p>}
+    </div>
+  );
+}
+
+function InfoRow({ label, value, icon, muted = false, strong = false, strike = false }: { label: string; value: string | number; icon?: ReactNode; muted?: boolean; strong?: boolean; strike?: boolean }) {
+  return (
+    <div className="flex items-start gap-2">
+      {icon}
+      <div>
+        <p className="text-xs text-slate-500">{label}</p>
+        <p className={`${muted ? 'text-slate-500' : 'text-slate-900'} ${strong ? 'text-2xl font-semibold' : 'font-medium'} ${strike ? 'line-through' : ''}`}>
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 /* =========================
    FORMULARIO DE PAGO STRIPE

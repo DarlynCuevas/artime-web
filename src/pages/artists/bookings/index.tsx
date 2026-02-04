@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 
 import { StatusBadge } from '@/components/ui/StatusBadge';
 
 import { withRole } from '@/components/auth/withRole';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { ArrowRight, Calendar, Filter, LayoutList, MapPin, Search, Ticket } from 'lucide-react';
 
 type BookingDto = {
   id: string;
@@ -54,7 +55,7 @@ const TABS = [
     label: 'Histórico',
     statuses: ['COMPLETED', 'REJECTED', 'CANCELLED'],
   },
-];
+] as const;
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString();
@@ -65,7 +66,8 @@ function ArtistBookingsPage() {
   const [bookings, setBookings] = useState<BookingDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('PENDING');
+  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]['key']>('PENDING');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     if (!user?.token) {
@@ -105,183 +107,181 @@ function ArtistBookingsPage() {
       .finally(() => setLoading(false));
   }, [user?.token]);
 
-  if (loading) {
-    return <p style={{ padding: 40 }}>Cargando contrataciones…</p>;
-  }
-
-  if (error) {
-    return (
-      <p style={{ padding: 40, color: 'red' }}>
-        {error}
-      </p>
-    );
-  }
-
-  const bookingsByStatus = groupByStatus(bookings);
-
   const countsByTab = useMemo(() => {
-    const map: Record<string, number> = {};
-    TABS.forEach((tab) => {
-      const base = bookings.filter((b) => tab.statuses.includes(b.status));
-      map[tab.key] = tab.key === 'CONFIRMED'
-        ? base.filter((b) => b.status !== 'PENDING').length
-        : base.length;
-    });
-    return map;
+    const grouped = groupByStatus(bookings);
+    return TABS.reduce<Record<string, number>>((acc, tab) => {
+      acc[tab.key] = tab.statuses.reduce((sum, status) => sum + (grouped[status]?.length ?? 0), 0);
+      return acc;
+    }, {});
   }, [bookings]);
 
   const filteredBookings = useMemo(() => {
     const tab = TABS.find((t) => t.key === activeTab);
-    if (!tab) return [] as BookingDto[];
-    const base = bookings.filter((b) => tab.statuses.includes(b.status));
-    const filtered =
-      tab.key === 'CONFIRMED'
-        ? base.filter((b) => b.status !== 'PENDING')
-        : base;
+    const byTab = tab ? bookings.filter((b) => tab.statuses.includes(b.status)) : bookings;
+    if (!query.trim()) return byTab;
+    const q = query.toLowerCase();
+    return byTab.filter((b) => {
+      const name = b.eventName || b.venueName || b.venueId || '';
+      return name.toLowerCase().includes(q) || (b.city ?? '').toLowerCase().includes(q);
+    });
+  }, [activeTab, bookings, query]);
 
-    if (tab.key === 'PENDING') {
-      return [...filtered].sort((a, b) => {
-        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bTime - aTime;
-      });
-    }
+  if (loading) {
+    return <div className="p-8 text-slate-700">Cargando bookings…</div>;
+  }
 
-    return filtered;
-  }, [bookings, activeTab]);
+  if (error) {
+    return <div className="p-8 text-red-600">{error}</div>;
+  }
 
   return (
-    <main
-      style={{
-        maxWidth: 1100,
-        margin: '0 auto',
-        padding: '32px 24px',
-      }}
-    >
-      <header style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, marginBottom: 8 }}>Bookings</h1>
-        <p style={{ color: '#555' }}>
-          Vista del artista con estado de contrataciones, fee y sala.
-        </p>
+    <main className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
+      <header className="space-y-2">
+        <p className="text-sm font-medium text-slate-500">Bookings</p>
+        <h1 className="text-3xl font-semibold text-slate-900">Contrataciones del artista</h1>
+        <p className="text-slate-600">Estados claros, sin ruido.</p>
       </header>
 
-      <section style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+      <section className="flex flex-wrap items-center gap-3">
         {TABS.map((tab) => (
-          <button
+          <FilterChip
             key={tab.key}
+            label={tab.label}
+            count={countsByTab[tab.key] ?? 0}
+            active={activeTab === tab.key}
             onClick={() => setActiveTab(tab.key)}
-            style={{
-              padding: '10px 14px',
-              borderRadius: 8,
-              border: activeTab === tab.key ? '1px solid #0f172a' : '1px solid #ddd',
-              background: activeTab === tab.key ? '#0f172a' : '#fff',
-              color: activeTab === tab.key ? '#fff' : '#0f172a',
-              cursor: 'pointer',
-              minWidth: 160,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8,
-            }}
-          >
-            <span>{tab.label}</span>
-            <span
-              style={{
-                background: activeTab === tab.key ? 'rgba(255,255,255,0.2)' : '#f2f2f2',
-                color: activeTab === tab.key ? '#fff' : '#0f172a',
-                borderRadius: 20,
-                padding: '2px 10px',
-                fontSize: 12,
-                fontWeight: 600,
-              }}
-            >
-              {countsByTab[tab.key] ?? 0}
-            </span>
-          </button>
+          />
         ))}
       </section>
 
+      <section className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm w-full sm:w-auto">
+          <Search className="h-4 w-4 text-slate-500" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por venue o ciudad"
+            className="w-full sm:w-64 text-sm outline-none placeholder:text-slate-400"
+          />
+        </div>
+        <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 shadow-sm">
+          <Filter className="h-4 w-4 text-slate-500" />
+          <span>{bookings.length} totales</span>
+          <span className="text-slate-400">•</span>
+          <span>{filteredBookings.length} en esta vista</span>
+        </div>
+      </section>
+
       {bookings.length === 0 && (
-        <section
-          style={{
-            padding: 24,
-            border: '1px solid #ddd',
-            background: '#fafafa',
-          }}
+        <Card
+          title="Sin bookings"
+          subtitle="Cuando haya nuevas contrataciones aparecerán aquí"
+          icon={<LayoutList className="h-4 w-4 text-slate-600" />}
         >
-          <p>No hay bookings activos.</p>
-          <p style={{ color: '#666' }}>
-            Cuando tengas nuevas contrataciones aparecerán aquí.
-          </p>
-        </section>
+          <p className="text-sm text-slate-600">Aún no tienes contrataciones activas.</p>
+        </Card>
       )}
 
       {bookings.length > 0 && (
-        <section style={{ border: '1px solid #ddd' }}>
-          <header
-            style={{
-              padding: '16px',
-              borderBottom: '1px solid #ddd',
-              background: '#f5f5f5',
-            }}
-          >
-            <h2 style={{ fontSize: 16, marginBottom: 4 }}>{TABS.find((t) => t.key === activeTab)?.label}</h2>
-            <p style={{ fontSize: 13, color: '#555' }}>
-              {filteredBookings.length}{' '}
-              {filteredBookings.length === 1 ? 'booking' : 'bookings'}
-            </p>
-          </header>
-
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+        <Card
+          title={TABS.find((t) => t.key === activeTab)?.label ?? 'Bookings'}
+          subtitle={`${filteredBookings.length} ${filteredBookings.length === 1 ? 'booking' : 'bookings'}`}
+          icon={<Ticket className="h-4 w-4 text-slate-600" />}
+        >
+          <div className="divide-y divide-slate-100">
             {filteredBookings.map((booking) => (
-              <li
-                key={booking.id}
-                style={{
-                  padding: 16,
-                  borderTop: '1px solid #eee',
-                  display: 'grid',
-                  gridTemplateColumns: '2fr 2fr 2fr 1fr',
-                  gap: 16,
-                  alignItems: 'center',
-                }}
-              >
-                <div>
-                  <strong>
+              <div key={booking.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 py-4">
+                <div className="md:col-span-5">
+                  <p className="font-semibold text-slate-900">
                     {booking.eventName || booking.venueName || booking.venueId || 'Venue sin nombre'}
-                  </strong>
+                  </p>
                   {booking.eventName && (
-                    <div style={{ color: '#666', fontSize: 13 }}>
-                      Sala: {booking.venueName || booking.venueId || 'Sala sin nombre'}
-                    </div>
+                    <p className="text-xs text-slate-500">Sala: {booking.venueName || booking.venueId || 'Sala sin nombre'}</p>
                   )}
-                  <div style={{ color: '#666', fontSize: 13 }}>
+                  <p className="flex items-center gap-1 text-xs text-slate-500">
+                    <MapPin className="h-3.5 w-3.5" />
                     {booking.city ? `Ciudad: ${booking.city}` : 'Ciudad no indicada'}
+                  </p>
+                </div>
+                <div className="md:col-span-3 text-sm text-slate-600 space-y-1">
+                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Fecha: {booking.start_date ? formatDate(booking.start_date) : 'No definida'}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Creado: {booking.createdAt ? formatDate(booking.createdAt) : '—'}</span>
                   </div>
                 </div>
-
-                <div>
-                  Fecha: {booking.start_date ? formatDate(booking.start_date) : '—'}
+                <div className="md:col-span-2 flex flex-col gap-2">
+                  <StatusBadge status={booking.status} paidPercent={booking.paidPercent ?? undefined} />
+                  <p className="text-xs text-slate-500">Fee: {booking.totalAmount ? `${booking.totalAmount} ${booking.currency}` : 'No definido'}</p>
                 </div>
-
-                <div>
-                  Fee: {booking.totalAmount ? `${booking.totalAmount} ${booking.currency}` : '—'}
-                </div>
-
-                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                    <StatusBadge status={booking.status} paidPercent={booking.paidPercent} />
-                  </div>
-                  <Link href={`/bookings/${booking.id}`}>
-                    Abrir booking
+                <div className="md:col-span-2 text-right">
+                  <Link href={`/bookings/${booking.id}`} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 hover:text-slate-900">
+                    Ver booking
+                    <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
-        </section>
+          </div>
+        </Card>
       )}
     </main>
   );
 }
 
 export default withRole(ArtistBookingsPage, ['ARTIST']);
+
+function Card({
+  title,
+  subtitle,
+  icon,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-4">
+      <header className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          {icon && <div className="rounded-lg bg-slate-100 p-2 text-slate-600">{icon}</div>}
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+            {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
+          </div>
+        </div>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function FilterChip({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition shadow-sm ${
+        active ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'
+      }`}
+    >
+      <span>{label}</span>
+      <span className={`text-xs ${active ? 'text-white/80' : 'text-slate-500'}`}>{count}</span>
+    </button>
+  );
+}

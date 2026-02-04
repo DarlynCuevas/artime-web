@@ -18,6 +18,7 @@ export function useMe() {
   const [role, setRole] = useState<Role>(null);
   const [profileId, setProfileId] = useState<string | undefined>(undefined);
   const [profileName, setProfileName] = useState<string | undefined>(undefined);
+  const [refreshIndex, setRefreshIndex] = useState(0);
 
   useEffect(() => {
     console.log('[useMe] mount', { user, loading, role });
@@ -58,7 +59,13 @@ export function useMe() {
         console.log('Respuesta /me', data);
         const profiles = data?.profiles;
 
-        if (profiles?.venue) {
+        // Prioritize manager to avoid "acceso no autorizado" when the user also has other profiles.
+        if (profiles?.manager) {
+          setRole('MANAGER');
+          setProfileId(profiles.manager.id);
+          setProfileName(profiles.manager.name);
+          console.log('Set role MANAGER');
+        } else if (profiles?.venue) {
           setRole('VENUE');
           setProfileId(profiles.venue.id);
           setProfileName(profiles.venue.name);
@@ -68,11 +75,6 @@ export function useMe() {
           setProfileId(profiles.artist.id);
           setProfileName(profiles.artist.name);
           console.log('Set role ARTIST');
-        } else if (profiles?.manager) {
-          setRole('MANAGER');
-          setProfileId(profiles.manager.id);
-          setProfileName(profiles.manager.name);
-          console.log('Set role MANAGER');
         } else if (profiles?.promoter) {
           setRole('PROMOTER');
           setProfileId(profiles.promoter.id);
@@ -98,12 +100,13 @@ export function useMe() {
     return () => {
       console.log('[useMe] unmount');
     };
-  }, [user?.token]);
+  }, [user?.token, refreshIndex]);
 
   return {
     loading,
     role,
     profileId,
     profileName,
+    refresh: () => setRefreshIndex((i) => i + 1),
   };
 }

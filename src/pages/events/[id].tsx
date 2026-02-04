@@ -1,5 +1,8 @@
+import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { AlertTriangle, Calendar, CheckCircle2, Copy, Eye, EyeOff, Sparkles, Users } from 'lucide-react';
+
 import type { Event } from '@/types/event';
 import { eventsService } from '@/services/events/events.service';
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -45,9 +48,9 @@ export default function EventDetailPage() {
       .finally(() => setLoading(false));
   }, [id, user?.token]);
 
-  if (loading) return <p style={{ padding: 40 }}>Cargando evento…</p>;
-  if (error) return <p style={{ padding: 40, color: 'red' }}>{error}</p>;
-  if (!event) return <p>No se encontró el evento.</p>;
+  if (loading) return <div className="p-8 text-slate-700">Cargando evento…</div>;
+  if (error) return <div className="p-8 text-red-600">{error}</div>;
+  if (!event) return <div className="p-8 text-red-600">No se encontró el evento.</div>;
 
   const handleToggleVisibility = async () => {
     if (!user?.token) return;
@@ -166,312 +169,198 @@ export default function EventDetailPage() {
     ? acceptedInvitationsFiltered
     : acceptedInvitationsFiltered.slice(0, 5);
 
-  return (
-    <main
-      style={{
-        maxWidth: 1100,
-        margin: '0 auto',
-        padding: '32px 24px',
-      }}
-    >
-      {/* HEADER */}
-      <header style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 24, marginBottom: 8 }}>
-          {event.name}
-        </h1>
+  const visibilityLabel = event.visibility === 'PRIVATE' ? 'Hacer evento visible' : 'Ocultar evento';
 
-        <p style={{ color: '#555' }}>
-          {event.start_date
-            ? new Date(event.start_date).toLocaleDateString()
-            : 'Fecha por definir'}
-        </p>
+  return (
+    <main className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-slate-500">Evento</p>
+          <h1 className="text-3xl font-semibold text-slate-900">{event.name}</h1>
+          <p className="text-slate-600 flex items-center gap-2 text-sm">
+            <Calendar className="h-4 w-4" /> {event.start_date ? formatDate(event.start_date) : 'Fecha por definir'}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleDuplicateEvent}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+          >
+            <Copy className="h-4 w-4" /> Duplicar
+          </button>
+          <button
+            type="button"
+            onClick={handleToggleVisibility}
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
+          >
+            {event.visibility === 'PRIVATE' ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            {visibilityLabel}
+          </button>
+          {canSearchArtists && (
+            <button
+              type="button"
+              onClick={handleSearchArtists}
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            >
+              <Users className="h-4 w-4" /> Buscar artistas
+            </button>
+          )}
+        </div>
       </header>
 
-      {/* ESTADO Y PRESUPUESTO */}
-      <section
-        style={{
-          border: '1px solid #ddd',
-          padding: 16,
-          marginBottom: 32,
-          background: '#fafafa',
-        }}
-      >
-        <p>
-          <strong>Visibilidad:</strong> {event.visibility}
-        </p>
-        <p style={{ marginTop: 8 }}>
-          <strong>Estado:</strong> {event.status}
-        </p>
-        <p style={{ marginTop: 8 }}>
-          <strong>Presupuesto estimado:</strong>{' '}
-          {event.estimatedBudget ?? '—'}
-        </p>
-
-        <button
-          onClick={handleToggleVisibility}
-          style={{
-            marginTop: 8,
-            padding: '6px 10px',
-            border: '1px solid #000',
-            background: '#fff',
-            cursor: 'pointer',
-          }}
-        >
-          {event.visibility === 'PRIVATE'
-            ? 'Hacer evento visible'
-            : 'Ocultar evento'}
-        </button>
-
-        <button
-          onClick={handleDuplicateEvent}
-          style={{
-            marginTop: 8,
-            marginLeft: 8,
-            padding: '6px 10px',
-            border: '1px solid #000',
-            background: '#fff',
-            cursor: 'pointer',
-          }}
-        >
-          Duplicar evento
-        </button>
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card title="Visibilidad" icon={<Eye className="h-4 w-4 text-slate-600" />}>
+          <Pill label={event.visibility} tone="amber" />
+        </Card>
+        <Card title="Estado" icon={<Sparkles className="h-4 w-4 text-slate-600" />}>
+          <Pill label={event.status} tone="slate" />
+        </Card>
+        <Card title="Presupuesto estimado" icon={<CheckCircle2 className="h-4 w-4 text-slate-600" />}>
+          <p className="text-lg font-semibold text-slate-900">{event.estimatedBudget ?? '—'}</p>
+          <p className="text-xs text-slate-500">Referencia para ofertas</p>
+        </Card>
       </section>
 
-      {/* CTA: BUSCAR ARTISTAS */}
-      {canSearchArtists && (
-        <section
-          style={{
-            border: '1px solid #ddd',
-            padding: 16,
-            marginBottom: 32,
-            background: '#f5f7ff',
-          }}
-        >
-          <h2 style={{ fontSize: 16, marginBottom: 8 }}>
-            Buscar artistas para este evento
-          </h2>
-          <p style={{ color: '#555', marginBottom: 12 }}>
-            Filtra artistas disponibles y envía invitaciones al evento.
-          </p>
-          <button
-            onClick={handleSearchArtists}
-            style={{
-              padding: '8px 12px',
-              background: '#000',
-              color: '#fff',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            Buscar artistas para este evento
-          </button>
-        </section>
-      )}
-
-      {/* ARTISTAS INVITADOS */}
-      <section style={{ marginBottom: 32 }} id="event-invitations">
-        <h2 style={{ fontSize: 18, marginBottom: 16 }}>
-          Artistas invitados
-        </h2>
-
-        {invitationsLoading && <p>Cargando invitaciones…</p>}
+      <Card title="Artistas invitados" icon={<Users className="h-4 w-4 text-slate-600" />}>
+        {invitationsLoading && <p className="text-sm text-slate-600">Cargando invitaciones…</p>}
 
         {!invitationsLoading && invitations.length === 0 && (
-          <p>No hay invitaciones todavía.</p>
+          <p className="text-sm text-slate-600">No hay invitaciones todavía.</p>
         )}
 
         {!invitationsLoading && invitations.length > 0 && (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-              gap: 16,
-            }}
-          >
-            <div style={{ border: '1px solid #ddd', padding: 12 }}>
-              <h3 style={{ fontSize: 14, marginBottom: 8 }}>
-                Pendientes
-              </h3>
-              {pendingInvitations.length === 0 ? (
-                <p style={{ color: '#666', fontSize: 13 }}>
-                  Sin pendientes
-                </p>
-              ) : (
-                pendingInvitations.map((inv) => (
-                  <div key={inv.invitationId}>
-                    {artistNameById(inv.artistId)}
-                  </div>
-                ))
-              )}
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <InvitationColumn title="Pendientes" items={pendingInvitations} emptyCopy="Sin pendientes">
+              {(inv) => <span className="text-sm text-slate-700">{artistNameById(inv.artistId)}</span>}
+            </InvitationColumn>
 
-            <div style={{ border: '1px solid #ddd', padding: 12 }}>
-              <h3 style={{ fontSize: 14, marginBottom: 8 }}>
-                Aceptados
-              </h3>
-              {acceptedInvitationsFiltered.length === 0 ? (
-                <p style={{ color: '#666', fontSize: 13 }}>
-                  Sin aceptados
-                </p>
-              ) : (
-                visibleAcceptedInvitations.map((inv) => (
-                  <div
-                    key={inv.invitationId}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 8,
-                      marginBottom: 6,
-                    }}
-                  >
-                    <span>{artistNameById(inv.artistId)}</span>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {bookingByArtistId.has(inv.artistId) ? (
-                        <>
-                          <span style={{ fontSize: 12, color: '#333' }}>
-                            Booking {bookingByArtistId.get(inv.artistId)?.status}
-                          </span>
-                          <a
-                            href={`/bookings/${bookingByArtistId.get(inv.artistId)?.bookingId}`}
-                            style={{ fontSize: 12, border: '1px solid #ddd', padding: '4px 8px' }}
-                          >
-                            Ver booking
-                          </a>
-                        </>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleCreateBooking(inv.artistId)}
-                          style={{
-                            fontSize: 12,
-                            border: '1px solid #000',
-                            padding: '4px 8px',
-                            background: '#000',
-                            color: '#fff',
-                            cursor: 'pointer',
-                          }}
+            <InvitationColumn title="Aceptados" items={visibleAcceptedInvitations} emptyCopy="Sin aceptados">
+              {(inv) => (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-slate-700">{artistNameById(inv.artistId)}</span>
+                  <div className="flex items-center gap-2">
+                    {bookingByArtistId.has(inv.artistId) ? (
+                      <>
+                        <span className="text-xs text-slate-500">Booking {bookingByArtistId.get(inv.artistId)?.status}</span>
+                        <Link
+                          href={`/bookings/${bookingByArtistId.get(inv.artistId)?.bookingId}`}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-800 hover:bg-slate-50"
                         >
-                          Crear booking
-                        </button>
-                      )}
-                      <a
-                        href={`/artists/profile/${inv.artistId}?eventId=${event?.id ?? ''}&date=${eventDateForQuery}`}
-                        style={{ fontSize: 12, border: '1px solid #ddd', padding: '4px 8px' }}
+                          Ver booking
+                        </Link>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleCreateBooking(inv.artistId)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-slate-800"
                       >
-                        Ver perfil
-                      </a>
-                    </div>
+                        Crear booking
+                      </button>
+                    )}
+                    <Link
+                      href={`/artists/profile/${inv.artistId}?eventId=${event?.id ?? ''}&date=${eventDateForQuery}`}
+                      className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-800 hover:bg-slate-50"
+                    >
+                      Ver perfil
+                    </Link>
                   </div>
-                ))
+                </div>
               )}
-              {acceptedInvitationsFiltered.length > 5 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllAccepted((s) => !s)}
-                  style={{
-                    marginTop: 8,
-                    fontSize: 12,
-                    border: '1px solid #ddd',
-                    padding: '4px 8px',
-                    cursor: 'pointer',
-                    background: '#fff',
-                  }}
-                >
-                  {showAllAccepted ? 'Ver menos' : 'Ver más'}
-                </button>
-              )}
-            </div>
+            </InvitationColumn>
 
-            <div style={{ border: '1px solid #ddd', padding: 12 }}>
-              <h3 style={{ fontSize: 14, marginBottom: 8 }}>
-                Rechazados
-              </h3>
-              {uniqueRejectedItems.length === 0 ? (
-                <p style={{ color: '#666', fontSize: 13 }}>
-                  Sin rechazados
-                </p>
-              ) : (
-                uniqueRejectedItems.map((item) => (
-                  <div key={item.artistId}>
-                    {item.name}
-                  </div>
-                ))
-              )}
-            </div>
+            <InvitationColumn title="Rechazados" items={uniqueRejectedItems} emptyCopy="Sin rechazados">
+              {(item) => <span className="text-sm text-slate-700">{item.name}</span>}
+            </InvitationColumn>
           </div>
         )}
-      </section>
 
-      {/* LINE-UP (CONTRATACIONES DEL EVENTO) */}
-      <section>
-        <h2 style={{ fontSize: 18, marginBottom: 16 }}>
-          Line-up del evento
-        </h2>
+        {acceptedInvitationsFiltered.length > 5 && (
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setShowAllAccepted((s) => !s)}
+              className="text-xs font-medium text-slate-700 hover:text-slate-900"
+            >
+              {showAllAccepted ? 'Ver menos' : 'Ver más'}
+            </button>
+          </div>
+        )}
+      </Card>
 
-        {bookingsLoading && <p>Cargando contrataciones…</p>}
-        {bookingsError && (
-          <p style={{ color: 'red' }}>
-            No se pudieron cargar las contrataciones
-          </p>
+      <Card title="Line-up (bookings)" icon={<Sparkles className="h-4 w-4 text-slate-600" />}>
+        {bookingsLoading && <p className="text-sm text-slate-600">Cargando contrataciones…</p>}
+        {bookingsError && <p className="text-sm text-red-600">No se pudieron cargar las contrataciones</p>}
+
+        {!bookingsLoading && !bookingsError && eventBookings.length === 0 && (
+          <p className="text-sm text-slate-600">No hay contrataciones asociadas.</p>
         )}
 
-        {!bookingsLoading &&
-          !bookingsError &&
-          eventBookings.length === 0 && (
-            <p>No hay contrataciones asociadas.</p>
-          )}
-
-        {!bookingsLoading &&
-          !bookingsError &&
-          eventBookings.length > 0 && (
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-              }}
-            >
-              <thead>
-                <tr style={{ borderBottom: '1px solid #ccc' }}>
-                  <th align="left">Artista</th>
-                  <th align="left">Fecha</th>
-                  <th align="left">Estado</th>
-                  <th />
-                </tr>
-              </thead>
-
-              <tbody>
-                {eventBookings.map((booking) => (
-                  <tr
-                    key={booking.id}
-                    style={{ borderTop: '1px solid #eee' }}
-                  >
-                    <td style={{ padding: '12px 0' }}>
-                      {booking.artist?.name ??
-                        'Artista desconocido'}
-                    </td>
-
-                    <td>
-                      {booking.start_date
-                        ? new Date(
-                            booking.start_date,
-                          ).toLocaleDateString()
-                        : '—'}
-                    </td>
-
-                    <td>{booking.status}</td>
-
-                    <td align="right">
-                      <a href={`/bookings/${booking.id}`}>
-                        Ver contratación
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-      </section>
+        {!bookingsLoading && !bookingsError && eventBookings.length > 0 && (
+          <div className="divide-y divide-slate-100">
+            {eventBookings.map((booking) => (
+              <div key={booking.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 py-3">
+                <div className="md:col-span-5">
+                  <p className="font-medium text-slate-900">{booking.artist?.name ?? 'Artista desconocido'}</p>
+                  <p className="text-xs text-slate-500">Booking #{booking.id}</p>
+                </div>
+                <div className="md:col-span-3 text-sm text-slate-600 flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>{booking.start_date ? formatDate(booking.start_date) : '—'}</span>
+                </div>
+                <div className="md:col-span-2">
+                  <Pill label={booking.status} tone="slate" />
+                </div>
+                <div className="md:col-span-2 text-right">
+                  <Link href={`/bookings/${booking.id}`} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 hover:text-slate-900">
+                    Ver contratación
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </main>
   );
+}
+
+function Card({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
+      <header className="flex items-center gap-2">
+        {icon && <div className="rounded-lg bg-slate-100 p-2 text-slate-600">{icon}</div>}
+        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function Pill({ label, tone = 'slate' }: { label: string; tone?: 'slate' | 'amber' | 'emerald' }) {
+  const toneClass =
+    tone === 'amber'
+      ? 'bg-amber-100 text-amber-700'
+      : tone === 'emerald'
+        ? 'bg-emerald-100 text-emerald-700'
+        : 'bg-slate-100 text-slate-700';
+  return <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${toneClass}`}>{label}</span>;
+}
+
+function InvitationColumn<T>({ title, items, emptyCopy, children }: { title: string; items: T[]; emptyCopy: string; children: (item: T) => ReactNode }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 space-y-3">
+      <p className="text-sm font-semibold text-slate-900">{title}</p>
+      {items.length === 0 ? (
+        <p className="text-xs text-slate-500">{emptyCopy}</p>
+      ) : (
+        <div className="space-y-2">{items.map((item, idx) => <div key={idx}>{children(item)}</div>)}</div>
+      )}
+    </div>
+  );
+}
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString();
 }

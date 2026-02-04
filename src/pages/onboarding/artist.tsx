@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { useRouter } from 'next/router';
+import { CalendarDays, CheckCircle2, Guitar, Loader2, MapPin, Music2, ShieldPlus, Sparkles } from 'lucide-react';
+
 import { useAuth } from '@/hooks/auth/useAuth';
+import { useMe } from '@/context/MeContext';
 
 export default function ArtistOnboardingPage() {
   const { user } = useAuth();
+  const { refresh } = useMe();
   const router = useRouter();
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
@@ -48,6 +52,7 @@ export default function ArtistOnboardingPage() {
       });
       if (!res.ok) throw new Error('No se pudo completar el onboarding.');
 
+      refresh();
       await router.push('/artists/dashboard');
     } catch (err: any) {
       setError(err?.message ?? 'Error al guardar el perfil.');
@@ -57,64 +62,93 @@ export default function ArtistOnboardingPage() {
   };
 
   return (
-    <main className="p-8 max-w-2xl mx-auto space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">Onboarding Artista</h1>
-        <p className="text-slate-600">Completa tu perfil mínimo para operar en ARTIME.</p>
-      </header>
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-3xl space-y-8">
+        <header className="space-y-2 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg">
+            <ShieldPlus className="h-6 w-6" />
+          </div>
+          <h1 className="text-3xl font-semibold text-slate-900">Onboarding Artista</h1>
+          <p className="text-sm text-slate-600">Completa el mínimo para operar en Artime.</p>
+        </header>
 
-      <form onSubmit={onSubmit} className="space-y-6">
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium">Identidad básica</h2>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Nombre artístico</label>
-            <input className="w-full rounded-md border border-slate-300 px-3 py-2" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Ciudad base</label>
-            <input className="w-full rounded-md border border-slate-300 px-3 py-2" value={city} onChange={(e) => setCity(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Géneros (separados por coma)</label>
-            <input className="w-full rounded-md border border-slate-300 px-3 py-2" value={genresText} onChange={(e) => setGenresText(e.target.value)} />
-          </div>
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
+          {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
+
+          <form onSubmit={onSubmit} className="space-y-6">
+            <Card title="Identidad básica" icon={<Guitar className="h-4 w-4 text-slate-600" />}>
+              <Field label="Nombre artístico">
+                <input className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Luna Norte" />
+              </Field>
+              <Field label="Ciudad base">
+                <div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
+                  <MapPin className="h-4 w-4 text-slate-500" />
+                  <input className="w-full text-sm focus:outline-none" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ciudad" />
+                </div>
+              </Field>
+              <Field label="Géneros (separados por coma)">
+                <div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
+                  <Music2 className="h-4 w-4 text-slate-500" />
+                  <input className="w-full text-sm focus:outline-none" value={genresText} onChange={(e) => setGenresText(e.target.value)} placeholder="Indie, pop, electrónica" />
+                </div>
+              </Field>
+            </Card>
+
+            <Card title="Caché" icon={<Sparkles className="h-4 w-4 text-slate-600" />}>
+              <Field label="Caché base">
+                <input type="number" className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} placeholder="Ej. 500" />
+              </Field>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" checked={isNegotiable} onChange={(e) => setIsNegotiable(e.target.checked)} />
+                Caché negociable
+              </label>
+            </Card>
+
+            <Card title="Disponibilidad inicial" icon={<CalendarDays className="h-4 w-4 text-slate-600" />}>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input type="radio" checked={availability === 'available'} onChange={() => setAvailability('available')} />
+                Estoy disponible por defecto
+              </label>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input type="radio" checked={availability === 'block'} onChange={() => setAvailability('block')} />
+                Bloquear fechas ahora (lo haré después)
+              </label>
+            </Card>
+
+            {!hasToken && <p className="text-sm text-slate-500">Cargando sesión…</p>}
+
+            <button
+              type="submit"
+              disabled={loading || !hasToken}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-70"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {loading ? 'Guardando…' : 'Finalizar onboarding'}
+            </button>
+          </form>
         </section>
-
-        <section className="space-y-4">
-          <h2 className="text-lg font-medium">Caché</h2>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Caché base</label>
-            <input type="number" className="w-full rounded-md border border-slate-300 px-3 py-2" value={basePrice} onChange={(e) => setBasePrice(e.target.value)} />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" checked={isNegotiable} onChange={(e) => setIsNegotiable(e.target.checked)} />
-            Cache negociable
-          </label>
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="text-lg font-medium">Disponibilidad inicial</h2>
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input type="radio" checked={availability === 'available'} onChange={() => setAvailability('available')} />
-            Estoy disponible por defecto
-          </label>
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input type="radio" checked={availability === 'block'} onChange={() => setAvailability('block')} />
-            Bloquear fechas ahora (lo haré después)
-          </label>
-        </section>
-
-        {!hasToken && <p className="text-sm text-slate-500">Cargando sesion...</p>}
-        {error && <p className="text-sm text-red-600">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading || !hasToken}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-        >
-          {loading ? 'Guardando…' : 'Finalizar onboarding'}
-        </button>
-      </form>
+      </div>
     </main>
+  );
+}
+
+function Card({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
+      <header className="flex items-center gap-2 text-slate-900 font-semibold">
+        {icon}
+        <h2>{title}</h2>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="space-y-1 text-sm text-slate-700 block">
+      <span className="font-medium text-slate-800">{label}</span>
+      {children}
+    </label>
   );
 }

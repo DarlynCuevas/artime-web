@@ -28,6 +28,10 @@ export default function IndexPage() {
       router.replace('/events');
       return;
     }
+    if (role === 'MANAGER') {
+      router.replace('/manager/dashboard');
+      return;
+    }
 
     // Si user existe pero role es null, NO redirigir (esperar a que role se actualice)
   }, [user, role, authLoading, meLoading, router]);
