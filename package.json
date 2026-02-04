@@ -6,7 +6,9 @@
     "dev": "next dev -p 8080",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "use:render": "node -e \"const fs=require('fs');const p='.env.local';let s=fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const line='NEXT_PUBLIC_API_BASE_URL=https://artime-backend.onrender.com';if(s.match(/^NEXT_PUBLIC_API_BASE_URL=.*$/m)) s=s.replace(/^NEXT_PUBLIC_API_BASE_URL=.*$/m,line); else s=line+'\\n'+s;fs.writeFileSync(p,s);console.log('Set NEXT_PUBLIC_API_BASE_URL to Render');\"",
+    "use:local": "node -e \"const fs=require('fs');const p='.env.local';let s=fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const line='NEXT_PUBLIC_API_BASE_URL=http://localhost:3000';if(s.match(/^NEXT_PUBLIC_API_BASE_URL=.*$/m)) s=s.replace(/^NEXT_PUBLIC_API_BASE_URL=.*$/m,line); else s=line+'\\n'+s;fs.writeFileSync(p,s);console.log('Set NEXT_PUBLIC_API_BASE_URL to Local');\""
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
