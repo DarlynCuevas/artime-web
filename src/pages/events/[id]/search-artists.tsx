@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useArtists } from '@/hooks/artists/useArtists';
@@ -12,7 +12,6 @@ import type { Event } from '@/types/event';
 type Filters = {
   date?: string;
   budget?: string;
-  type?: string;
 };
 
 export default function EventSearchArtistsPage() {
@@ -28,9 +27,11 @@ export default function EventSearchArtistsPage() {
   const [filteredArtists, setFilteredArtists] = useState<any[]>([]);
   const [filtering, setFiltering] = useState(false);
   const [filterError, setFilterError] = useState<string | null>(null);
+  const [filterApplied, setFilterApplied] = useState(false);
   const [profilesById, setProfilesById] = useState<
     Record<string, any>
   >({});
+  const autoFilteredRef = useRef(false);
 
   useEffect(() => {
     if (!id || typeof id !== 'string') return;
@@ -50,7 +51,6 @@ export default function EventSearchArtistsPage() {
             data.estimatedBudget !== undefined
               ? String(data.estimatedBudget)
               : '',
-          type: data.type ?? '',
         });
       })
       .finally(() => setLoadingEvent(false));
@@ -75,10 +75,8 @@ export default function EventSearchArtistsPage() {
   }, [artists, user?.token]);
 
   const visibleArtists = useMemo(() => {
-    return filteredArtists.length > 0
-      ? filteredArtists
-      : artists;
-  }, [filteredArtists, artists]);
+    return filterApplied ? filteredArtists : artists;
+  }, [filterApplied, filteredArtists, artists]);
 
   async function handleInvite(artistId: string) {
     if (!event || !user?.token) return;
@@ -87,6 +85,35 @@ export default function EventSearchArtistsPage() {
       await eventsService.sendInvitation(event.id, artistId, user.token);
     } finally {
       setSendingId(null);
+    }
+  }
+
+  async function applyAvailabilityFilter(date: string) {
+    if (!user?.token) return;
+    setFiltering(true);
+    setFilterError(null);
+
+    try {
+      const checks = await Promise.all(
+        artists.map(async (artist) => {
+          const availability = await getArtistAvailability(
+            artist.id,
+            date,
+            date,
+            user.token
+          );
+          const day = availability?.days?.[0];
+          return day?.status === 'AVAILABLE' ? artist : null;
+        })
+      );
+      setFilteredArtists(checks.filter(Boolean) as any[]);
+      setFilterApplied(true);
+    } catch (err: any) {
+      setFilterError(
+        err?.message || 'No se pudo aplicar el filtro',
+      );
+    } finally {
+      setFiltering(false);
     }
   }
 
@@ -128,6 +155,7 @@ export default function EventSearchArtistsPage() {
       }
 
       setFilteredArtists(current);
+      setFilterApplied(true);
     } catch (err: any) {
       setFilterError(
         err?.message || 'No se pudo aplicar el filtro',
@@ -136,6 +164,14 @@ export default function EventSearchArtistsPage() {
       setFiltering(false);
     }
   }
+
+  useEffect(() => {
+    if (autoFilteredRef.current) return;
+    if (!user?.token || artists.length === 0) return;
+    if (!filters.date) return;
+    autoFilteredRef.current = true;
+    void applyAvailabilityFilter(filters.date);
+  }, [artists, filters.date, user?.token]);
 
   return (
     <main
@@ -199,18 +235,6 @@ export default function EventSearchArtistsPage() {
                 value={filters.budget ?? ''}
                 onChange={(e) =>
                   setFilters({ ...filters, budget: e.target.value })
-                }
-                style={{ padding: 8, border: '1px solid #ddd' }}
-              />
-            </label>
-            <label style={{ display: 'grid', gap: 6 }}>
-              <span style={{ fontSize: 12, color: '#666' }}>
-                Tipo de evento
-              </span>
-              <input
-                value={filters.type ?? ''}
-                onChange={(e) =>
-                  setFilters({ ...filters, type: e.target.value })
                 }
                 style={{ padding: 8, border: '1px solid #ddd' }}
               />
@@ -307,6 +331,11 @@ export default function EventSearchArtistsPage() {
                 </div>
               </div>
             ))}
+            {filterApplied && visibleArtists.length === 0 && (
+              <div style={{ color: '#666', fontSize: 14 }}>
+                No hay artistas disponibles para esta fecha.
+              </div>
+            )}
           </div>
         )}
       </section>
