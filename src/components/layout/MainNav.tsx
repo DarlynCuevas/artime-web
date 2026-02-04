@@ -319,6 +319,29 @@ export function MainNav({ children }: { children: ReactNode }) {
                               return;
                             }
 
+                              if (n.type === 'REPRESENTATION_REQUEST_CREATED') {
+                                const repRequestId =
+                                  n.payload?.requestId ||
+                                  n.payload?.request_id ||
+                                  n.payload?.id;
+
+                                // Forzar navegación incluso si falta requestId: muestra página genérica
+                                const path = repRequestId
+                                  ? `/artists/representation-requests/${repRequestId}`
+                                  : '/artists/representation-requests';
+
+                                const qs = new URLSearchParams();
+                                const mgrName = n.payload?.managerName || n.payload?.manager_name;
+                                const commission = n.payload?.commissionPercentage || n.payload?.commission_percentage;
+                                if (mgrName) qs.set('managerName', mgrName);
+                                if (commission) qs.set('commission', String(commission));
+                                const suffix = qs.toString();
+
+                                router.push(`${path}${suffix ? `?${suffix}` : ''}`);
+                                setShowDropdown(false);
+                                return;
+                              }
+
                             const invitationId = n.payload?.invitationId;
                             const eventId = n.payload?.eventId;
                             if (n.type === 'EVENT_INVITATION_ACCEPTED' || n.type === 'EVENT_INVITATION_DECLINED') {

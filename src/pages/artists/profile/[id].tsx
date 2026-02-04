@@ -118,7 +118,8 @@ export default function ArtistProfilePage() {
     artist?.representationStatus ?? (artist?.managerId ? 'ACTIVE' : 'NONE');
 
   const handleSendRepresentationRequest = async () => {
-    if (!artist || !user?.token) return;
+    const targetArtistId = artist?.id ?? id;
+    if (!targetArtistId || !user?.token) return;
     if (commission === '' || commission === null) {
       setRequestError('La comisión es obligatoria');
       return;
@@ -128,7 +129,7 @@ export default function ArtistProfilePage() {
     setRequestError(null);
 
     try {
-      await createRepresentationRequest({ artistId: artist.id, commissionPercentage: Number(commission), token: user.token });
+      await createRepresentationRequest({ artistId: targetArtistId, commissionPercentage: Number(commission), token: user.token });
       setShowRepModal(false);
       setRequestState('PENDING');
       loadArtist();
@@ -139,7 +140,8 @@ export default function ArtistProfilePage() {
   };
 
   return (
-    <main className="p-6 md:p-8 max-w-6xl mx-auto space-y-8">
+    <>
+      <main className="p-6 md:p-8 max-w-6xl mx-auto space-y-8">
       <Link
         href={eventId ? `/events/${eventId}/search-artists` : '/venues/discover'}
         className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors"
@@ -205,17 +207,6 @@ export default function ArtistProfilePage() {
             )}
           </div>
         </div>
-      </section>
-
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <KpiCard icon={<Wallet className="h-4 w-4" />} label="Caché base" value={formatCurrency(artist.basePrice, artist.currency)} />
-        <KpiCard icon={<MapPin className="h-4 w-4" />} label="Ciudad" value={artist.city || '—'} />
-        <KpiCard
-          icon={<ShieldCheck className="h-4 w-4" />}
-          label="Negociación"
-          value={artist.isNegotiable ? 'Negociable' : 'No negociable'}
-          tone={artist.isNegotiable ? 'amber' : 'emerald'}
-        />
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -319,6 +310,10 @@ export default function ArtistProfilePage() {
         </div>
 
         <div className="space-y-6">
+          <Card title="Material" icon={<Link2 className="h-4 w-4 text-slate-600" />}>
+            <p className="text-sm text-slate-600">Comparte links clave (EPK, tech rider, redes) al iniciar la propuesta.</p>
+          </Card>
+
           <Card title="Representación" icon={<ShieldCheck className="h-4 w-4 text-slate-600" />}>
             <div className="space-y-3 text-sm text-slate-700">
               <div className="flex items-center gap-3">
@@ -358,50 +353,24 @@ export default function ArtistProfilePage() {
               )}
             </div>
           </Card>
-
-          <Card title="Material" icon={<Link2 className="h-4 w-4 text-slate-600" />}>
-            <p className="text-sm text-slate-600">Comparte links clave (EPK, tech rider, redes) al iniciar la propuesta.</p>
-          </Card>
-
-          <Card
-            title={isManager || !roleKnown ? 'Solicitar representación' : 'Iniciar contratación'}
-            icon={isManager || !roleKnown ? <ShieldCheck className="h-4 w-4 text-slate-600" /> : <Ticket className="h-4 w-4 text-slate-600" />}
-          >
-            {isManager || !roleKnown ? (
-              <>
-                <p className="text-sm text-slate-600">
-                  La representación solo se activará si el artista acepta. Hasta entonces no podrás actuar en su nombre.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowRepModal(true)}
-                  className="w-full inline-flex items-center justify-center rounded-lg bg-slate-900 text-white px-4 py-2 text-sm font-medium hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
-                  disabled={!canRequestRepresentation || requestState === 'PENDING' || representationStatus === 'PENDING'}
-                >
-                  {requestState === 'PENDING' || representationStatus === 'PENDING' ? 'Solicitud pendiente' : 'Solicitar representación'}
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-slate-600">
-                  {isFromEvent
-                    ? 'La fecha del evento ya está definida. Solo puedes iniciar la contratación para ese día.'
-                    : 'Selecciona una fecha disponible para continuar con la propuesta.'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleBooking(eventDate)}
-                  className="w-full inline-flex items-center justify-center rounded-lg bg-slate-900 text-white px-4 py-2 text-sm font-medium hover:bg-slate-800 disabled:opacity-60"
-                  disabled={isFromEvent && !eventDate}
-                >
-                  Iniciar contratación
-                </button>
-              </>
-            )}
-          </Card>
         </div>
       </div>
     </main>
+
+      <RepresentationRequestModal
+        open={showRepModal}
+        onClose={() => {
+          setShowRepModal(false);
+          setRequestError(null);
+        }}
+        artistName={artist.name}
+        commission={commission}
+        setCommission={setCommission}
+        onConfirm={handleSendRepresentationRequest}
+        loading={requestState === 'SUBMITTING'}
+        error={requestError}
+      />
+    </>
   );
 }
 
