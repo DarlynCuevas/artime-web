@@ -55,17 +55,21 @@ export function ArtistCalendar({
   const selectedDay = selectedDate ? daysByDate.get(selectedDate) ?? null : null;
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
-      <CalendarLegend />
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-          gap: 8,
-        }}
-      >
-        {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map((d) => (
-          <div key={d} style={{ textAlign: 'center', fontWeight: 600, color: '#555' }}>
+    <div className="flex flex-col gap-10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-8 border-b border-slate-100">
+        <div className="flex items-center gap-3">
+          <div className="size-2 rounded-full bg-slate-900 animate-pulse" />
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Red de disponibilidad activa</p>
+        </div>
+        <CalendarLegend />
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 md:gap-3 lg:gap-4">
+        {['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'].map((d) => (
+          <div
+            key={d}
+            className="text-center text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 pb-4 select-none"
+          >
             {d}
           </div>
         ))}
@@ -78,12 +82,15 @@ export function ArtistCalendar({
           />
         ))}
       </div>
-      <BlockDayButton
-        selectedDate={selectedDate ?? null}
-        selectedStatus={selectedDay?.status ?? null}
-        onBlockDay={onBlockDay}
-        onUnblockDay={onUnblockDay}
-      />
+
+      <div className="pt-8 border-t border-slate-100">
+        <BlockDayButton
+          selectedDate={selectedDate ?? null}
+          selectedStatus={selectedDay?.status ?? null}
+          onBlockDay={onBlockDay}
+          onUnblockDay={onUnblockDay}
+        />
+      </div>
     </div>
   );
 }
