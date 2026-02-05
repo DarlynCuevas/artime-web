@@ -7,6 +7,31 @@ import { withRole } from '@/components/auth/withRole';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { usePromoterDashboard } from '@/hooks/promoter/usePromoterDashboard';
 
+const PAYMENT_STATUSES = ['CONTRACT_SIGNED', 'PAID_PARTIAL'] as const;
+
+type StatusCopy = {
+  label: string;
+  tone: string;
+};
+
+type PromoterActionBooking = {
+  id: string;
+  artistName: string;
+  eventName: string;
+  date?: string | null;
+  status: string;
+  actionLabel?: string;
+};
+
+const actionCopyByStatus: Record<string, StatusCopy> = {
+  PENDING: { label: 'Responder solicitud', tone: 'Confirma si quieres avanzar' },
+  NEGOTIATING: { label: 'Responder negociación', tone: 'Cierra o ajusta la oferta' },
+  FINAL_OFFER_SENT: { label: 'Responder oferta final', tone: 'Confirma condiciones finales' },
+  ACCEPTED: { label: 'Enviar o firmar contrato', tone: 'Formaliza el acuerdo' },
+  CONTRACT_SIGNED: { label: 'Programar pago', tone: 'Define calendario de pagos' },
+  PAID_PARTIAL: { label: 'Completar pago pendiente', tone: 'Liquida el importe restante' },
+};
+
 function PromoterDashboardPage() {
   const { data, loading, error } = usePromoterDashboard();
   const [statusFilter, setStatusFilter] = useState<'ALL' | string>('ALL');
@@ -42,6 +67,7 @@ function PromoterDashboardPage() {
     pendingActionsCount: 0,
   };
   const events = data.events ?? [];
+  const actionBookings: PromoterActionBooking[] = data.actionBookings ?? [];
 
   return (
     <main className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
@@ -66,7 +92,7 @@ function PromoterDashboardPage() {
             statusFilter={statusFilter}
             onFilterChange={setStatusFilter}
           />
-          <ActionBlock metrics={metrics} />
+          <ActionBlock metrics={metrics} actionBookings={actionBookings} />
         </div>
         <div className="space-y-6">
           <ProfileBlock profile={profile} />
@@ -168,8 +194,11 @@ function ActiveEventsBlock({
   );
 }
 
-function ActionBlock({ metrics }: { metrics: any }) {
-  const hasActions = (metrics.pendingActionsCount ?? 0) > 0;
+function ActionBlock({ metrics, actionBookings }: { metrics: any; actionBookings: PromoterActionBooking[] }) {
+  const hasMetrics = (metrics.pendingContractsCount ?? 0) > 0 || (metrics.pendingPaymentsCount ?? 0) > 0 || (metrics.pendingResponsesCount ?? 0) > 0;
+  const hasActionBookings = actionBookings.length > 0;
+  const hasActions = hasMetrics || hasActionBookings;
+
   return (
     <section className="rounded-xl border border-amber-200 bg-amber-50/70 shadow-sm p-5 space-y-3">
       <header className="flex items-center gap-2">
@@ -183,28 +212,93 @@ function ActionBlock({ metrics }: { metrics: any }) {
       {!hasActions ? (
         <p className="text-sm text-amber-800">No tienes acciones pendientes.</p>
       ) : (
-        <div className="space-y-2 text-sm text-slate-700">
-          {metrics.pendingContractsCount > 0 && (
-            <div className="flex items-center gap-2">
-              <FileSignature className="h-4 w-4 text-amber-700" />
-              <span>Contratos por firmar: {metrics.pendingContractsCount}</span>
+        <div className="space-y-4">
+          {hasMetrics && (
+            <div className="space-y-2 text-sm text-slate-700">
+              {metrics.pendingContractsCount > 0 && (
+                <div className="flex items-center gap-2">
+                  <FileSignature className="h-4 w-4 text-amber-700" />
+                  <span>Contratos por firmar: {metrics.pendingContractsCount}</span>
+                </div>
+              )}
+              {metrics.pendingPaymentsCount > 0 && (
+                <div className="flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-amber-700" />
+                  <span>Pagos pendientes: {metrics.pendingPaymentsCount}</span>
+                </div>
+              )}
+              {metrics.pendingResponsesCount > 0 && (
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-700" />
+                  <span>Respuestas pendientes: {metrics.pendingResponsesCount}</span>
+                </div>
+              )}
             </div>
           )}
-          {metrics.pendingPaymentsCount > 0 && (
-            <div className="flex items-center gap-2">
-              <Coins className="h-4 w-4 text-amber-700" />
-              <span>Pagos pendientes: {metrics.pendingPaymentsCount}</span>
-            </div>
-          )}
-          {metrics.pendingResponsesCount > 0 && (
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-700" />
-              <span>Respuestas pendientes: {metrics.pendingResponsesCount}</span>
-            </div>
-          )}
+
+          <ActionBookingsList bookings={actionBookings} />
         </div>
       )}
     </section>
+  );
+}
+
+function ActionBookingsList({ bookings }: { bookings: PromoterActionBooking[] }) {
+  return (
+    <div className="rounded-lg border border-amber-200 bg-white/70 p-4 space-y-3">
+      <header className="flex items-center justify-between gap-2">
+        <div>
+          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Crítico</p>
+          <h3 className="text-base font-semibold text-slate-900">Bookings que requieren acción</h3>
+          <p className="text-xs text-amber-800">Si el promotor no actúa aquí, nadie lo hará.</p>
+        </div>
+        <FileSignature className="h-5 w-5 text-amber-700" />
+      </header>
+
+      {bookings.length === 0 ? (
+        <p className="text-sm text-amber-800">Nada pendiente ahora mismo.</p>
+      ) : (
+        <div className="space-y-3">
+          {bookings.map((booking) => {
+            const copy = actionCopyByStatus[booking.status] ?? { label: booking.actionLabel ?? 'Revisar booking', tone: booking.actionLabel ?? 'Revisa el booking' };
+            const dateLabel = booking.date ? formatDate(booking.date) : 'Sin fecha';
+            const isPaymentPending = PAYMENT_STATUSES.includes(booking.status as (typeof PAYMENT_STATUSES)[number]);
+
+            return (
+              <div key={booking.id} className="rounded-lg border border-amber-200 bg-white px-4 py-3 flex items-start gap-3 shadow-sm">
+                <div className="mt-0.5">
+                  {isPaymentPending ? <Coins className="h-5 w-5 text-amber-700" /> : <CheckCircle2 className="h-5 w-5 text-amber-700" />}
+                </div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900 truncate">{booking.artistName}</p>
+                      <p className="text-xs text-slate-500 truncate">{booking.eventName}</p>
+                    </div>
+                    <StatusBadge status={booking.status} className="shrink-0" />
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <span>{dateLabel}</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className={isPaymentPending ? 'text-amber-700 font-semibold truncate' : 'text-amber-700 font-medium truncate'}>
+                      {isPaymentPending ? 'Pago pendiente' : copy.label}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500">{isPaymentPending ? 'Completa o programa el pago para seguir avanzando.' : copy.tone}</p>
+                </div>
+                <Link
+                  href={`/bookings/${booking.id}`}
+                  className="inline-flex items-center gap-1 text-sm font-medium text-amber-800 hover:text-amber-900"
+                >
+                  Abrir
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

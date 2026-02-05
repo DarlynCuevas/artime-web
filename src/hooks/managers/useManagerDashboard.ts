@@ -70,8 +70,6 @@ export function useManagerDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // TODO: Replace with real API call when backend endpoint is ready.
-    // For now we mock a deterministic snapshot so UI can ship.
     if (!user?.token) {
       setData(null);
       setLoading(false);
@@ -213,8 +211,32 @@ export function useManagerDashboard() {
       },
     };
 
-    setData(mock);
-    setLoading(false);
+    const fetchRepresented = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/managers/me/represented`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        if (!res.ok) throw new Error('No se pudieron cargar los artistas representados');
+        const represented = await res.json();
+
+        const artists = Array.isArray(represented) ? represented : [];
+        setData({
+          ...mock,
+          summary: {
+            ...mock.summary,
+            representedArtists: artists.length,
+          },
+          artists,
+        });
+      } catch (err: any) {
+        setError(err?.message ?? 'Error al cargar representados');
+        setData(mock);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRepresented();
   }, [user?.token]);
 
   return { data, loading, error };

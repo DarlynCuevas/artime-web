@@ -34,10 +34,8 @@ function ArtistDashboardPage() {
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard icon={<LayoutDashboard className="h-4 w-4" />} label="Bookings activos" value={metrics.activeBookingsCount} />
-        <KpiCard icon={<Calendar className="h-4 w-4" />} label="Próximos shows" value={metrics.upcomingBookingsCount} />
         <KpiCard icon={<Coins className="h-4 w-4" />} label="Ingresos previstos" value={formatCurrencySafe(metrics.expectedIncome)} />
         <KpiCard icon={<Coins className="h-4 w-4" />} label="Ingresos confirmados" value={formatCurrencySafe(metrics.confirmedIncome)} tone="emerald" />
-        <KpiCard icon={<ClipboardList className="h-4 w-4" />} label="Acciones pendientes" value={metrics.pendingActionsCount} tone="amber" />
         <KpiCard icon={<ClipboardList className="h-4 w-4" />} label="Ocupación mes" value={`${Math.round((metrics.occupancyRate ?? 0) * 100)}%`} />
         <KpiCard icon={<ClipboardList className="h-4 w-4" />} label="Días reservados" value={metrics.reservedDaysCount} />
         <KpiCard icon={<ClipboardList className="h-4 w-4" />} label="Ingreso total previsto" value={formatCurrencySafe(metrics.forecastIncome)} />

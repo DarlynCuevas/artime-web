@@ -190,17 +190,7 @@ export default function ArtistProfilePage() {
             </div>
           </div>
           <div className="hidden md:flex flex-col items-end gap-2 text-sm text-slate-600">
-            {isManager || !roleKnown ? (
-              <button
-                type="button"
-                onClick={() => setShowRepModal(true)}
-                disabled={!canRequestRepresentation || requestState === 'PENDING' || representationStatus === 'PENDING'}
-                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-              >
-                <ShieldCheck className="h-4 w-4" />
-                {requestState === 'PENDING' || representationStatus === 'PENDING' ? 'Solicitud pendiente' : 'Solicitar representación'}
-              </button>
-            ) : (
+            {(!isManager && roleKnown) && (
               <div className="inline-flex items-center gap-1 rounded-lg bg-slate-900 text-white px-3 py-2 text-sm font-medium">
                 <Ticket className="h-4 w-4" /> Iniciar booking
               </div>
@@ -319,7 +309,15 @@ export default function ArtistProfilePage() {
               <div className="flex items-center gap-3">
                 <RepresentationStatusBadge status={representationStatus} />
                 {artist.managerName && representationStatus === 'ACTIVE' && (
-                  <span className="text-sm text-slate-700">Manager: {artist.managerName}</span>
+                  <span className="text-sm text-slate-700">
+                    Manager:{' '}
+                    <Link
+                      href={artist.managerId ? `/manager/profile/${artist.managerId}` : '/manager/profile'}
+                      className="font-semibold text-slate-900 hover:text-slate-700 underline underline-offset-2"
+                    >
+                      {artist.managerName}
+                    </Link>
+                  </span>
                 )}
               </div>
 
