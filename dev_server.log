@@ -1,0 +1,12 @@
+
+> web@0.1.0 dev
+> next dev -p 8080
+
+▲ Next.js 16.1.1 (Turbopack)
+- Local:         http://localhost:8080
+- Network:       http://192.168.0.2:8080
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 1058ms
+ GET / 200 in 3.3s (compile: 3.2s, render: 94ms)
