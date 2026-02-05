@@ -28,7 +28,8 @@ export type ManagerDashboardData = {
       | 'FINAL_OFFER_SENT'
       | 'ACCEPTED'
       | 'CONTRACT_SENT'
-      | 'CONTRACT_SIGNED';
+      | 'CONTRACT_SIGNED'
+      | 'PAID_PARTIAL';
     actionLabel: string;
   }[];
   activeBookings: {
@@ -220,13 +221,28 @@ export function useManagerDashboard() {
         const represented = await res.json();
 
         const artists = Array.isArray(represented) ? represented : [];
+        let actionBookings: ManagerDashboardData['actionBookings'] = [];
+        try {
+          const actionRes = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/managers/me/action-bookings`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          });
+          if (actionRes.ok) {
+            const actionData = await actionRes.json();
+            actionBookings = Array.isArray(actionData) ? actionData : [];
+          }
+        } catch (e) {
+          // ignore action bookings error, keep UI running
+        }
+
         setData({
           ...mock,
           summary: {
             ...mock.summary,
             representedArtists: artists.length,
+            actionRequired: actionBookings.length,
           },
           artists,
+          actionBookings,
         });
       } catch (err: any) {
         setError(err?.message ?? 'Error al cargar representados');

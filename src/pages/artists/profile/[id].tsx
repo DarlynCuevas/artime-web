@@ -99,8 +99,7 @@ export default function ArtistProfilePage() {
 
   const handleBooking = (bookingDate?: string) => {
     if (!roleKnown || isManager) {
-      setShowRepModal(true);
-      return;
+      return; // Manager/no rol: no acción al clicar día
     }
     router.push(
       bookingDate

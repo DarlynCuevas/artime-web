@@ -346,14 +346,18 @@ export function MainNav({ children }: { children: ReactNode }) {
 
                             if (n.type === 'BOOKING_REQUEST') {
                               const bookingId = n.payload?.bookingId;
-                              const base =
-                                role === 'VENUE'
-                                  ? '/venues/bookings'
-                                  : role === 'PROMOTER'
-                                    ? '/promoter/bookings'
-                                    : '/artists/bookings';
-                              const target = bookingId ? `${base}?bookingId=${bookingId}` : base;
-                              router.push(target);
+                              if (role === 'MANAGER' && bookingId) {
+                                router.push(`/bookings/${bookingId}`);
+                              } else {
+                                const base =
+                                  role === 'VENUE'
+                                    ? '/venues/bookings'
+                                    : role === 'PROMOTER'
+                                      ? '/promoter/bookings'
+                                      : '/artists/bookings';
+                                const target = bookingId ? `${base}?bookingId=${bookingId}` : base;
+                                router.push(target);
+                              }
                               setShowDropdown(false);
                               return;
                             }

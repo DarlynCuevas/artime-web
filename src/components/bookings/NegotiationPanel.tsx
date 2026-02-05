@@ -76,10 +76,8 @@ export function NegotiationPanel({
         : isLastFromArtistSide;
 
   // Si el backend define el turno, úsalo como fuente principal.
-  const isMyTurn =
-    handledByRole
-      ? handledByRole === userRole
-      : !isHandledByOther && isMyTurnByMessages;
+  const lockedToOther = handledByRole && handledByRole !== userRole;
+  const isMyTurn = lockedToOther ? false : isMyTurnByMessages;
 
   const canWrite =
     ['PENDING', 'NEGOTIATING'].includes(bookingStatus) &&

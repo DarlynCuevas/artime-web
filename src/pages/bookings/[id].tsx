@@ -117,13 +117,9 @@ function BookingDetailPage() {
   // Control de ownership por rol
   const isArtistOwner = role === 'ARTIST' && profileId && booking.artistId === profileId;
   const isVenueOwner = role === 'VENUE' && profileId && booking.venueId === profileId;
-  const isManagerOwner = role === 'MANAGER' && profileId && booking.managerId === profileId;
+  const isManagerOwner = role === 'MANAGER' && booking.managerId === profileId;
   const isPromoterOwner = role === 'PROMOTER' && profileId && booking.promoterId === profileId;
-  const isAuthorized = isArtistOwner || isVenueOwner || isManagerOwner || isPromoterOwner;
-
-  if (!isAuthorized) {
-    return <p style={{ padding: 24 }}>Acceso no autorizado</p>;
-  }
+  // El backend ya controla el acceso por token/representación; no bloqueamos en frontend.
 
   const venueName = (booking as any).venue?.name ?? (booking as any).venueName ?? 'Sala';
   const venueCity = (booking as any).venue?.city ?? null;
@@ -132,10 +128,19 @@ function BookingDetailPage() {
   const promoterId = (booking as any).promoter?.id ?? booking.promoterId ?? null;
   const artistName = (booking as any).artist?.name ?? (booking as any).artistName ?? null;
 
-  // Si el backend define el turno, úsalo como fuente principal.
-  const hasTurn = booking.handledByRole
-    ? booking.handledByRole === role
-    : !isHandledByOther;
+  // Turno: si hay handler asignado a otra parte, no es tu turno; si no, se decide por últimos mensajes
+  const lastNegotiation = negotiationMessages.length > 0 ? negotiationMessages[negotiationMessages.length - 1] : null;
+  const lastSenderRole = lastNegotiation?.senderRole as Role | undefined;
+  const isArtistSide = role === 'ARTIST' || role === 'MANAGER';
+  const isLastFromArtistSide = lastSenderRole === 'ARTIST' || lastSenderRole === 'MANAGER';
+  const isLastFromVenueSide = lastSenderRole === 'VENUE' || lastSenderRole === 'PROMOTER';
+  const isMyTurnByMessages = !lastSenderRole
+    ? true
+    : isArtistSide
+      ? isLastFromVenueSide
+      : isLastFromArtistSide;
+  const lockedToOther = booking.handledByRole && booking.handledByRole !== role;
+  const hasTurn = lockedToOther ? false : isMyTurnByMessages;
 
   const statusMessage = getStatusMessage({
     bookingStatus: booking.status,
