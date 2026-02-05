@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Calendar, MapPin, Clock, CreditCard, FileText, AlertTriangle, MessageSquare, HandCoins, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Calendar, MapPin, Clock, CreditCard, FileText, AlertTriangle, MessageSquare, HandCoins, CheckCircle2, XCircle, ChevronLeft } from 'lucide-react';
 
 import { CancelBookingModal } from '@/components/bookings/CancelBookingModal';
 import { NegotiationPanel } from '@/components/bookings/NegotiationPanel';
@@ -110,16 +110,32 @@ function BookingDetailPage() {
       .catch(() => setPaymentSummary(null));
   }, [bookingId, booking?.totalAmount, user?.token]);
 
-  if (loading || meLoading) return <p style={{ padding: 24 }}>Cargando contratación…</p>;
-  if (!booking) return <p>No se pudo cargar la contratación.</p>;
-  if (!user) return null;
+  if (loading || meLoading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="flex items-center gap-2 text-slate-500 animate-pulse font-medium text-sm">
+          <Clock className="h-4 w-4" />
+          <span>Cargando detalle de contratación...</span>
+        </div>
+      </div>
+    );
+  }
 
-  // Control de ownership por rol
-  const isArtistOwner = role === 'ARTIST' && profileId && booking.artistId === profileId;
-  const isVenueOwner = role === 'VENUE' && profileId && booking.venueId === profileId;
-  const isManagerOwner = role === 'MANAGER' && booking.managerId === profileId;
-  const isPromoterOwner = role === 'PROMOTER' && profileId && booking.promoterId === profileId;
-  // El backend ya controla el acceso por token/representación; no bloqueamos en frontend.
+  if (!booking) {
+    return (
+      <div className="p-8">
+        <div className="max-w-md mx-auto rounded-xl border border-slate-200 bg-white p-6 text-center space-y-4">
+          <AlertTriangle className="h-8 w-8 text-slate-300 mx-auto" />
+          <p className="text-sm font-semibold text-slate-900">No se pudo cargar la contratación.</p>
+          <Link href="/bookings" className="text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-900">
+            Volver al listado
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   const venueName = (booking as any).venue?.name ?? (booking as any).venueName ?? 'Sala';
   const venueCity = (booking as any).venue?.city ?? null;
@@ -128,7 +144,6 @@ function BookingDetailPage() {
   const promoterId = (booking as any).promoter?.id ?? booking.promoterId ?? null;
   const artistName = (booking as any).artist?.name ?? (booking as any).artistName ?? null;
 
-  // Turno: si hay handler asignado a otra parte, no es tu turno; si no, se decide por últimos mensajes
   const lastNegotiation = negotiationMessages.length > 0 ? negotiationMessages[negotiationMessages.length - 1] : null;
   const lastSenderRole = lastNegotiation?.senderRole as Role | undefined;
   const isArtistSide = role === 'ARTIST' || role === 'MANAGER';
@@ -164,9 +179,8 @@ function BookingDetailPage() {
     ? 'Es tu turno para responder o cancelar la propuesta.'
     : handledByLabel
       ? `Turno de ${handledByLabel}.`
-      : 'La otra parte estÃ¡ gestionando este booking.';
+      : 'La otra parte está gestionando este booking.';
 
-  const hasContract = Boolean(contract);
   const canSignContract =
     Boolean(contract) &&
     contract?.status === 'DRAFT' &&
@@ -214,8 +228,6 @@ function BookingDetailPage() {
     },
   };
 
-
-
   const headerTargetName = eventName ?? venueName;
   const headerTargetMeta = eventName ? null : venueCity;
 
@@ -225,68 +237,86 @@ function BookingDetailPage() {
     : (artistId ? `/artists/profile/${artistId}` : null);
   const counterpartyLabel = isArtistSideViewer ? 'Ver sala' : 'Ver artista';
 
-
   return (
-    <main className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
-      <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors">
-        <ArrowLeft className="h-4 w-4" />
+    <main className="p-6 md:p-10 max-w-7xl mx-auto space-y-10">
+      <Link href={backHref} className="inline-flex items-center gap-2 text-[13px] font-bold text-slate-500 hover:text-slate-900 transition-colors uppercase tracking-widest">
+        <ChevronLeft className="h-4 w-4" />
         Volver a bookings
       </Link>
 
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div>
-                <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{artistName ?? 'Artista'}</h1>
-                <p className="text-xs text-slate-500">Booking #{booking.id}</p>
+      <section className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row items-start justify-between gap-6">
+          <div className="space-y-4">
+            <div className="flex flex-col gap-1">
+               <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-slate-900" />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Artime OS · Operativo</p>
               </div>
-              <StatusBadge status={booking.status} />
+              <div className="flex flex-wrap items-center gap-4">
+                <h1 className="text-3xl font-black tracking-tight text-slate-900">{artistName ?? 'Artista'}</h1>
+                <StatusBadge status={booking.status} className="scale-110" />
+              </div>
+              <p className="text-sm font-semibold text-slate-500">Booking #{booking.id}</p>
             </div>
-            <p className="text-sm text-slate-600">
-              {artistName ?? 'Artista'} → {headerTargetName}
-              {headerTargetMeta ? ` · ${headerTargetMeta}` : ''}
-            </p>
+
+            <div className="flex items-center gap-3 text-sm font-bold text-slate-700 bg-slate-50 px-3 py-1.5 rounded-lg w-fit">
+              <span className="text-slate-400">{artistName ?? 'Artista'}</span>
+              <ArrowRight className="h-3.5 w-3.5 text-slate-300" />
+              <span>{headerTargetName}{headerTargetMeta ? `, ${headerTargetMeta}` : ''}</span>
+            </div>
           </div>
-          <div className="text-right text-sm text-slate-600">
-            <p className="font-medium text-slate-900">Última actividad</p>
-            <p>{lastActivity ? formatRelativeTime(lastActivity) : 'Sin actividad'}</p>
+
+          <div className="text-right md:pt-4">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Última actividad</p>
+            <div className="flex items-center justify-end gap-2 text-slate-900 font-bold">
+              <Clock className="h-4 w-4 text-slate-400" />
+              <span>{lastActivity ? formatRelativeTime(lastActivity) : 'Sin actividad'}</span>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-          <KpiCard label="Estado" value={booking.status} />
-          <KpiCard label="Importe" value={formatCurrency(bookingAmount, bookingCurrency)} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100 bg-slate-50/30">
+          <KpiCard label="Importe acordado" value={formatCurrency(bookingAmount, bookingCurrency)} />
           <KpiCard
-            label="Pago"
-            value={paymentSummary ? (paymentSummary.percent >= 100 ? 'Pagado completo' : `Pagado ${paymentSummary.percent}%`) : '—'}
-            helper={paymentSummary ? `${formatCurrency(paymentSummary.paidAmount, bookingCurrency)} de ${formatCurrency(paymentSummary.totalAmount, bookingCurrency)}` : undefined}
+            label="Estado de pago"
+            value={paymentSummary ? `${paymentSummary.percent}%` : '—'}
+            helper={paymentSummary ? `${formatCurrency(paymentSummary.paidAmount, bookingCurrency)} liquidados` : undefined}
+            tone={paymentSummary?.percent === 100 ? 'emerald' : 'slate'}
           />
-          <KpiCard label="Turno" value={hasTurn ? 'Tu turno' : handledByLabel ? `Turno de ${handledByLabel}` : 'En gestión'} />
+          <KpiCard
+            label="Turno operativo"
+            value={hasTurn ? 'Tu turno' : handledByLabel ? handledByLabel : 'En gestión'}
+            tone={hasTurn ? 'amber' : 'slate'}
+          />
+          <KpiCard
+            label="Fecha del evento"
+            value={eventDate ? new Date(eventDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '—'}
+            helper={eventDate ? new Date(eventDate).getFullYear().toString() : undefined}
+          />
         </div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card title="Evento y condiciones" subtitle="Fuente: backend" icon={<Calendar className="h-4 w-4 text-slate-600" />}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InfoRow label="Fecha" value={formatDate(eventDate)} icon={<Calendar className="h-4 w-4 text-slate-500" />} />
-              <InfoRow label="Turno" value={booking.handledByRole ?? '—'} icon={<Clock className="h-4 w-4 text-slate-500" />} />
-              <InfoRow label="Sala" value={`${venueName}${venueCity ? `, ${venueCity}` : ''}`} icon={<MapPin className="h-4 w-4 text-slate-500" />} />
-              <InfoRow label="Importe" value={formatCurrency(bookingAmount, bookingCurrency)} icon={<CreditCard className="h-4 w-4 text-slate-500" />} />
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div className="lg:col-span-8 space-y-10">
+          <Card title="Evento y condiciones" subtitle="Detalles técnicos y de ubicación" icon={<Calendar className="h-4 w-4" />}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+              <InfoRow label="Fecha del evento" value={formatDate(eventDate)} icon={<Calendar className="h-4 w-4 text-slate-400" />} />
+              <InfoRow label="Responsable actual" value={booking.handledByRole ?? 'No asignado'} icon={<Clock className="h-4 w-4 text-slate-400" />} />
+              <InfoRow label="Lugar de actuación" value={`${venueName}${venueCity ? `, ${venueCity}` : ''}`} icon={<MapPin className="h-4 w-4 text-slate-400" />} />
+              <InfoRow label="Caché pactado" value={formatCurrency(bookingAmount, bookingCurrency)} icon={<CreditCard className="h-4 w-4 text-slate-400" />} />
             </div>
 
             {(counterpartyHref || promoterId) && (
-              <div className="flex flex-wrap gap-3 pt-4">
+              <div className="flex flex-wrap gap-4 pt-2">
                 {counterpartyHref && (
-                  <Link href={counterpartyHref} className="inline-flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-slate-900">
+                  <Link href={counterpartyHref} className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-slate-200 bg-white text-[13px] font-bold text-slate-700 hover:border-slate-900 hover:text-slate-900 transition-all shadow-sm">
                     {counterpartyLabel}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 )}
                 {promoterId && role !== 'PROMOTER' && (
-                  <Link href={`/promoter/profile/${promoterId}`} className="inline-flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-slate-900">
-                    Ver promotor
+                  <Link href={`/promoter/profile/${promoterId}`} className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-slate-200 bg-white text-[13px] font-bold text-slate-700 hover:border-slate-900 hover:text-slate-900 transition-all shadow-sm">
+                    Ver perfil de promotor
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 )}
@@ -294,29 +324,39 @@ function BookingDetailPage() {
             )}
           </Card>
 
-          <Card title="Condiciones en negociación" subtitle="Incluido / no incluido" icon={<CreditCard className="h-4 w-4 text-slate-600" />}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-              <InfoRow label="Propuesta inicial" value={formatCurrency(bookingData.conditions.originalPrice, bookingData.conditions.currency)} muted strike />
-              <InfoRow label="Oferta actual" value={formatCurrency(bookingData.conditions.currentOffer, bookingData.conditions.currency)} strong />
+          <Card title="Condiciones en negociación" subtitle="Servicios incluidos y exclusiones" icon={<CreditCard className="h-4 w-4" />}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 border-b border-slate-50 pb-8">
+              <InfoRow label="Oferta inicial" value={formatCurrency(bookingData.conditions.originalPrice, bookingData.conditions.currency)} muted strike />
+              <InfoRow label="Valor actual" value={formatCurrency(bookingData.conditions.currentOffer, bookingData.conditions.currency)} strong />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <p className="text-sm font-medium text-slate-800 mb-2">Incluido</p>
-                <ul className="space-y-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="space-y-4">
+                <p className="text-[11px] font-black uppercase tracking-widest text-emerald-700 flex items-center gap-2">
+                   <div className="h-1 w-4 bg-emerald-500 rounded-full" />
+                   Incluido en el fee
+                </p>
+                <ul className="space-y-3">
                   {bookingData.conditions.includes.map((item) => (
-                    <li key={item} className="text-sm text-slate-600 flex items-center gap-2">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    <li key={item} className="text-[13px] text-slate-600 flex items-center gap-3 font-medium">
+                      <div className="h-5 w-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="h-3 w-3" />
+                      </div>
                       {item}
                     </li>
                   ))}
                 </ul>
               </div>
-              <div>
-                <p className="text-sm font-medium text-slate-800 mb-2">No incluido</p>
-                <ul className="space-y-1">
+              <div className="space-y-4">
+                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                   <div className="h-1 w-4 bg-slate-200 rounded-full" />
+                   Fuera del acuerdo
+                </p>
+                <ul className="space-y-3">
                   {bookingData.conditions.excludes.map((item) => (
-                    <li key={item} className="text-sm text-slate-600 flex items-center gap-2">
-                      <XCircle className="h-3.5 w-3.5 text-red-500" />
+                    <li key={item} className="text-[13px] text-slate-500 flex items-center gap-3 font-medium">
+                      <div className="h-5 w-5 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center shrink-0">
+                        <XCircle className="h-3 w-3" />
+                      </div>
                       {item}
                     </li>
                   ))}
@@ -326,90 +366,112 @@ function BookingDetailPage() {
           </Card>
 
           {contract?.status === 'SIGNED' && (role === 'VENUE' || role === 'PROMOTER') && !['PAID_FULL', 'COMPLETED'].includes(booking.status) && (
-            <Card title="Pagos" subtitle="Procesa milestones pendientes" icon={<CreditCard className="h-4 w-4 text-slate-600" />}>
+            <Card title="Gestión de pagos" subtitle="Liquidación de hitos pendientes" icon={<CreditCard className="h-4 w-4" />}>
               {!clientSecret && (
-                <Button
-                  variant="default"
-                  onClick={async () => {
-                    try {
-                      setPaymentError(null);
-                      setPaymentInfo(null);
-                      const milestones = await getMilestonesForBooking(booking.id, user.token);
-                      const pending = milestones.find((m: any) => m.props?.status === 'PENDING');
-                      if (!pending) {
-                        setPaymentError('No hay milestones pendientes');
-                        return;
+                <div className="bg-slate-900 rounded-2xl p-6 text-white space-y-4 shadow-xl shadow-slate-900/10">
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Acción requerida</p>
+                    <h4 className="text-xl font-bold">Procesar siguiente milestone</h4>
+                  </div>
+                  <Button
+                    variant="default"
+                    className="w-full bg-white text-slate-900 hover:bg-slate-100 h-12 font-bold rounded-xl transition-all"
+                    onClick={async () => {
+                      try {
+                        setPaymentError(null);
+                        setPaymentInfo(null);
+                        const milestones = await getMilestonesForBooking(booking.id, user.token);
+                        const pending = milestones.find((m: any) => m.props?.status === 'PENDING');
+                        if (!pending) {
+                          setPaymentError('No hay milestones pendientes');
+                          return;
+                        }
+                        const result = await createPaymentIntentForMilestone(pending.props.id, user.token);
+                        if (result.status === 'succeeded') {
+                          setPaymentInfo('Pago confirmado en Stripe. Actualizando booking...');
+                          await confirmPaymentForMilestone({ bookingId: booking.id, milestoneId: pending.props.id, token: user.token });
+                          await refresh();
+                          return;
+                        }
+                        if (result.status) {
+                          setPaymentInfo(`Estado del PaymentIntent: ${result.status}`);
+                        }
+                        setMilestoneId(pending.props.id);
+                        setClientSecret(result.clientSecret);
+                      } catch (err) {
+                        setPaymentError(err instanceof Error ? err.message : 'Error creando PaymentIntent');
                       }
-                      const result = await createPaymentIntentForMilestone(pending.props.id, user.token);
-                      if (result.status === 'succeeded') {
-                        setPaymentInfo('Pago confirmado en Stripe. Actualizando booking...');
-                        await confirmPaymentForMilestone({ bookingId: booking.id, milestoneId: pending.props.id, token: user.token });
-                        await refresh();
-                        return;
-                      }
-                      if (result.status) {
-                        setPaymentInfo(`Estado del PaymentIntent: ${result.status}`);
-                      }
-                      setMilestoneId(pending.props.id);
-                      setClientSecret(result.clientSecret);
-                    } catch (err) {
-                      setPaymentError(err instanceof Error ? err.message : 'Error creando PaymentIntent');
-                    }
-                  }}
-                >
-                  Proceder al pago
-                </Button>
+                    }}
+                  >
+                    Proceder al pago seguro
+                  </Button>
+                </div>
               )}
 
               {clientSecret && milestoneId && (
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
-                  <SimpleCardPaymentForm
-                    clientSecret={clientSecret}
-                    bookingId={booking.id}
-                    milestoneId={milestoneId}
-                    token={user.token}
-                    onSuccess={refresh}
-                  />
-                </Elements>
+                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+                  <Elements stripe={stripePromise} options={{ clientSecret }}>
+                    <SimpleCardPaymentForm
+                      clientSecret={clientSecret}
+                      bookingId={booking.id}
+                      milestoneId={milestoneId}
+                      token={user.token}
+                      onSuccess={refresh}
+                    />
+                  </Elements>
+                </div>
               )}
 
-              {paymentInfo && <p className="mt-2 text-sm text-slate-600">{paymentInfo}</p>}
-              {paymentError && <p className="mt-2 text-sm text-red-600">{paymentError}</p>}
+              {paymentInfo && <p className="mt-4 text-[13px] font-bold text-slate-600 bg-slate-50 px-4 py-2 rounded-lg">{paymentInfo}</p>}
+              {paymentError && <p className="mt-4 text-[13px] font-bold text-red-600 bg-red-50 px-4 py-2 rounded-lg">{paymentError}</p>}
             </Card>
           )}
 
-          <Card title="Historial de negociación" subtitle="Lo más reciente primero" icon={<MessageSquare className="h-4 w-4 text-slate-600" />}>
+          <Card title="Historial operativo" subtitle="Trazabilidad de la negociación" icon={<MessageSquare className="h-4 w-4" />}>
             {negotiationLoading ? (
-              <p className="text-sm text-slate-500">Cargando historial…</p>
+              <div className="py-8 flex items-center justify-center gap-2 text-slate-400 animate-pulse">
+                <Clock className="h-4 w-4" />
+                <span className="text-sm font-bold uppercase tracking-wider">Recuperando histórico...</span>
+              </div>
             ) : timelineEvents.length === 0 ? (
-              <div className="space-y-2 text-sm text-slate-600">
-                <p>Sin actividad de negociación.</p>
-                {statusMessage && <p className="text-slate-900">{statusMessage}</p>}
+              <div className="py-12 text-center border border-dashed border-slate-200 rounded-2xl">
+                <p className="text-sm text-slate-400 font-medium">Sin actividad de negociación registrada.</p>
+                {statusMessage && <p className="text-slate-900 font-bold mt-2">{statusMessage}</p>}
               </div>
             ) : (
-              <div className="relative">
+              <div className="relative pt-4">
                 {!hasArtistResponse && statusMessage && (
-                  <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  <div className="mb-8 rounded-xl border border-amber-100 bg-amber-50 px-5 py-4 text-[13px] font-bold text-amber-900 flex items-center gap-3">
+                    <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
                     {statusMessage}
                   </div>
                 )}
-                <div className="absolute left-[19px] top-2 bottom-2 w-px bg-slate-200" />
-                <div className="space-y-4">
+                <div className="absolute left-[19px] top-6 bottom-6 w-px bg-slate-100" />
+                <div className="space-y-8">
                   {timelineEvents.map((event, index) => (
-                    <div key={event.id} className="relative flex items-start gap-4" style={{ animationDelay: `${index * 40}ms` }}>
-                      <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center ${getTimelineColor(event)}`}>
+                    <div key={event.id} className="relative flex items-start gap-6 group" style={{ animationDelay: `${index * 40}ms` }}>
+                      <div className={`relative z-10 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm transition-transform group-hover:scale-105 ${getTimelineColor(event)}`}>
                         {getTimelineIcon(event)}
                       </div>
-                      <div className="flex-1 min-w-0 pt-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-slate-900">{event.isFinal ? 'Oferta final' : event.amount ? 'Propuesta' : 'Mensaje'}</p>
+                      <div className="flex-1 min-w-0 bg-white group-hover:bg-slate-50/50 p-4 rounded-2xl transition-all border border-transparent group-hover:border-slate-100">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-bold text-slate-900">
+                            {event.isFinal ? 'Oferta final' : event.amount ? 'Propuesta económica' : 'Comunicación'}
+                          </p>
                           {typeof event.amount === 'number' && (
-                            <p className="font-medium text-slate-900">{formatCurrency(event.amount, bookingCurrency)}</p>
+                            <p className="text-lg font-black text-slate-900 tabular-nums">{formatCurrency(event.amount, bookingCurrency)}</p>
                           )}
                         </div>
-                        <p className="text-sm text-slate-500 capitalize">{event.role.toLowerCase()}</p>
-                        {event.note && <p className="text-sm text-slate-600 mt-1">{event.note}</p>}
-                        <p className="text-xs text-slate-500 mt-1">{formatShortDate(event.createdAt)} · {formatShortTime(event.createdAt)}</p>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{event.role}</span>
+                          <span className="text-slate-200">·</span>
+                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{formatShortDate(event.createdAt)} · {formatShortTime(event.createdAt)}</p>
+                        </div>
+                        {event.note && (
+                          <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-100 mt-3">
+                            <p className="text-[13px] text-slate-700 leading-relaxed font-medium">"{event.note}"</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -418,39 +480,68 @@ function BookingDetailPage() {
             )}
           </Card>
 
-          <Card title="Acciones" subtitle="Turno y cancelación" icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}>
-            <p className="text-sm text-slate-700 mb-3">{actionTurnMessage}</p>
-            <NegotiationPanel
-              bookingId={booking.id}
-              bookingStatus={booking.status}
-              userRole={role as any}
-              handledByRole={booking.handledByRole as any}
-              isHandledByOther={isHandledByOther}
-              onBookingUpdated={refresh}
-              refreshContract={refreshContract}
-              onCancelBooking={() => {
-                if (canCancelBooking) setShowCancelModal(true);
-              }}
-            />
+          <Card title="Consola de acciones" subtitle="Foco y respuesta rápida" icon={<AlertTriangle className="h-4 w-4" />} tone={hasTurn ? 'amber' : 'slate'}>
+            <div className={`p-6 rounded-2xl border ${hasTurn ? 'bg-amber-50/30 border-amber-100' : 'bg-slate-50/50 border-slate-100'}`}>
+              <div className="flex items-center gap-3 mb-6">
+                <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${hasTurn ? 'bg-amber-100 text-amber-600' : 'bg-slate-200 text-slate-500'}`}>
+                   <Clock className="h-4 w-4" />
+                </div>
+                <p className="text-[13px] font-bold text-slate-900">{actionTurnMessage}</p>
+              </div>
+              <NegotiationPanel
+                bookingId={booking.id}
+                bookingStatus={booking.status}
+                userRole={role as any}
+                handledByRole={booking.handledByRole as any}
+                isHandledByOther={isHandledByOther}
+                onBookingUpdated={refresh}
+                refreshContract={refreshContract}
+                onCancelBooking={() => {
+                  if (canCancelBooking) setShowCancelModal(true);
+                }}
+              />
+            </div>
           </Card>
         </div>
 
-        <div className="space-y-6">
-          <Card title="Contrato" subtitle="Estado contractual" icon={<FileText className="h-4 w-4 text-slate-600" />}>
-            <p className="text-sm text-slate-600">{hasContract ? `Contrato ${contract?.status ?? 'en preparación'}` : 'Aún no hay contrato generado.'}</p>
-            {canSignContract && (
-              <div className="mt-3">
-                <Button onClick={() => setShowSignContractModal(true)} variant="default">
-                  Firmar contrato
-                </Button>
+        <div className="lg:col-span-4 space-y-8">
+          <Card title="Documentación" subtitle="Contrato oficial" icon={<FileText className="h-4 w-4 text-slate-400" />}>
+             <div className="bg-slate-50/50 rounded-2xl p-5 border border-slate-100 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-slate-400">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Estado contractual</p>
+                  <p className="text-[13px] font-black text-slate-900 uppercase tracking-tight">
+                    {hasContract ? contract?.status : 'PENDIENTE'}
+                  </p>
+                </div>
               </div>
-            )}
+
+              <p className="text-[13px] text-slate-500 font-medium leading-relaxed">
+                {hasContract
+                  ? `El contrato se encuentra en estado ${contract?.status?.toLowerCase()}.`
+                  : 'El contrato digital se generará automáticamente tras el acuerdo económico.'}
+              </p>
+
+              {canSignContract && (
+                <Button
+                  onClick={() => setShowSignContractModal(true)}
+                  variant="default"
+                  className="w-full h-11 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
+                >
+                  Firmar documento digital
+                </Button>
+              )}
+            </div>
           </Card>
 
-          <Card title="Metadatos" subtitle="Auditoría" icon={<HandCoins className="h-4 w-4 text-slate-600" />}>
-            <div className="space-y-2 text-sm text-slate-700">
-              <InfoRow label="Booking ID" value={booking.id} />
-              <InfoRow label="Última actividad" value={lastActivity ? formatDateTime(lastActivity) : '—'} />
+          <Card title="Metadatos" subtitle="Auditoría de sistema" icon={<HandCoins className="h-4 w-4 text-slate-400" />}>
+            <div className="space-y-4 bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
+              <InfoRow label="Identificador de booking" value={booking.id} />
+              <div className="h-px bg-slate-200/50" />
+              <InfoRow label="Registro de actividad" value={lastActivity ? formatDateTime(lastActivity) : '—'} />
             </div>
           </Card>
         </div>
@@ -460,7 +551,7 @@ function BookingDetailPage() {
         <CancelBookingModal
           open={showCancelModal}
           title="Cancelar booking"
-          confirmLabel="Cancelar booking"
+          confirmLabel="Ejecutar cancelación"
           onClose={() => setShowCancelModal(false)}
           onConfirm={async ({ reason, description }) => {
             await cancelBooking({
@@ -479,8 +570,8 @@ function BookingDetailPage() {
 
       <SignContractModal
         open={showSignContractModal}
-        title="Firmar contrato"
-        confirmLabel="Firmar contrato"
+        title="Confirmación de firma"
+        confirmLabel="Confirmar firma digital"
         onClose={() => setShowSignContractModal(false)}
         onConfirm={async () => {
           if (!contract?.id) return;
@@ -496,50 +587,49 @@ function BookingDetailPage() {
 export default withRole(BookingDetailPage, ['VENUE', 'PROMOTER', 'ARTIST', 'MANAGER']);
 
 function Card({ title, subtitle, icon, children, tone = 'slate' }: { title: string; subtitle?: string; icon?: ReactNode; children: ReactNode; tone?: 'slate' | 'amber' }) {
-  const borderClass = tone === 'amber' ? 'border-amber-200 bg-amber-50/70' : 'border-slate-200 bg-white';
   return (
-    <section className={`rounded-xl ${borderClass} shadow-sm p-5 space-y-3`}>
-      <header className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+    <section className="space-y-4">
+      <header className="flex items-center gap-3">
+        <div className={`p-1.5 rounded-lg ${tone === 'amber' ? 'bg-amber-100 text-amber-700' : 'bg-slate-900 text-white shadow-sm'}`}>
           {icon}
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-            {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
-          </div>
+        </div>
+        <div>
+          <h2 className="text-base font-black text-slate-900 tracking-tight uppercase leading-none">{title}</h2>
+          {subtitle && <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest leading-none">{subtitle}</p>}
         </div>
       </header>
-      {children}
+      <div className="pt-2">
+        {children}
+      </div>
     </section>
   );
 }
 
-function KpiCard({ label, value, helper }: { label: string; value: string | number; helper?: string }) {
+function KpiCard({ label, value, helper, tone = 'slate' }: { label: string; value: string | number; helper?: string; tone?: 'slate' | 'emerald' | 'amber' }) {
+  const valueColor = tone === 'emerald' ? 'text-emerald-700' : tone === 'amber' ? 'text-amber-700' : 'text-slate-900';
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm px-4 py-3">
-      <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">{label}</p>
-      <p className="text-xl font-semibold text-slate-900">{value}</p>
-      {helper && <p className="text-xs text-slate-500 mt-0.5">{helper}</p>}
+    <div className="px-8 py-6 flex flex-col gap-1">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
+      <p className={`text-xl font-black tabular-nums ${valueColor}`}>{value}</p>
+      {helper && <p className="text-[11px] font-bold text-slate-400 leading-none">{helper}</p>}
     </div>
   );
 }
 
 function InfoRow({ label, value, icon, muted = false, strong = false, strike = false }: { label: string; value: string | number; icon?: ReactNode; muted?: boolean; strong?: boolean; strike?: boolean }) {
   return (
-    <div className="flex items-start gap-2">
-      {icon}
-      <div>
-        <p className="text-xs text-slate-500">{label}</p>
-        <p className={`${muted ? 'text-slate-500' : 'text-slate-900'} ${strong ? 'text-2xl font-semibold' : 'font-medium'} ${strike ? 'line-through' : ''}`}>
+    <div className="flex items-start gap-3">
+      {icon && <div className="mt-1">{icon}</div>}
+      <div className="space-y-0.5">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 leading-none">{label}</p>
+        <p className={`leading-tight ${muted ? 'text-slate-400' : 'text-slate-900'} ${strong ? 'text-2xl font-black' : 'text-[14px] font-bold'} ${strike ? 'line-through decoration-slate-300' : ''}`}>
           {value}
         </p>
       </div>
     </div>
   );
 }
-
-/* =========================
-   FORMULARIO DE PAGO STRIPE
-   ========================= */
 
 function SimpleCardPaymentForm({
   clientSecret,
@@ -592,11 +682,11 @@ function SimpleCardPaymentForm({
   };
 
   return (
-    <div className="mt-4 space-y-3">
+    <div className="space-y-4">
       <PaymentElement />
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <Button onClick={handlePay} disabled={loading} className="w-full">
-        {loading ? 'Procesando…' : 'Pagar'}
+      {error && <p className="text-[13px] font-bold text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">{error}</p>}
+      <Button onClick={handlePay} disabled={loading} className="w-full h-12 bg-slate-900 text-white font-bold rounded-xl shadow-lg shadow-slate-900/10">
+        {loading ? 'Procesando pago seguro...' : 'Confirmar pago ahora'}
       </Button>
     </div>
   );
@@ -627,13 +717,13 @@ function formatRelativeTime(value?: string | null) {
 
   const minutes = Math.floor(diffMs / 60000);
   if (minutes < 1) return 'hace unos segundos';
-  if (minutes < 60) return `hace ${minutes} min`;
+  if (minutes < 60) return `hace ${minutes}m`;
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `hace ${hours} h`;
+  if (hours < 24) return `hace ${hours}h`;
 
   const days = Math.floor(hours / 24);
-  if (days < 30) return `hace ${days} d`;
+  if (days < 30) return `hace ${days}d`;
 
   const months = Math.floor(days / 30);
   if (months < 12) return `hace ${months} mes${months === 1 ? '' : 'es'}`;
@@ -656,8 +746,8 @@ function formatShortTime(value?: string | null) {
 
 function getTimelineColor(event: { isFinal: boolean; amount?: number }) {
   if (event.isFinal) return 'bg-amber-100 text-amber-700';
-  if (typeof event.amount === 'number') return 'bg-blue-100 text-blue-700';
-  return 'bg-slate-100 text-slate-600';
+  if (typeof event.amount === 'number') return 'bg-slate-900 text-white';
+  return 'bg-slate-100 text-slate-500';
 }
 
 function getTimelineIcon(event: { isFinal: boolean; amount?: number }) {
@@ -670,6 +760,3 @@ function formatCurrency(amount: number | null, currency: string) {
   if (amount === null || amount === undefined) return '—';
   return new Intl.NumberFormat('es-ES', { style: 'currency', currency }).format(amount);
 }
-
-
-
