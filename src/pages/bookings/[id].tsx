@@ -154,7 +154,9 @@ function BookingDetailPage() {
     : isArtistSide
       ? isLastFromVenueSide
       : isLastFromArtistSide;
-  const lockedToOther = booking.handledByRole && booking.handledByRole !== role;
+
+  const handlerIsArtistSide = booking.handledByRole === 'ARTIST' || booking.handledByRole === 'MANAGER';
+  const lockedToOther = handlerIsArtistSide && isArtistSide && booking.handledByRole !== role;
   const hasTurn = lockedToOther ? false : isMyTurnByMessages;
 
   const statusMessage = getStatusMessage({
@@ -163,6 +165,8 @@ function BookingDetailPage() {
     role: role as Role,
     hasTurn,
   });
+
+  const hasContract = Boolean(contract);
 
   const handledByLabel =
     booking.handledByRole === 'PROMOTER'
@@ -182,7 +186,7 @@ function BookingDetailPage() {
       : 'La otra parte está gestionando este booking.';
 
   const canSignContract =
-    Boolean(contract) &&
+    hasContract &&
     contract?.status === 'DRAFT' &&
     (role === 'ARTIST' || role === 'MANAGER');
 
@@ -200,6 +204,7 @@ function BookingDetailPage() {
   const lastActivity = booking.handledAt ?? (booking as any).updatedAt ?? (booking as any).createdAt ?? null;
   const bookingAmount = (booking as any).totalAmount ?? (booking as any).amount ?? null;
   const bookingCurrency = (booking as any).currency ?? 'EUR';
+  const isFullyPaid = booking.status === 'PAID_FULL' || paymentSummary?.percent === 100;
   const eventDate = booking.start_date ?? (booking as any).startDate ?? null;
   const timelineEvents = negotiationMessages
     .map((m) => ({
@@ -296,6 +301,75 @@ function BookingDetailPage() {
         </div>
       </section>
 
+      {statusMessage && (
+        <div className="rounded-xl border border-amber-100 bg-amber-50 px-5 py-4 text-[13px] font-bold text-amber-900 flex items-center gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+          {statusMessage}
+        </div>
+      )}
+
+      {contract?.status === 'SIGNED' && (role === 'VENUE' || role === 'PROMOTER') && !['PAID_FULL', 'COMPLETED'].includes(booking.status) && !isFullyPaid && (
+        <Card title="Gestión de pagos" subtitle="Liquidación de hitos pendientes" icon={<CreditCard className="h-4 w-4" />}>
+          {!clientSecret && (
+            <div className="bg-slate-900 rounded-2xl p-6 text-white space-y-4 shadow-xl shadow-slate-900/10">
+              <div className="space-y-1">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Acción requerida</p>
+                <h4 className="text-xl font-bold">Procesar siguiente milestone</h4>
+              </div>
+              <Button
+                variant="default"
+                className="w-full bg-white text-slate-900 hover:bg-slate-100 h-12 font-bold rounded-xl transition-all"
+                onClick={async () => {
+                  try {
+                    setPaymentError(null);
+                    setPaymentInfo(null);
+                    const milestones = await getMilestonesForBooking(booking.id, user.token);
+                    const pending = milestones.find((m: any) => m.props?.status === 'PENDING');
+                    if (!pending) {
+                      setPaymentError('No hay milestones pendientes');
+                      return;
+                    }
+                    const result = await createPaymentIntentForMilestone(pending.props.id, user.token);
+                    if (result.status === 'succeeded') {
+                      setPaymentInfo('Pago confirmado en Stripe. Actualizando booking...');
+                      await confirmPaymentForMilestone({ bookingId: booking.id, milestoneId: pending.props.id, token: user.token });
+                      await refresh();
+                      return;
+                    }
+                    if (result.status) {
+                      setPaymentInfo(`Estado del PaymentIntent: ${result.status}`);
+                    }
+                    setMilestoneId(pending.props.id);
+                    setClientSecret(result.clientSecret);
+                  } catch (err) {
+                    setPaymentError(err instanceof Error ? err.message : 'Error creando PaymentIntent');
+                  }
+                }}
+              >
+                Proceder al pago seguro
+              </Button>
+            </div>
+          )}
+
+          {clientSecret && milestoneId && (
+            <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
+              <Elements stripe={stripePromise} options={{ clientSecret }}>
+                <SimpleCardPaymentForm
+                  clientSecret={clientSecret}
+                  bookingId={booking.id}
+                  milestoneId={milestoneId}
+                  token={user.token}
+                  onSuccess={refresh}
+                />
+              </Elements>
+            </div>
+          )}
+
+          {paymentInfo && <p className="mt-4 text-[13px] font-bold text-slate-600 bg-slate-50 px-4 py-2 rounded-lg">{paymentInfo}</p>}
+          {paymentError && <p className="mt-4 text-[13px] font-bold text-red-600 bg-red-50 px-4 py-2 rounded-lg">{paymentError}</p>}
+        </Card>
+      )}
+
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         <div className="lg:col-span-8 space-y-10">
           <Card title="Evento y condiciones" subtitle="Detalles técnicos y de ubicación" icon={<Calendar className="h-4 w-4" />}>
@@ -365,68 +439,6 @@ function BookingDetailPage() {
             </div>
           </Card>
 
-          {contract?.status === 'SIGNED' && (role === 'VENUE' || role === 'PROMOTER') && !['PAID_FULL', 'COMPLETED'].includes(booking.status) && (
-            <Card title="Gestión de pagos" subtitle="Liquidación de hitos pendientes" icon={<CreditCard className="h-4 w-4" />}>
-              {!clientSecret && (
-                <div className="bg-slate-900 rounded-2xl p-6 text-white space-y-4 shadow-xl shadow-slate-900/10">
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Acción requerida</p>
-                    <h4 className="text-xl font-bold">Procesar siguiente milestone</h4>
-                  </div>
-                  <Button
-                    variant="default"
-                    className="w-full bg-white text-slate-900 hover:bg-slate-100 h-12 font-bold rounded-xl transition-all"
-                    onClick={async () => {
-                      try {
-                        setPaymentError(null);
-                        setPaymentInfo(null);
-                        const milestones = await getMilestonesForBooking(booking.id, user.token);
-                        const pending = milestones.find((m: any) => m.props?.status === 'PENDING');
-                        if (!pending) {
-                          setPaymentError('No hay milestones pendientes');
-                          return;
-                        }
-                        const result = await createPaymentIntentForMilestone(pending.props.id, user.token);
-                        if (result.status === 'succeeded') {
-                          setPaymentInfo('Pago confirmado en Stripe. Actualizando booking...');
-                          await confirmPaymentForMilestone({ bookingId: booking.id, milestoneId: pending.props.id, token: user.token });
-                          await refresh();
-                          return;
-                        }
-                        if (result.status) {
-                          setPaymentInfo(`Estado del PaymentIntent: ${result.status}`);
-                        }
-                        setMilestoneId(pending.props.id);
-                        setClientSecret(result.clientSecret);
-                      } catch (err) {
-                        setPaymentError(err instanceof Error ? err.message : 'Error creando PaymentIntent');
-                      }
-                    }}
-                  >
-                    Proceder al pago seguro
-                  </Button>
-                </div>
-              )}
-
-              {clientSecret && milestoneId && (
-                <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm">
-                  <Elements stripe={stripePromise} options={{ clientSecret }}>
-                    <SimpleCardPaymentForm
-                      clientSecret={clientSecret}
-                      bookingId={booking.id}
-                      milestoneId={milestoneId}
-                      token={user.token}
-                      onSuccess={refresh}
-                    />
-                  </Elements>
-                </div>
-              )}
-
-              {paymentInfo && <p className="mt-4 text-[13px] font-bold text-slate-600 bg-slate-50 px-4 py-2 rounded-lg">{paymentInfo}</p>}
-              {paymentError && <p className="mt-4 text-[13px] font-bold text-red-600 bg-red-50 px-4 py-2 rounded-lg">{paymentError}</p>}
-            </Card>
-          )}
-
           <Card title="Historial operativo" subtitle="Trazabilidad de la negociación" icon={<MessageSquare className="h-4 w-4" />}>
             {negotiationLoading ? (
               <div className="py-8 flex items-center justify-center gap-2 text-slate-400 animate-pulse">
@@ -440,12 +452,6 @@ function BookingDetailPage() {
               </div>
             ) : (
               <div className="relative pt-4">
-                {!hasArtistResponse && statusMessage && (
-                  <div className="mb-8 rounded-xl border border-amber-100 bg-amber-50 px-5 py-4 text-[13px] font-bold text-amber-900 flex items-center gap-3">
-                    <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
-                    {statusMessage}
-                  </div>
-                )}
                 <div className="absolute left-[19px] top-6 bottom-6 w-px bg-slate-100" />
                 <div className="space-y-8">
                   {timelineEvents.map((event, index) => (

@@ -16,6 +16,7 @@ import {
   ChevronRight,
   LogOut,
   User,
+  XCircle,
 } from 'lucide-react';
 
 import { BottomNav } from '@/components/layout/BottomNav';
