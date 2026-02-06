@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
-import { AlertCircle, ArrowRight, Calendar, CheckCircle2, ClipboardList, Clock, Coins, FileSignature, LayoutDashboard, Users } from 'lucide-react';
+import { AlertCircle, ArrowRight, Calendar, CheckCircle2, ClipboardList, Coins, FileSignature, Users } from 'lucide-react';
 
 import { withRole } from '@/components/auth/withRole';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -43,33 +43,15 @@ function PromoterDashboardPage() {
   }, [data?.events, statusFilter]);
 
   if (loading) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <div className="flex items-center gap-2 text-slate-500 animate-pulse">
-          <Clock className="h-5 w-5" />
-          <span className="text-sm font-medium">Cargando dashboard operativo...</span>
-        </div>
-      </div>
-    );
+    return <div className="p-8 text-slate-700">Cargando dashboard…</div>;
   }
 
   if (error) {
-    return (
-      <div className="p-8">
-        <div className="max-w-md mx-auto rounded-lg border border-red-100 bg-red-50 p-4 flex items-center gap-3 text-red-700">
-          <AlertCircle className="h-5 w-5 shrink-0" />
-          <p className="text-sm font-medium">{error}</p>
-        </div>
-      </div>
-    );
+    return <div className="p-8 text-red-600">{error}</div>;
   }
 
   if (!data) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-slate-500">No hay datos operativos disponibles en este momento.</p>
-      </div>
-    );
+    return <div className="p-8">No hay datos disponibles</div>;
   }
 
   const profile = data.profile ?? { name: 'Promotor', id: '—' };
@@ -88,29 +70,22 @@ function PromoterDashboardPage() {
   const actionBookings: PromoterActionBooking[] = data.actionBookings ?? [];
 
   return (
-    <main className="p-6 md:p-10 max-w-7xl mx-auto space-y-10">
-      <header className="border-b border-slate-100 pb-6 mb-2">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-slate-900" />
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Artime OS</p>
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Control operativo del promotor</h1>
-          <p className="text-sm text-slate-500 max-w-2xl">Gestión de eventos, bookings y flujos de pago en un solo panel.</p>
-        </div>
+    <main className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
+      <header className="space-y-2">
+        <p className="text-sm font-medium text-slate-500">Dashboard</p>
+        <h1 className="text-3xl font-semibold text-slate-900">Panel operativo del promotor</h1>
+        <p className="text-slate-600">Visibilidad total de eventos, presupuestos y bookings.</p>
       </header>
 
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <KpiCard icon={<LayoutDashboard className="h-4 w-4" />} label="Eventos creados" value={metrics.totalEvents} />
-        <KpiCard icon={<Users className="h-4 w-4" />} label="Eventos activos" value={metrics.activeEvents} tone="emerald" />
-        <KpiCard icon={<ClipboardList className="h-4 w-4" />} label="Borradores" value={metrics.draftEvents} />
-        <KpiCard icon={<CheckCircle2 className="h-4 w-4" />} label="Artistas confirmados" value={metrics.confirmedArtists ?? 0} />
-        <KpiCard icon={<FileSignature className="h-4 w-4" />} label="Contratos pendientes" value={metrics.pendingContractsCount ?? 0} tone="amber" />
-        <KpiCard icon={<Coins className="h-4 w-4" />} label="Pagos pendientes" value={metrics.pendingPaymentsCount ?? 0} tone="amber" />
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard title="Eventos creados" value={metrics.totalEvents} icon={<ClipboardList className="h-4 w-4" />} />
+        <KpiCard title="Eventos activos" value={metrics.activeEvents} icon={<Users className="h-4 w-4" />} />
+        <KpiCard title="Borradores" value={metrics.draftEvents} icon={<FileSignature className="h-4 w-4" />} tone="amber" />
+        <KpiCard title="Artistas confirmados" value={metrics.confirmedArtists ?? 0} icon={<CheckCircle2 className="h-4 w-4" />} tone="emerald" />
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 space-y-6">
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
           <ActiveEventsBlock
             events={events}
             filteredEvents={filteredActiveEvents}
@@ -119,7 +94,7 @@ function PromoterDashboardPage() {
           />
           <ActionBlock metrics={metrics} actionBookings={actionBookings} />
         </div>
-        <div className="lg:col-span-4 space-y-6">
+        <div className="space-y-6">
           <ProfileBlock profile={profile} />
         </div>
       </section>
@@ -129,24 +104,21 @@ function PromoterDashboardPage() {
 
 export default withRole(PromoterDashboardPage, ['PROMOTER']);
 
-function KpiCard({ icon, label, value, tone = 'slate' }: { icon: React.ReactNode; label: string; value: string | number; tone?: 'slate' | 'emerald' | 'amber' }) {
-  const accentClass = {
-    slate: 'bg-slate-600',
-    emerald: 'bg-emerald-500',
-    amber: 'bg-amber-500',
+function KpiCard({ title, value, icon, tone = 'slate' }: { title: string; value: string | number; icon: ReactNode; tone?: 'slate' | 'amber' | 'emerald' }) {
+  const toneClass = {
+    slate: 'bg-slate-900 text-white',
+    amber: 'bg-amber-600 text-white',
+    emerald: 'bg-emerald-600 text-white',
   }[tone];
 
   return (
-    <div className="relative group rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-all">
-      <div className={`absolute left-0 top-6 bottom-6 w-1 rounded-r-full ${accentClass}`} />
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-          <div className="p-1.5 rounded-md bg-slate-50 text-slate-600">
-            {icon}
-          </div>
-          <span>{label}</span>
-        </div>
-        <p className="text-2xl font-bold text-slate-900 tracking-tight tabular-nums">{value}</p>
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="px-4 py-3 flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500">
+        {icon}
+        <span>{title}</span>
+      </div>
+      <div className={`px-4 py-4 ${toneClass}`}>
+        <p className="text-3xl font-semibold">{value}</p>
       </div>
     </div>
   );
@@ -166,41 +138,43 @@ function ActiveEventsBlock({
   const statuses = Array.from(new Set(events.map((e) => e.status)));
 
   return (
-    <Card title="Eventos activos" subtitle={`${filteredEvents.length} visibles`} icon={<Calendar className="h-4 w-4" />}>
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <FilterChip label="Todos" active={statusFilter === 'ALL'} onClick={() => onFilterChange('ALL')} />
-        {statuses.map((status) => (
-          <FilterChip key={status} label={status} active={statusFilter === status} onClick={() => onFilterChange(status)} />
-        ))}
-      </div>
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-4">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-medium text-slate-500">Eventos</p>
+          <h2 className="text-xl font-semibold text-slate-900">Activos y próximos</h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <FilterChip label="Todos" active={statusFilter === 'ALL'} onClick={() => onFilterChange('ALL')} />
+          {statuses.map((status) => (
+            <FilterChip key={status} label={status} active={statusFilter === status} onClick={() => onFilterChange(status)} />
+          ))}
+        </div>
+      </header>
 
       {filteredEvents.length === 0 ? (
-        <div className="py-12 text-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50">
-          <p className="text-sm text-slate-500">No tienes eventos en este filtro.</p>
-        </div>
+        <p className="text-sm text-slate-600">No tienes eventos en este filtro.</p>
       ) : (
-        <div className="divide-y divide-slate-100 -mx-6">
+        <div className="divide-y divide-slate-100">
           {filteredEvents.map((event) => (
-            <div key={event.id} className="grid grid-cols-1 md:grid-cols-12 gap-6 px-6 py-5 hover:bg-slate-50/50 transition-all group items-center">
-              <div className="md:col-span-6 space-y-1">
-                <p className="font-bold text-slate-900 leading-tight truncate">{event.name}</p>
-                <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-tight">ID: {event.id}</p>
+            <div key={event.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 py-3">
+              <div className="md:col-span-6">
+                <p className="font-medium text-slate-900">{event.name}</p>
+                <p className="text-xs text-slate-500">ID: {event.id}</p>
               </div>
-              <div className="md:col-span-3 space-y-2 text-[13px] text-slate-600">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-slate-400" />
-                  <span className="font-semibold">{event.start_date ? formatDate(event.start_date) : 'Sin fecha'}</span>
+              <div className="md:col-span-3 text-sm text-slate-600">
+                <div className="flex items-center gap-1 text-xs text-slate-500">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>{event.start_date ? formatDate(event.start_date) : 'Sin fecha'}</span>
                 </div>
               </div>
               <div className="md:col-span-2 flex items-center">
                 <StatusBadge status={event.status} />
               </div>
               <div className="md:col-span-1 text-right">
-                <Link
-                  href={`/events/${event.id}`}
-                  className="inline-flex items-center justify-center h-10 px-3 rounded-lg bg-white border border-slate-200 text-[13px] font-bold text-slate-700 hover:border-slate-900 hover:text-slate-900 transition-all shadow-sm"
-                >
+                <Link href={`/events/${event.id}`} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 hover:text-slate-900">
                   Ver
+                  <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             </div>
@@ -208,16 +182,15 @@ function ActiveEventsBlock({
         </div>
       )}
 
-      <div className="flex justify-end pt-4">
+      <div className="flex justify-end pt-2">
         <Link
           href="/promoter/events"
-          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-colors shadow-sm"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50"
         >
           Ver todos los eventos
-          <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
-    </Card>
+    </section>
   );
 }
 
@@ -227,14 +200,17 @@ function ActionBlock({ metrics, actionBookings }: { metrics: any; actionBookings
   const hasActions = hasMetrics || hasActionBookings;
 
   return (
-    <Card title="Acciones pendientes" subtitle={hasActions ? 'Atención requerida' : 'Flujo operativo al día'} tone={hasActions ? 'amber' : 'slate'} icon={<AlertCircle className="h-4 w-4" />}>
-      {!hasActions ? (
-        <div className="flex items-center gap-3 py-2 text-slate-500">
-          <div className="h-8 w-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <ClipboardList className="h-4 w-4" />
-          </div>
-          <p className="text-sm">Todo está en orden.</p>
+    <section className="rounded-xl border border-amber-200 bg-amber-50/70 shadow-sm p-5 space-y-3">
+      <header className="flex items-center gap-2">
+        <AlertCircle className="h-4 w-4 text-amber-700" />
+        <div>
+          <p className="text-sm font-medium text-amber-700">Acciones pendientes</p>
+          <p className="text-xs text-amber-800">Si no actúas aquí, nadie lo hará.</p>
         </div>
+      </header>
+
+      {!hasActions ? (
+        <p className="text-sm text-amber-800">No tienes acciones pendientes.</p>
       ) : (
         <div className="space-y-4">
           {hasMetrics && (
@@ -263,7 +239,7 @@ function ActionBlock({ metrics, actionBookings }: { metrics: any; actionBookings
           <ActionBookingsList bookings={actionBookings} />
         </div>
       )}
-    </Card>
+    </section>
   );
 }
 
@@ -328,21 +304,20 @@ function ActionBookingsList({ bookings }: { bookings: PromoterActionBooking[] })
 
 function ProfileBlock({ profile }: { profile: { name: string; id: string } }) {
   return (
-    <Card title="Perfil" subtitle="Promotor" icon={<Users className="h-4 w-4" />}>
-      <div className="text-sm text-slate-700 space-y-2">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold uppercase">
-            {profile.name?.slice(0, 2) ?? 'PR'}
-          </div>
-          <div>
-            <p className="font-bold text-slate-900">{profile.name}</p>
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">ID: {profile.id}</p>
-          </div>
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
+      <header className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-slate-500">Perfil</p>
+          <h3 className="text-lg font-semibold text-slate-900">Promotor</h3>
         </div>
-        <StatusBadge status="ACTIVE" className="w-fit" />
-        <p className="text-xs text-slate-500">Los datos sensibles se gestionan en autenticación.</p>
+        <StatusBadge status="ACTIVE" />
+      </header>
+      <div className="text-sm text-slate-700 space-y-1">
+        <p className="font-medium text-slate-900">{profile.name}</p>
+        <p className="text-xs text-slate-500">ID: {profile.id}</p>
       </div>
-    </Card>
+      <p className="text-xs text-slate-500">Los datos sensibles se gestionan en autenticación.</p>
+    </section>
   );
 }
 
@@ -351,43 +326,15 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-3 rounded-full border px-5 py-2.5 text-[13px] font-bold transition-all shadow-sm ${
-        active
-          ? 'border-slate-900 bg-slate-900 text-white shadow-slate-900/10'
-          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition shadow-sm ${
+        active ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'
       }`}
     >
-      <span>{label}</span>
+      {label}
     </button>
   );
 }
 
-function Card({ title, subtitle, children, icon, tone = 'slate' }: { title: string; subtitle?: string; children: React.ReactNode; icon?: React.ReactNode; tone?: 'slate' | 'amber' }) {
-  const headerBg = tone === 'amber' ? 'bg-amber-50/50' : 'bg-white';
-  const borderClass = tone === 'amber' ? 'border-amber-200' : 'border-slate-200';
-
-  return (
-    <section className={`rounded-2xl ${borderClass} border bg-white shadow-sm overflow-hidden flex flex-col`}>
-      <header className={`px-6 py-5 border-b border-slate-50 ${headerBg}`}>
-        <div className="flex items-center gap-3">
-          {icon && <div className={`p-1.5 rounded-lg ${tone === 'amber' ? 'bg-amber-100 text-amber-700' : 'bg-slate-900 text-white shadow-sm'}`}>{icon}</div>}
-          <div>
-            <h2 className="text-base font-bold text-slate-900 tracking-tight">{title}</h2>
-            {subtitle && <p className="text-[12px] font-medium text-slate-400 mt-0.5 uppercase tracking-wider">{subtitle}</p>}
-          </div>
-        </div>
-      </header>
-      <div className="p-6">
-        {children}
-      </div>
-    </section>
-  );
-}
-
 function formatDate(value: string) {
-  try {
-    return new Date(value).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
-  } catch (e) {
-    return value;
-  }
+  return new Date(value).toLocaleDateString();
 }

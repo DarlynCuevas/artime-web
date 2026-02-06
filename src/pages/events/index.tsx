@@ -4,19 +4,17 @@ import { useRouter } from 'next/router';
 import { Calendar, Eye, Plus, Sparkles, Clock, AlertCircle, ChevronRight, LayoutList } from 'lucide-react';
 
 import { useAuth } from '@/hooks/auth/useAuth';
-import { useMe } from '@/hooks/auth/useMe';
 import { eventsService } from '@/services/events/events.service';
 import type { Event } from '@/types/event';
 
 export default function EventsPage() {
   const { user } = useAuth();
-  const { role } = useMe();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const canCreateEvent = role === 'VENUE';
+  const canCreateEvent = user?.role === 'VENUE';
 
   useEffect(() => {
     if (!user?.token) return;
@@ -65,24 +63,13 @@ export default function EventsPage() {
           <button
             type="button"
             onClick={() => router.push('/events/new')}
-            className="hidden md:inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-slate-900 text-white text-[13px] font-black hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10 active:scale-95"
+            className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-slate-900 text-white text-[13px] font-black hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10 active:scale-95"
           >
             <Plus className="h-4 w-4" />
             Publicar nuevo evento
           </button>
         )}
       </header>
-
-      {canCreateEvent && (
-        <button
-          type="button"
-          onClick={() => router.push('/events/new')}
-          className="md:hidden w-full inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-slate-900 text-white text-[13px] font-black hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10 active:scale-95"
-        >
-          <Plus className="h-4 w-4" />
-          Publicar nuevo evento
-        </button>
-      )}
 
       {events.length === 0 ? (
         <div className="py-20 text-center rounded-3xl border border-dashed border-slate-200 bg-white">

@@ -18,7 +18,7 @@ import {
   User,
   FileText,
   AlertTriangle,
-  Info,
+  Info
 } from 'lucide-react';
 
 import { useAuth } from '@/hooks/auth/useAuth';
@@ -239,14 +239,14 @@ export default function ArtistProfilePage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           <div className="lg:col-span-8 space-y-10">
             <Card title="Biografía profesional" subtitle="Trayectoria y visión artística" icon={<Sparkles className="h-4 w-4" />}>
-              <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 max-h-64 overflow-auto">
+              <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
                 <p className="text-[15px] text-slate-700 leading-relaxed font-medium">
                   {artist.bio || 'Este artista aún no ha registrado una descripción profesional detallada.'}
                 </p>
               </div>
             </Card>
 
-            <Card title="Calendario de disponibilidad" subtitle="Fechas públicas y bloqueos" icon={<CalendarIcon className="h-4 w-4" />}>
+            <Card title="Agenda Operativa" subtitle="Monitor de disponibilidad en tiempo real" icon={<CalendarIcon className="h-4 w-4" />}>
               <div className="space-y-6">
                 <div className="flex items-center justify-between bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
                   <div className="flex items-center gap-4">
@@ -321,10 +321,10 @@ export default function ArtistProfilePage() {
                       })}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 text-[12px] font-semibold text-slate-500">
-                      <LegendDot tone="emerald" label="Disponible (puedes proponer)" />
-                      <LegendDot tone="slate" label="Reservado" />
-                      <LegendDot tone="muted" label="Bloqueado" />
+                    <div className="flex flex-wrap gap-4 pt-4 border-t border-slate-50">
+                      <LegendItem color="bg-emerald-500" label="Disponible" />
+                      <LegendItem color="bg-slate-200" label="Reservado" />
+                      <LegendItem color="bg-slate-50" label="No disponible" />
                     </div>
                   </div>
                 )}
@@ -349,7 +349,7 @@ export default function ArtistProfilePage() {
 
           <div className="lg:col-span-4 space-y-10">
             <Card title="Recursos y Enlaces" subtitle="Material operativo" icon={<Link2 className="h-4 w-4" />}>
-              <div className="space-y-3 max-h-64 overflow-auto">
+              <div className="space-y-3">
                 <p className="text-[13px] text-slate-600 font-medium mb-4">Inicia una propuesta para acceder a links privados, tech-riders y contenido exclusivo del EPK.</p>
                 <div className="grid grid-cols-1 gap-2">
                    <div className="h-11 px-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-3 grayscale opacity-60 cursor-not-allowed">
@@ -492,22 +492,6 @@ function RepresentationRequestModal({
       onConfirm={onConfirm}
       loading={loading}
     />
-  );
-}
-
-function LegendDot({ tone, label }: { tone: 'emerald' | 'slate' | 'muted'; label: string }) {
-  const toneClass =
-    tone === 'emerald'
-      ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
-      : tone === 'slate'
-        ? 'bg-slate-100 text-slate-500 border-slate-200'
-        : 'bg-slate-50 text-slate-300 border-slate-100';
-
-  return (
-    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[11px] font-bold ${toneClass}`}>
-      <span className="h-2 w-2 rounded-full bg-current" />
-      {label}
-    </span>
   );
 }
 

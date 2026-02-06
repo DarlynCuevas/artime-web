@@ -76,8 +76,7 @@ export function NegotiationPanel({
         ? isLastFromVenueSide
         : isLastFromArtistSide;
 
-  const handlerIsArtistSide = handledByRole === 'ARTIST' || handledByRole === 'MANAGER';
-  const lockedToOther = handlerIsArtistSide && isArtistSide && handledByRole !== userRole;
+  const lockedToOther = handledByRole && handledByRole !== userRole;
   const isMyTurn = lockedToOther ? false : isMyTurnByMessages;
 
   const canWrite =

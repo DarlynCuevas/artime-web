@@ -32,13 +32,6 @@ export async function cancelBooking(params: {
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    // Si ya está cancelado, evitamos romper UX y retornamos silenciosamente
-    const msg = (data.message || '').toString().toLowerCase();
-    const alreadyCanceled = res.status === 409 || res.status === 400;
-    if (alreadyCanceled && msg.includes('cancel')) {
-      return;
-    }
-
     throw new Error(data.message || 'No se pudo cancelar el booking');
   }
 }
