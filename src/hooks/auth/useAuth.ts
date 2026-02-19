@@ -15,7 +15,6 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('[useAuth] mount', { user, loading });
     // 1️ Sesión inicial
     supabase.auth.getSession().then(
       (response: { data: { session: Session | null } }) => {
@@ -51,7 +50,6 @@ export function useAuth() {
 
     return () => {
       subscription.unsubscribe();
-      console.log('[useAuth] unmount');
     };
   }, []);
 

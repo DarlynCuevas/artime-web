@@ -11,8 +11,6 @@ type UpdateBookingOrganizationPayload = {
 
 export const eventsService = {
     async getEvents(token: string): Promise<Event[]> {
-console.log('EVENTS TOKEN:', token);
-
         const res = await fetch(`${BASE_URL}/events`, {
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -239,4 +237,3 @@ export const updateEventBookingOrganization = async (
 
 //Cambiar visibilidad del Event
  
-
