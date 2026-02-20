@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AlertCircle, CheckCircle2, Link2, Loader2, MapPin, Music, ShieldCheck, Sparkles, Wallet, Calendar as CalendarIcon } from 'lucide-react';
 
 import { withRole } from '@/components/auth/withRole';
 import { useMe } from '@/context/MeContext';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { updateMyArtistProfile } from '@/services/artists/artists.service';
+import { deleteArtistGalleryImage, getArtistGallery, uploadArtistGalleryImage } from '@/services/artists/gallery.service';
+import { getProfileImage, uploadProfileImage } from '@/services/users/profileImage.service';
+import { addArtistVideo, deleteArtistVideo, getArtistVideos } from '@/services/artists/videos.service';
 import { useArtistDashboard } from '@/hooks/artists/useArtistDashboard';
 
 type EditableProfile = {
@@ -31,6 +34,16 @@ function ArtistPrivateProfilePage() {
 	const [loadingProfile, setLoadingProfile] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [saved, setSaved] = useState(false);
+	const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+	const [uploadingImage, setUploadingImage] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
+	const [gallery, setGallery] = useState<Array<{ id: string; url: string }>>([]);
+	const [uploadingGallery, setUploadingGallery] = useState(false);
+	const galleryInputRef = useRef<HTMLInputElement | null>(null);
+	const [videos, setVideos] = useState<Array<{ id: string; youtubeId: string; title?: string | null }>>([]);
+	const [videoUrl, setVideoUrl] = useState('');
+	const [uploadingVideo, setUploadingVideo] = useState(false);
+	const [mediaTab, setMediaTab] = useState<'gallery' | 'videos' | 'material'>('gallery');
 
 	const confirmedDates = useMemo(() => {
 		const allowed = new Set(['CONTRACT_SIGNED', 'PAID_PARTIAL', 'PAID_FULL']);
@@ -80,6 +93,27 @@ function ArtistPrivateProfilePage() {
 			.catch((err) => setError(err.message))
 			.finally(() => setLoadingProfile(false));
 	}, [user?.token, profileId]);
+
+	useEffect(() => {
+		if (!user?.token) return;
+		getProfileImage(user.token)
+			.then((result) => setProfileImageUrl(result.url))
+			.catch(() => setProfileImageUrl(null));
+	}, [user?.token]);
+
+	useEffect(() => {
+		if (!profileId) return;
+		getArtistGallery(profileId)
+			.then((items) => setGallery(items ?? []))
+			.catch(() => setGallery([]));
+	}, [profileId]);
+
+	useEffect(() => {
+		if (!profileId) return;
+		getArtistVideos(profileId)
+			.then((items) => setVideos(items ?? []))
+			.catch(() => setVideos([]));
+	}, [profileId]);
 
 	if (meLoading || loadingProfile) {
 		return <div className="p-8 text-slate-700">Cargando perfil…</div>;
@@ -160,182 +194,300 @@ function ArtistPrivateProfilePage() {
 				<p className="text-slate-600">Refleja lo que ven salas y promoters. El backend sigue siendo la fuente de verdad.</p>
 			</header>
 
-			<section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-				<KpiCard icon={<MapPin className="h-4 w-4" />} label="Ciudad" value={profile.city || 'Añade ciudad'} />
-				<KpiCard icon={<Wallet className="h-4 w-4" />} label="Caché base" value={formatCurrency(profile.basePrice, profile.currency)} />
-				<KpiCard
-					icon={<ShieldCheck className="h-4 w-4" />}
-					label="Negociación"
-					value={profile.isNegotiable ? 'Negociable' : 'No negociable'}
-				/>
+			<section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 space-y-4">
+				<div className="flex items-start gap-4">
+					<div className="h-16 w-16 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 text-lg font-semibold overflow-hidden">
+						{profileImageUrl ? (
+							<img
+								src={profileImageUrl}
+								alt="Foto de perfil"
+								className="h-full w-full object-cover"
+								onError={() => setProfileImageUrl(null)}
+							/>
+						) : (
+							(profile.name || 'AR').slice(0, 2).toUpperCase()
+						)}
+					</div>
+					<div className="flex-1 min-w-0 space-y-2">
+						<div className="flex flex-wrap items-center gap-2">
+							<input
+								className="text-2xl font-semibold text-slate-900 tracking-tight bg-transparent border-b border-transparent focus:border-slate-300 outline-none"
+								value={profile.name}
+								onChange={(e) => handleChange('name', e.target.value)}
+								placeholder="Nombre artístico"
+							/>
+							<span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
+								<ShieldCheck className="h-3.5 w-3.5" /> Perfil verificado en ARTIME
+							</span>
+						</div>
+						<div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+							<span className="flex items-center gap-1.5">
+								<MapPin className="h-4 w-4" />
+								<input
+									className="bg-transparent border-b border-transparent focus:border-slate-300 outline-none text-sm"
+									value={profile.city}
+									onChange={(e) => handleChange('city', e.target.value)}
+									placeholder="Ciudad"
+								/>
+							</span>
+							<span className="flex items-center gap-1.5">
+								<Wallet className="h-4 w-4" />
+								<input
+									type="number"
+									className="w-24 bg-transparent border-b border-transparent focus:border-slate-300 outline-none text-sm"
+									value={profile.basePrice}
+									onChange={(e) => handleChange('basePrice', Number(e.target.value))}
+								/>
+								<input
+									className="w-16 bg-transparent border-b border-transparent focus:border-slate-300 outline-none text-sm"
+									value={profile.currency}
+									onChange={(e) => handleChange('currency', e.target.value)}
+								/>
+							</span>
+							<label className="inline-flex items-center gap-2 text-sm text-slate-600">
+								<input
+									type="checkbox"
+									checked={profile.isNegotiable}
+									onChange={(e) => handleChange('isNegotiable', e.target.checked)}
+									className="h-4 w-4"
+								/>
+								<span>{profile.isNegotiable ? 'Negociable' : 'No negociable'}</span>
+							</label>
+						</div>
+						<div className="flex flex-wrap gap-2">
+							<input
+								className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:border-slate-400 focus:outline-none"
+								value={profile.genres}
+								onChange={(e) => handleChange('genres', e.target.value)}
+								placeholder="Géneros (coma)"
+							/>
+						</div>
+					</div>
+				</div>
+
+				<div className="grid grid-cols-1 gap-4">
+					<div>
+						<label className="text-xs font-medium text-slate-500">Biografía</label>
+						<textarea
+							className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none min-h-[120px]"
+							value={profile.bio}
+							onChange={(e) => handleChange('bio', e.target.value)}
+							placeholder="Describe tu propuesta en 3-5 frases claras."
+						/>
+					</div>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<label className="text-xs font-medium text-slate-500">Formato / setup</label>
+							<input
+								className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
+								value={profile.format}
+								onChange={(e) => handleChange('format', e.target.value)}
+								placeholder="Solo, banda completa, DJ set"
+							/>
+						</div>
+					</div>
+				</div>
+
+				<div className="border-t border-slate-100 pt-3 space-y-2">
+					<p className="text-xs text-slate-500">Imagen de perfil</p>
+					<div className="flex items-center gap-2">
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept="image/*"
+							className="hidden"
+							onChange={async (e) => {
+								const file = e.target.files?.[0];
+								if (!file || !user?.token) return;
+								setUploadingImage(true);
+								try {
+									await uploadProfileImage(file, user.token);
+									const refreshed = await getProfileImage(user.token);
+									setProfileImageUrl(refreshed.url);
+								} finally {
+									setUploadingImage(false);
+									if (fileInputRef.current) fileInputRef.current.value = '';
+								}
+							}}
+						/>
+						<button
+							type="button"
+							disabled={uploadingImage}
+							onClick={() => fileInputRef.current?.click()}
+							className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+						>
+							{uploadingImage ? 'Subiendo…' : 'Subir imagen'}
+						</button>
+						{profileImageUrl && (
+							<span className="text-xs text-slate-500">Actualizada</span>
+						)}
+					</div>
+				</div>
+
+				<div className="border-t border-slate-100 pt-4 space-y-3">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-2 text-xs">
+							<button
+								type="button"
+								onClick={() => setMediaTab('gallery')}
+								className={`rounded-full px-3 py-1 border ${mediaTab === 'gallery' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600'}`}
+							>
+								Galería
+							</button>
+							<button
+								type="button"
+								onClick={() => setMediaTab('videos')}
+								className={`rounded-full px-3 py-1 border ${mediaTab === 'videos' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600'}`}
+							>
+								Videos
+							</button>
+							<button
+								type="button"
+								onClick={() => setMediaTab('material')}
+								className={`rounded-full px-3 py-1 border ${mediaTab === 'material' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600'}`}
+							>
+								Material
+							</button>
+						</div>
+						{mediaTab === 'gallery' ? (
+							<div className="flex items-center gap-2">
+								<input
+									ref={galleryInputRef}
+									type="file"
+									accept="image/*"
+									className="hidden"
+									onChange={async (e) => {
+										const file = e.target.files?.[0];
+										if (!file || !user?.token || !profileId) return;
+										setUploadingGallery(true);
+										try {
+											await uploadArtistGalleryImage(file, user.token);
+											const refreshed = await getArtistGallery(profileId);
+											setGallery(refreshed ?? []);
+										} finally {
+											setUploadingGallery(false);
+											if (galleryInputRef.current) galleryInputRef.current.value = '';
+										}
+									}}
+								/>
+								<button
+									type="button"
+									disabled={uploadingGallery || gallery.length >= 6}
+									onClick={() => galleryInputRef.current?.click()}
+									className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+								>
+									{uploadingGallery ? 'Subiendo…' : 'Subir'}
+								</button>
+							</div>
+						) : mediaTab === 'videos' ? (
+							<div className="flex items-center gap-2">
+								<input
+									type="url"
+									value={videoUrl ?? ''}
+									onChange={(e) => setVideoUrl(e.target.value)}
+									placeholder="Enlace de YouTube"
+									className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs"
+								/>
+								<button
+									type="button"
+									disabled={uploadingVideo || videos.length >= 4 || !videoUrl}
+									onClick={async () => {
+										if (!user?.token || !videoUrl || !profileId) return;
+										setUploadingVideo(true);
+										try {
+											await addArtistVideo(videoUrl, user.token);
+											setVideoUrl('');
+											const refreshed = await getArtistVideos(profileId);
+											setVideos(refreshed ?? []);
+										} finally {
+											setUploadingVideo(false);
+										}
+									}}
+									className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+								>
+									{uploadingVideo ? 'Añadiendo…' : 'Añadir'}
+								</button>
+							</div>
+						) : (
+							<div className="text-xs text-slate-500">Completa tus enlaces operativos.</div>
+						)}
+					</div>
+					{mediaTab === 'gallery' ? (
+						gallery.length === 0 ? (
+							<p className="text-xs text-slate-500">Aún no has subido imágenes.</p>
+						) : (
+							<div className="grid grid-cols-2 gap-2">
+								{gallery.map((item) => (
+									<div key={item.id} className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+										<img src={item.url} alt="Imagen de galería" className="h-24 w-full object-cover" />
+										<button
+											type="button"
+											onClick={async () => {
+												if (!user?.token || !profileId) return;
+												await deleteArtistGalleryImage(item.id, user.token);
+												const refreshed = await getArtistGallery(profileId);
+												setGallery(refreshed ?? []);
+											}}
+											className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-700 shadow-sm"
+										>
+											Eliminar
+										</button>
+									</div>
+								))}
+							</div>
+						)
+					) : mediaTab === 'videos' ? (
+						videos.length === 0 ? (
+							<p className="text-xs text-slate-500">Aún no has añadido videos.</p>
+						) : (
+							<div className="grid grid-cols-2 gap-2">
+								{videos.map((item) => (
+									<div key={item.id} className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+										<img src={`https://img.youtube.com/vi/${item.youtubeId}/hqdefault.jpg`} alt="Video" className="h-24 w-full object-cover" />
+										<button
+											type="button"
+											onClick={async () => {
+												if (!user?.token || !profileId) return;
+												await deleteArtistVideo(item.id, user.token);
+												const refreshed = await getArtistVideos(profileId);
+												setVideos(refreshed ?? []);
+											}}
+											className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-700 shadow-sm"
+										>
+											Eliminar
+										</button>
+									</div>
+								))}
+							</div>
+						)
+					) : (
+						<div className="rounded-xl border border-slate-200 bg-white p-3">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+								<Field label="EPK / Social">
+									<input
+										className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
+										value={profile.socialLink ?? ''}
+										onChange={(e) => handleChange('socialLink', e.target.value)}
+										placeholder="https://"
+									/>
+								</Field>
+								<Field label="Rider técnico (PDF o link)">
+									<input
+										className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
+										value={profile.techRider ?? ''}
+										onChange={(e) => handleChange('techRider', e.target.value)}
+										placeholder="https://"
+									/>
+								</Field>
+							</div>
+							<p className="mt-2 text-xs text-slate-500">Se comparten como enlaces directos al iniciar una propuesta.</p>
+						</div>
+					)}
+				</div>
 			</section>
 
 			<section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				<div className="lg:col-span-2 space-y-6">
-					<Card title="Información básica" icon={<Sparkles className="h-4 w-4 text-slate-600" />}>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<Field label="Nombre artístico">
-								<input
-									className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
-									value={profile.name}
-									onChange={(e) => handleChange('name', e.target.value)}
-								/>
-							</Field>
-							<Field label="Ciudad">
-								<div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
-									<MapPin className="h-4 w-4 text-slate-500" />
-									<input
-										className="w-full text-sm focus:outline-none"
-										value={profile.city}
-										onChange={(e) => handleChange('city', e.target.value)}
-									/>
-								</div>
-							</Field>
-							<Field label="Géneros (coma)">
-								<div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
-									<Music className="h-4 w-4 text-slate-500" />
-									<input
-										className="w-full text-sm focus:outline-none"
-										value={profile.genres}
-										onChange={(e) => handleChange('genres', e.target.value)}
-										placeholder="Indie, Rock, Electrónica"
-									/>
-								</div>
-							</Field>
-							<Field label="Formato / setup">
-								<input
-									className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
-									value={profile.format}
-									onChange={(e) => handleChange('format', e.target.value)}
-									placeholder="Solo, banda completa, DJ set"
-								/>
-							</Field>
-						</div>
-
-						<Field label="Biografía" helper="Recomendado: 3-5 frases claras.">
-							<textarea
-								className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none min-h-[120px]"
-								value={profile.bio}
-								onChange={(e) => handleChange('bio', e.target.value)}
-							/>
-						</Field>
-					</Card>
-
-					<Card title="Condiciones" icon={<Wallet className="h-4 w-4 text-slate-600" />}>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-							<Field label="Fee base">
-								<input
-									type="number"
-									className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
-									value={profile.basePrice}
-									onChange={(e) => handleChange('basePrice', Number(e.target.value))}
-								/>
-							</Field>
-							<Field label="Moneda">
-								<input
-									className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
-									value={profile.currency}
-									onChange={(e) => handleChange('currency', e.target.value)}
-								/>
-							</Field>
-							<Field label="Negociable" helper="Visible para la otra parte">
-								<label className="inline-flex items-center gap-2 text-sm text-slate-700">
-									<input
-										type="checkbox"
-										checked={profile.isNegotiable}
-										onChange={(e) => handleChange('isNegotiable', e.target.checked)}
-										className="h-4 w-4"
-									/>
-									<span>{profile.isNegotiable ? 'Sí, abierto a oferta' : 'No, caché fijo'}</span>
-								</label>
-							</Field>
-						</div>
-
-						<p className="text-xs text-slate-500">La cifra final se confirma en el booking, pero este bloque guía expectativas.</p>
-					</Card>
-
-					<Card title="Enlaces y material" icon={<Link2 className="h-4 w-4 text-slate-600" />}>
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<Field label="Social / EPK">
-								<input
-									className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
-									value={profile.socialLink ?? ''}
-									onChange={(e) => handleChange('socialLink', e.target.value)}
-									placeholder="https://"
-								/>
-							</Field>
-							<Field label="Tech rider">
-								<input
-									className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
-									value={profile.techRider ?? ''}
-									onChange={(e) => handleChange('techRider', e.target.value)}
-									placeholder="Drive, PDF, link"
-								/>
-							</Field>
-						</div>
-						<p className="text-xs text-slate-500">Estos enlaces pueden compartirse con salas para agilizar decisiones.</p>
-					</Card>
-				</div>
-
-				<div className="space-y-6">
-					<Card title="Vista pública" icon={<ShieldCheck className="h-4 w-4 text-slate-600" />}>
-						<div className="space-y-3 text-sm text-slate-700">
-							<div className="flex items-start gap-3">
-								<div className="h-12 w-12 rounded-lg bg-slate-100" />
-								<div className="space-y-1">
-									<p className="text-lg font-semibold text-slate-900">{profile.name || 'Tu nombre artístico'}</p>
-									<p className="text-xs text-slate-500 flex items-center gap-2">
-										<MapPin className="h-3.5 w-3.5" />
-										<span>{profile.city || 'Ciudad'}</span>
-									</p>
-									<div className="flex flex-wrap gap-2">
-										{genresList.length === 0 && <span className="text-xs text-slate-500">Añade géneros</span>}
-										{genresList.map((genre) => (
-											<span key={genre} className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
-												<Music className="h-3 w-3" />
-												{genre}
-											</span>
-										))}
-									</div>
-								</div>
-							</div>
-							<p className="leading-relaxed text-slate-700">{profile.bio || 'Añade una bio breve (3-5 frases) para que las salas te entiendan rápido.'}</p>
-							<div className="space-y-1 text-xs text-slate-500">
-								<p>
-									Formato: <span className="text-slate-800 font-medium">{profile.format || 'Indica setup'}</span>
-								</p>
-								<p>
-									Condiciones: <span className="text-slate-800 font-medium">{formatCurrency(profile.basePrice, profile.currency)} · {profile.isNegotiable ? 'Negociable' : 'No negociable'}</span>
-								</p>
-							</div>
-
-							{(profile.socialLink || profile.techRider) && (
-								<div className="border-t border-slate-100 pt-3 space-y-2">
-									{profile.socialLink && (
-										<a href={profile.socialLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-medium text-slate-800 hover:text-slate-900">
-											<Link2 className="h-3.5 w-3.5" /> Social / EPK
-										</a>
-									)}
-									{profile.techRider && (
-										<a href={profile.techRider} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-xs font-medium text-slate-800 hover:text-slate-900">
-											<Link2 className="h-3.5 w-3.5" /> Tech rider
-										</a>
-									)}
-								</div>
-							)}
-
-							<p className="text-xs text-slate-500">Esta vista es la referencia rápida que ve la otra parte.</p>
-						</div>
-					</Card>
-
-					<Card title="Estado" icon={<AlertCircle className="h-4 w-4 text-slate-600" />}>
-						<div className="space-y-3 text-sm text-slate-700">
-							<StatusLine label="Rol" value="Artista" />
-							<StatusLine label="ID de perfil" value={profile.id ?? '-'} />
-							<p className="text-xs text-slate-500">Los datos sensibles como email se gestionan en autenticación.</p>
-						</div>
-					</Card>
-
 					<Card title="Próximas fechas confirmadas" icon={<CalendarIcon />}> 
 						<div className="space-y-3 text-sm text-slate-700">
 							{confirmedDates.length === 0 && <p className="text-slate-500 text-xs">Sin fechas próximas por ahora.</p>}
@@ -371,20 +523,6 @@ function ArtistPrivateProfilePage() {
 	);
 }
 export default withRole(ArtistPrivateProfilePage, ['ARTIST']);
-
-function KpiCard({ icon, label, value }: { icon: ReactNode; label: string; value: string | number }) {
-	return (
-		<div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-			<div className="px-4 py-3 flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500">
-				{icon}
-				<span>{label}</span>
-			</div>
-			<div className="px-4 py-4 bg-slate-900 text-white">
-				<p className="text-2xl font-semibold">{value}</p>
-			</div>
-		</div>
-	);
-}
 
 function Card({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
 	return (

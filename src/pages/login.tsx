@@ -11,6 +11,26 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const handleBack = () => {
+    if (typeof window === 'undefined') return;
+    const referrer = document.referrer;
+    const origin = window.location.origin;
+
+    if (referrer && referrer.startsWith(origin)) {
+      try {
+        const url = new URL(referrer);
+        if (url.pathname === '/') {
+          router.push('/');
+          return;
+        }
+      } catch {
+        // Fallback to router.back()
+      }
+    }
+
+    router.back();
+  };
+
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setLoading(true);
@@ -33,6 +53,15 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md space-y-8">
+        <div>
+          <button
+            type="button"
+            onClick={handleBack}
+            className="text-sm font-medium text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2"
+          >
+            ← Volver
+          </button>
+        </div>
         <header className="space-y-2 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg">
             <ShieldCheck className="h-6 w-6" />

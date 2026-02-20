@@ -6,41 +6,34 @@ type Props = {
   onSelectDate?: (date: string) => void;
 };
 
-const STATUS_COLORS: Record<CalendarDay['status'], string> = {
-  AVAILABLE: '#e8f5e9',
-  BOOKED: '#ffe8e6',
-  BLOCKED: '#f3f4f6',
+const STATUS_CLASSES: Record<CalendarDay['status'], string> = {
+  AVAILABLE: 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:border-emerald-300',
+  BOOKED: 'bg-amber-50 text-amber-800 border-amber-200 cursor-not-allowed',
+  BLOCKED: 'bg-slate-100 text-slate-500 border-slate-200',
 };
 
 export function CalendarDayCell({ day, selected, onSelectDate }: Props) {
   if (!day) return <div />;
 
-  const bg = STATUS_COLORS[day.status];
   const isSelected = !!selected;
 
   return (
     <button
       type="button"
-      style={{
-        width: '100%',
-        aspectRatio: '1 / 1',
-        border: isSelected ? '2px solid #111' : '1px solid #ddd',
-        borderRadius: 8,
-        background: bg,
-        padding: 8,
-        textAlign: 'left',
-        cursor: 'pointer',
-      }}
+      className={`w-full aspect-square rounded-lg border p-2 text-left transition ${STATUS_CLASSES[day.status]} ${
+        isSelected ? 'ring-2 ring-slate-900/30' : ''
+      }`}
       onClick={() => onSelectDate?.(day.date)}
+      disabled={day.status === 'BOOKED'}
     >
-      <div style={{ fontWeight: 600, marginBottom: 4 }}>{day.date.slice(-2)}</div>
+      <div className="text-sm font-semibold mb-1">{day.date.slice(-2)}</div>
       {day.bookings && day.bookings.length > 0 && (
-        <div style={{ fontSize: 12, color: '#d14343' }}>
+        <div className="text-[11px] text-slate-600">
           {day.bookings.length} booking{day.bookings.length > 1 ? 's' : ''}
         </div>
       )}
       {day.status === 'BLOCKED' && (
-        <div style={{ fontSize: 12, color: '#555' }}>Bloqueado</div>
+        <div className="text-[11px] text-slate-500">Bloqueado</div>
       )}
     </button>
   );

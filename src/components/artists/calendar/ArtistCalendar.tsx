@@ -55,17 +55,11 @@ export function ArtistCalendar({
   const selectedDay = selectedDate ? daysByDate.get(selectedDate) ?? null : null;
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="grid gap-4">
       <CalendarLegend />
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
-          gap: 8,
-        }}
-      >
+      <div className="grid grid-cols-7 gap-2">
         {['D', 'L', 'M', 'X', 'J', 'V', 'S'].map((d) => (
-          <div key={d} style={{ textAlign: 'center', fontWeight: 600, color: '#555' }}>
+          <div key={d} className="text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
             {d}
           </div>
         ))}

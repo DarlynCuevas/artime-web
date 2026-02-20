@@ -11,6 +11,8 @@ import { createRepresentationRequest } from '@/services/representations/represen
 import { RepresentationStatusBadge } from '@/components/representations/RepresentationStatusBadge';
 import { CommissionInput } from '@/components/representations/CommissionInput';
 import { ConfirmActionModal } from '@/components/representations/ConfirmActionModal';
+import { getArtistGallery } from '@/services/artists/gallery.service';
+import { getArtistVideos } from '@/services/artists/videos.service';
 
 type ArtistProfile = {
   id: string;
@@ -28,6 +30,7 @@ type ArtistProfile = {
   representationStatus?: 'NONE' | 'PENDING' | 'ACTIVE' | 'REJECTED';
   representationRequestId?: string | null;
   representationCommission?: number | null;
+  profileImageUrl?: string | null;
 };
 
 export default function ArtistProfilePage() {
@@ -39,6 +42,8 @@ export default function ArtistProfilePage() {
   const isManager = role === 'MANAGER';
 
   const [artist, setArtist] = useState<ArtistProfile | null>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [showImageModal, setShowImageModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState<Date>(new Date());
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
@@ -48,6 +53,11 @@ export default function ArtistProfilePage() {
     'IDLE' | 'SUBMITTING' | 'PENDING' | 'RESOLVED_ACCEPTED' | 'RESOLVED_REJECTED' | 'ERROR'
   >('IDLE');
   const [requestError, setRequestError] = useState<string | null>(null);
+  const [gallery, setGallery] = useState<Array<{ id: string; url: string }>>([]);
+  const [showGalleryImage, setShowGalleryImage] = useState<string | null>(null);
+  const [videos, setVideos] = useState<Array<{ id: string; youtubeId: string; title?: string | null }>>([]);
+  const [showVideoId, setShowVideoId] = useState<string | null>(null);
+  const [mediaTab, setMediaTab] = useState<'gallery' | 'videos' | 'material'>('gallery');
 
   const { days: availability, loading: availabilityLoading } = useArtistAvailability(id, month, user?.token);
 
@@ -62,6 +72,7 @@ export default function ArtistProfilePage() {
       .then((r) => r.json())
       .then((data) => {
         setArtist(data);
+        setProfileImageUrl(data?.profileImageUrl ?? null);
         if (data?.representationStatus === 'PENDING') setRequestState('PENDING');
         if (data?.representationStatus === 'REJECTED') setRequestState('RESOLVED_REJECTED');
         if (data?.representationStatus === 'ACTIVE' || data?.managerId) setRequestState('RESOLVED_ACCEPTED');
@@ -84,6 +95,20 @@ export default function ArtistProfilePage() {
   useEffect(() => {
     loadArtist();
   }, [id, user?.token]);
+
+  useEffect(() => {
+    if (!id) return;
+    getArtistGallery(id)
+      .then((items) => setGallery(items ?? []))
+      .catch(() => setGallery([]));
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    getArtistVideos(id)
+      .then((items) => setVideos(items ?? []))
+      .catch(() => setVideos([]));
+  }, [id]);
 
   if (loading) {
     return <div className="p-8 text-slate-700">Cargando artista…</div>;
@@ -151,8 +176,23 @@ export default function ArtistProfilePage() {
 
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 space-y-4">
         <div className="flex items-start gap-4">
-          <div className="h-16 w-16 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 text-lg font-semibold">
-            {artist.name.slice(0, 2).toUpperCase()}
+          <div className="h-16 w-16 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 text-lg font-semibold overflow-hidden">
+            {profileImageUrl ? (
+              <button
+                type="button"
+                onClick={() => setShowImageModal(true)}
+                className="h-full w-full"
+              >
+                <img
+                  src={profileImageUrl}
+                  alt={`Foto de ${artist.name}`}
+                  className="h-full w-full object-cover"
+                  onError={() => setProfileImageUrl(null)}
+                />
+              </button>
+            ) : (
+              artist.name.slice(0, 2).toUpperCase()
+            )}
           </div>
           <div className="flex-1 min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -196,6 +236,83 @@ export default function ArtistProfilePage() {
             )}
           </div>
         </div>
+        <div className="border-t border-slate-100 pt-4">
+          <div className="flex items-center gap-2 text-xs mb-3">
+            <button
+              type="button"
+              onClick={() => setMediaTab('gallery')}
+              className={`rounded-full px-3 py-1 border ${mediaTab === 'gallery' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600'}`}
+            >
+              Galería
+            </button>
+            <button
+              type="button"
+              onClick={() => setMediaTab('videos')}
+              className={`rounded-full px-3 py-1 border ${mediaTab === 'videos' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600'}`}
+            >
+              Videos
+            </button>
+            <button
+              type="button"
+              onClick={() => setMediaTab('material')}
+              className={`rounded-full px-3 py-1 border ${mediaTab === 'material' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600'}`}
+            >
+              Material
+            </button>
+          </div>
+          {mediaTab === 'gallery' && (
+            gallery.length === 0 ? (
+              <p className="text-sm text-slate-500">Este artista aún no ha subido imágenes.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {gallery.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setShowGalleryImage(item.url)}
+                    className="group overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                  >
+                    <img src={item.url} alt="Imagen de galería" className="h-28 w-full object-cover transition-transform group-hover:scale-[1.02]" />
+                  </button>
+                ))}
+              </div>
+            )
+          )}
+
+          {mediaTab === 'videos' && (
+            videos.length === 0 ? (
+              <p className="text-sm text-slate-500">Este artista aún no ha subido videos.</p>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {videos.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setShowVideoId(item.youtubeId)}
+                    className="group overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+                  >
+                    <img src={`https://img.youtube.com/vi/${item.youtubeId}/hqdefault.jpg`} alt="Video" className="h-28 w-full object-cover transition-transform group-hover:scale-[1.02]" />
+                  </button>
+                ))}
+              </div>
+            )
+          )}
+
+          {mediaTab === 'material' && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-sm text-slate-600">
+                El material operativo (EPK, tech rider, redes y enlaces clave) se comparte al iniciar la propuesta en ARTIME.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {['EPK', 'Tech rider', 'Redes'].map((label) => (
+                  <span key={label} className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -204,6 +321,9 @@ export default function ArtistProfilePage() {
             <p className="text-slate-700 leading-relaxed">
               {artist.bio || 'No hay descripción profesional registrada.'}
             </p>
+            <div className="mt-3 text-xs text-slate-500">
+              Formato: <span className="text-slate-700 font-medium">{artist.format || 'Indica setup'}</span>
+            </div>
           </Card>
 
           <Card title="Disponibilidad" icon={<CalendarIcon className="h-4 w-4 text-slate-600" />}>
@@ -299,10 +419,6 @@ export default function ArtistProfilePage() {
         </div>
 
         <div className="space-y-6">
-          <Card title="Material" icon={<Link2 className="h-4 w-4 text-slate-600" />}>
-            <p className="text-sm text-slate-600">Comparte links clave (EPK, tech rider, redes) al iniciar la propuesta.</p>
-          </Card>
-
           <Card title="Representación" icon={<ShieldCheck className="h-4 w-4 text-slate-600" />}>
             <div className="space-y-3 text-sm text-slate-700">
               <div className="flex items-center gap-3">
@@ -367,6 +483,51 @@ export default function ArtistProfilePage() {
         loading={requestState === 'SUBMITTING'}
         error={requestError}
       />
+      {showImageModal && profileImageUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6"
+          onClick={() => setShowImageModal(false)}
+        >
+          <div className="relative w-[320px] sm:w-[420px] md:w-[520px]">
+            <div
+              className="rounded-2xl overflow-hidden bg-black/90 border border-white/10 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={profileImageUrl}
+                alt={`Foto de ${artist.name}`}
+                className="w-full h-auto object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      {showGalleryImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onClick={() => setShowGalleryImage(null)}>
+          <div className="relative w-[320px] sm:w-[420px] md:w-[520px]">
+            <div className="rounded-2xl overflow-hidden bg-black/90 border border-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <img src={showGalleryImage} alt="Imagen de galería" className="w-full h-auto object-contain" />
+            </div>
+          </div>
+        </div>
+      )}
+      {showVideoId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onClick={() => setShowVideoId(null)}>
+          <div className="relative w-[320px] sm:w-[520px] md:w-[640px]">
+            <div className="rounded-2xl overflow-hidden bg-black/90 border border-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="w-full aspect-video">
+                <iframe
+                  className="w-full h-full"
+                  src={`https://www.youtube-nocookie.com/embed/${showVideoId}?modestbranding=1&controls=1&rel=0`}
+                  title="Video del artista"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

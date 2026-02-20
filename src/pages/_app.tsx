@@ -4,6 +4,7 @@ import '../globals.css';
 import { MainNav } from '../components/layout/MainNav';
 import { useRouter } from 'next/router';
 import { MeProvider } from '../context/MeContext';
+import { Toaster } from '../components/ui/toaster';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
@@ -14,6 +15,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     return (
       <MeProvider>
         <Component {...pageProps} />
+        <Toaster />
       </MeProvider>
     );
   }
@@ -23,6 +25,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       <MainNav>
         <Component {...pageProps} />
       </MainNav>
+      <Toaster />
     </MeProvider>
   );
 }

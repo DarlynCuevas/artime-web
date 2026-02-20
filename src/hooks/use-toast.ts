@@ -1,9 +1,19 @@
-import { ToastActionElement, ToastProps } from "@/components/ui/toast";
 import * as React from "react";
 
 
 const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 3000;
+
+type ToastProps = {
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  variant?: "default" | "destructive";
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  href?: string;
+};
+
+type ToastActionElement = React.ReactNode;
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -155,6 +165,7 @@ function toast({ ...props }: Toast) {
       },
     },
   });
+  addToRemoveQueue(id);
 
   return {
     id: id,

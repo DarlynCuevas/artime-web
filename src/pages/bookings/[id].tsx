@@ -23,7 +23,7 @@ import {
   createPaymentIntentForMilestone,
   getMilestonesForBooking,
 } from '@/services/bookings/payments/payments.service.';
-import { signContract } from '@/services/contracts/contracts.service';
+import { downloadContractPdf, signContract } from '@/services/contracts/contracts.service';
 
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
@@ -70,6 +70,7 @@ function BookingDetailPage() {
     paidAmount: number;
     totalAmount: number;
     percent: number;
+    lastPaidAt?: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -102,6 +103,20 @@ function BookingDetailPage() {
             return sum + amount;
           }, 0);
 
+        const paidAtCandidates = (milestones ?? [])
+          .filter((m: any) => {
+            const status = m?.props?.status ?? m?.status;
+            return status === 'PAID' || status === 'FINALIZED';
+          })
+          .map((m: any) => m?.props?.paidAt ?? m?.paidAt ?? m?.props?.resolvedAt ?? m?.resolvedAt)
+          .filter(Boolean)
+          .map((value: any) => new Date(value).getTime());
+
+        const lastPaidAt =
+          paidAtCandidates.length > 0
+            ? new Date(Math.max(...paidAtCandidates)).toISOString()
+            : null;
+
         const totalAmount = booking.totalAmount ?? 0;
         const percent =
           totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 100) : 0;
@@ -110,6 +125,7 @@ function BookingDetailPage() {
           paidAmount,
           totalAmount,
           percent,
+          lastPaidAt,
         });
       })
       .catch(() => setPaymentSummary(null));
@@ -132,6 +148,7 @@ function BookingDetailPage() {
   const artistId = booking.artistId ?? (booking as any).artistId ?? null;
   const promoterId = (booking as any).promoter?.id ?? booking.promoterId ?? null;
   const artistName = (booking as any).artist?.name ?? (booking as any).artistName ?? null;
+  const resolvedEventName = eventName ?? (booking as any).eventName ?? null;
 
   // Turno: si hay handler asignado a otra parte, no es tu turno; si no, se decide por últimos mensajes
   const lastNegotiation = negotiationMessages.length > 0 ? negotiationMessages[negotiationMessages.length - 1] : null;
@@ -181,6 +198,12 @@ function BookingDetailPage() {
       : booking.status === 'CANCELLED' ||
         booking.status === 'CANCELLED_PENDING_REVIEW'
         ? 'La contratación ha sido cancelada.'
+        : booking.status === 'CONTRACT_SIGNED'
+          ? 'Contrato firmado. Pendiente de pagos.'
+        : booking.status === 'PAID_PARTIAL'
+          ? 'Pagos en curso. Pendiente de completar el importe.'
+        : booking.status === 'PAID_FULL' || booking.status === 'COMPLETED'
+          ? 'Pagos completados.'
         : booking.status === 'ACCEPTED'
           ? 'Contratación aceptada. Pendiente de firma de contrato.'
         : booking.status === 'FINAL_OFFER_SENT'
@@ -199,7 +222,11 @@ function BookingDetailPage() {
     booking.status === 'REJECTED' ||
     booking.status === 'CANCELLED' ||
     booking.status === 'CANCELLED_PENDING_REVIEW' ||
-    booking.status === 'ACCEPTED'
+    booking.status === 'ACCEPTED' ||
+    booking.status === 'CONTRACT_SIGNED' ||
+    booking.status === 'PAID_PARTIAL' ||
+    booking.status === 'PAID_FULL' ||
+    booking.status === 'COMPLETED'
       ? '—'
       : hasTurn
         ? 'Tu turno'
@@ -208,6 +235,7 @@ function BookingDetailPage() {
           : '—';
 
   const hasContract = Boolean(contract);
+  const canDownloadContract = contract?.status === 'SIGNED';
   const canSignContract =
     Boolean(contract) &&
     contract?.status === 'DRAFT' &&
@@ -224,7 +252,21 @@ function BookingDetailPage() {
           ? '/artists/bookings'
           : '/bookings';
 
-  const lastActivity = booking.handledAt ?? (booking as any).updatedAt ?? (booking as any).createdAt ?? null;
+  const lastActivityCandidates = [
+    lastNegotiation?.createdAt,
+    contract?.signedAt,
+    paymentSummary?.lastPaidAt,
+    booking.handledAt,
+    (booking as any).updatedAt,
+    (booking as any).createdAt,
+  ]
+    .filter(Boolean)
+    .map((value) => new Date(value as string).getTime());
+
+  const lastActivity =
+    lastActivityCandidates.length > 0
+      ? new Date(Math.max(...lastActivityCandidates))
+      : null;
   const bookingAmount = (booking as any).totalAmount ?? (booking as any).amount ?? null;
   const bookingCurrency = (booking as any).currency ?? 'EUR';
   const eventDate = booking.start_date ?? (booking as any).startDate ?? null;
@@ -261,8 +303,11 @@ function BookingDetailPage() {
 
 
 
-  const headerTargetName = eventName ?? venueName;
-  const headerTargetMeta = eventName ? null : venueCity;
+  const headerTargetName = resolvedEventName ?? venueName;
+  const headerTargetMeta = resolvedEventName ? null : venueCity;
+  const headerSecondaryMeta = eventName
+    ? `${promoterId ? 'Promotor' : 'Sala'}`
+    : null;
 
   const isArtistSideViewer = role === 'ARTIST' || role === 'MANAGER';
   const counterpartyHref = isArtistSideViewer
@@ -284,14 +329,20 @@ function BookingDetailPage() {
             <div className="flex items-center gap-3">
               <div>
                 <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{artistName ?? 'Artista'}</h1>
-                <p className="text-xs text-slate-500">Booking #{booking.id}</p>
               </div>
               <StatusBadge status={booking.status} />
             </div>
-            <p className="text-sm text-slate-600">
-              {artistName ?? 'Artista'} → {headerTargetName}
-              {headerTargetMeta ? ` · ${headerTargetMeta}` : ''}
-            </p>
+            <div className="text-sm text-slate-600 space-y-1">
+              <p>
+                {artistName ?? 'Artista'} → {headerTargetName}
+                {headerTargetMeta ? ` · ${headerTargetMeta}` : ''}
+              </p>
+              {resolvedEventName && (
+                <p className="text-xs text-slate-500">
+                  {promoterId ? 'Promotor' : 'Sala'}{venueName ? ` · ${venueName}` : ''}{venueCity ? `, ${venueCity}` : ''}
+                </p>
+              )}
+            </div>
           </div>
           <div className="text-right text-sm text-slate-600">
             <p className="font-medium text-slate-900">Última actividad</p>
@@ -300,11 +351,11 @@ function BookingDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-          <KpiCard label="Estado" value={booking.status} />
+          <KpiCard label="Estado" value={formatBookingStatusLabel(booking.status)} />
           <KpiCard label="Importe" value={formatCurrency(agreedAmount, bookingCurrency)} />
           <KpiCard
             label="Pago"
-            value={paymentSummary ? (paymentSummary.percent >= 100 ? 'Pagado completo' : `Pagado ${paymentSummary.percent}%`) : '—'}
+            value={paymentSummary ? (paymentSummary.percent >= 100 ? '100%' : `${paymentSummary.percent}%`) : '—'}
             helper={paymentSummary ? `${formatCurrency(paymentSummary.paidAmount, bookingCurrency)} de ${formatCurrency(paymentSummary.totalAmount, bookingCurrency)}` : undefined}
           />
           <KpiCard label="Turno" value={turnLabel} />
@@ -497,6 +548,19 @@ function BookingDetailPage() {
                 <Button onClick={() => setShowSignContractModal(true)} variant="default">
                   Firmar contrato
                 </Button>
+              </div>
+            )}
+            {canDownloadContract && (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await downloadContractPdf(booking.id, user.token);
+                  }}
+                  className="inline-flex items-center rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  Descargar contrato
+                </button>
               </div>
             )}
           </Card>
@@ -706,6 +770,27 @@ function formatShortTime(value?: string | null) {
   if (!value) return '—';
   const d = new Date(value);
   return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatBookingStatusLabel(status: string) {
+  const labels: Record<string, string> = {
+    PENDING: 'Pendiente',
+    NEGOTIATING: 'En negociación',
+    FINAL_OFFER_SENT: 'Oferta final enviada',
+    FINAL_OFFER_ACCEPTED: 'Oferta final aceptada',
+    FINAL_OFFER_REJECTED: 'Oferta final rechazada',
+    ACCEPTED: 'Aceptado',
+    CONTRACT_SENT: 'Contrato enviado',
+    CONTRACT_SIGNED: 'Contrato firmado',
+    PAID_PARTIAL: 'Pago parcial',
+    PAID_FULL: 'Pago completo',
+    COMPLETED: 'Completado',
+    CANCELLED: 'Cancelado',
+    CANCELLED_PENDING_REVIEW: 'Cancelado (revisión)',
+    REJECTED: 'Rechazado',
+  };
+
+  return labels[status] ?? status;
 }
 
 function getTimelineColor(event: { isFinal: boolean; amount?: number }) {

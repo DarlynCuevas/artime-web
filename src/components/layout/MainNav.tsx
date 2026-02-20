@@ -1,36 +1,22 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import {
-  AlertCircle,
-  Bell,
-  CalendarDays,
-  CheckCircle2,
-  CircleDot,
-  LayoutDashboard,
-  Settings,
-  Ticket,
-  UserRound,
-  Users,
-} from 'lucide-react';
+import { AlertCircle, Bell, CalendarDays, CheckCircle2, LayoutDashboard, Ticket, UserRound, Users } from 'lucide-react';
 
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { toast } from '@/hooks/use-toast';
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
@@ -40,53 +26,46 @@ import { useArtistNotifications } from '@/hooks/artists/useArtistNotifications';
 import { formatCurrency } from '@/lib/utils';
 import { supabase } from '@/services/supabase/supabaseClient';
 
-const navByRole: Record<string, { label: string; items: { label: string; href: string; icon: any }[] }[]> = {
-  VENUE: [
-    {
-      label: 'Principal',
-      items: [
-        { label: 'Dashboard', href: '/venues/dashboard', icon: LayoutDashboard },
-        { label: 'Artistas', href: '/venues/discover', icon: Users },
-        { label: 'Bookings', href: '/venues/bookings', icon: Ticket },
-      ],
-    },
-    {
-      label: 'Sistema',
-      items: [{ label: 'Configuración', href: '/settings', icon: UserRound }],
-    },
-  ],
-  ARTIST: [
-    {
-      label: 'Principal',
-      items: [
-        { label: 'Dashboard', href: '/artists/dashboard', icon: LayoutDashboard },
-        { label: 'Calendario', href: '/artists/calendar', icon: CalendarDays },
-        { label: 'Bookings', href: '/artists/bookings', icon: Ticket },
-        { label: 'Perfil', href: '/artists', icon: Users },
-      ],
-    },
-  ],
-  MANAGER: [
-    {
-      label: 'Principal',
-      items: [
-        { label: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
-        { label: 'Artistas', href: '/manager/artists', icon: Users },
-        { label: 'Perfil', href: '/manager/profile', icon: UserRound },
-      ],
-    },
-  ],
-  PROMOTER: [
-    {
-      label: 'Principal',
-      items: [
-        { label: 'Dashboard', href: '/promoter/dashboard', icon: LayoutDashboard },
-        { label: 'Eventos', href: '/promoter/events', icon: CalendarDays },
-        { label: 'Bookings', href: '/promoter/bookings', icon: Ticket },
-        { label: 'Perfil', href: '/promoter/profile', icon: UserRound },
-      ],
-    },
-  ],
+const navByRole: Record<
+  string,
+  {
+    main: { label: string; href: string; icon: any }[];
+    account: { label: string; href: string; icon: any }[];
+  }
+> = {
+  VENUE: {
+    main: [
+      { label: 'Dashboard', href: '/venues/dashboard', icon: LayoutDashboard },
+      { label: 'Bookings', href: '/venues/bookings', icon: Ticket },
+      { label: 'Perfil', href: '/venues/profile', icon: UserRound },
+    ],
+    account: [{ label: 'Configuración', href: '/settings', icon: UserRound }],
+  },
+  ARTIST: {
+    main: [
+      { label: 'Dashboard', href: '/artists/dashboard', icon: LayoutDashboard },
+      { label: 'Bookings', href: '/artists/bookings', icon: Ticket },
+      { label: 'Calendario', href: '/artists/calendar', icon: CalendarDays },
+      { label: 'Perfil', href: '/artists', icon: Users },
+    ],
+    account: [{ label: 'Configuración', href: '/settings', icon: UserRound }],
+  },
+  MANAGER: {
+    main: [
+      { label: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
+      { label: 'Perfil', href: '/manager/profile', icon: UserRound },
+    ],
+    account: [{ label: 'Configuración', href: '/settings', icon: UserRound }],
+  },
+  PROMOTER: {
+    main: [
+      { label: 'Dashboard', href: '/promoter/dashboard', icon: LayoutDashboard },
+      { label: 'Bookings', href: '/promoter/bookings', icon: Ticket },
+      { label: 'Events', href: '/promoter/events', icon: CalendarDays },
+      { label: 'Perfil', href: '/promoter/profile', icon: UserRound },
+    ],
+    account: [{ label: 'Configuración', href: '/settings', icon: UserRound }],
+  },
 };
 
 export function MainNav({ children }: { children: ReactNode }) {
@@ -99,20 +78,21 @@ export function MainNav({ children }: { children: ReactNode }) {
   const bellRef = useRef<HTMLButtonElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const lastToastIdRef = useRef<string | null>(null);
+  const hasBootstrappedToasts = useRef(false);
   const router = useRouter();
 
-  const navSections = useMemo(() => navByRole[role ?? ''] ?? [], [role]);
+  const navSections = useMemo(() => navByRole[role ?? ''], [role]);
   const navSectionsWithProfile = useMemo(() => {
-    return navSections.map((section) => {
-      if (role === 'VENUE' && section.label === 'Principal') {
-        const venueProfileHref = profileId ? `/venues/profile/${profileId}` : '/venues/profile';
-        return {
-          ...section,
-          items: section.items.map((item) => (item.label === 'Perfil' ? { ...item, href: venueProfileHref } : item)),
-        };
-      }
-      return section;
-    });
+    if (!navSections) return null;
+    const venueProfileHref = profileId ? `/venues/profile/${profileId}` : '/venues/profile';
+    const main = navSections.main.map((item) =>
+      role === 'VENUE' && item.label === 'Perfil' ? { ...item, href: venueProfileHref } : item,
+    );
+    return {
+      main,
+      account: navSections.account,
+    };
   }, [navSections, role, profileId]);
 
   const { notifications: latestNotifications = [], unreadCount, markAsRead } = useArtistNotifications({
@@ -122,10 +102,69 @@ export function MainNav({ children }: { children: ReactNode }) {
     limit: 20,
   });
 
-  const mainSections = navSectionsWithProfile.filter((section) => section.label !== 'Sistema');
-  const systemSection = navSectionsWithProfile.find((section) => section.label === 'Sistema');
+  useEffect(() => {
+    if (!latestNotifications.length) return;
 
-  const isActive = (href: string) => router.pathname.startsWith(href);
+    if (!hasBootstrappedToasts.current) {
+      hasBootstrappedToasts.current = true;
+      lastToastIdRef.current = latestNotifications[0]?.id ?? null;
+      return;
+    }
+
+    const latest = latestNotifications[0];
+    if (!latest || latest.id === lastToastIdRef.current) return;
+    lastToastIdRef.current = latest.id;
+
+    if (latest.type === 'BOOKING_REQUEST') {
+      const requester =
+        latest.payload?.eventName ||
+        latest.payload?.venueName ||
+        latest.payload?.promoterName ||
+        'Un organizador';
+      const bookingId = latest.payload?.bookingId;
+      let href: string | undefined;
+      if (bookingId) {
+        if (role === 'MANAGER') {
+          href = `/bookings/${bookingId}`;
+        } else {
+          const base =
+            role === 'VENUE'
+              ? '/venues/bookings'
+              : role === 'PROMOTER'
+                ? '/promoter/bookings'
+                : '/artists/bookings';
+          href = `${base}?bookingId=${bookingId}`;
+        }
+      }
+
+      toast({
+        title: 'Nueva solicitud de contratación',
+        description: `${requester} te ha enviado una solicitud de contratación.`,
+        href,
+      });
+    }
+  }, [latestNotifications]);
+
+  const mainItems = navSectionsWithProfile?.main ?? [];
+  const accountItems = navSectionsWithProfile?.account ?? [];
+  const primaryItems = mainItems.filter((item) => item.label !== 'Perfil');
+  const profileItem = mainItems.find((item) => item.label === 'Perfil');
+
+  const exactMatchRoutes = new Set([
+    '/artists',
+    '/venues',
+    '/manager/profile',
+    '/promoter/profile',
+  ]);
+
+  const isActive = (href: string) => {
+    if (exactMatchRoutes.has(href)) {
+      return router.pathname === href;
+    }
+    return router.pathname.startsWith(href);
+  };
+
+  const headerMeta = getHeaderMeta(router.pathname, role);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -146,100 +185,91 @@ export function MainNav({ children }: { children: ReactNode }) {
 
   return (
     <SidebarProvider>
-      <Sidebar className="bg-[hsl(var(--sidebar-primary))]">
-        <SidebarHeader className="flex items-center gap-2 px-4 pt-4 pb-3">
+      <Sidebar className="bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))]">
+        <SidebarHeader className="flex items-center px-4 pt-5 pb-4">
           <div className="flex items-center gap-2">
-            <Image src="/favicon.ico" alt="Artime" width={28} height={28} className="h-7 w-7 rounded-md" />
             <div className="flex flex-col leading-tight">
-              <span className="text-xs font-semibold tracking-[0.18em] text-[hsl(var(--sidebar-foreground))]">ARTIME</span>
-              <span className="text-[11px] text-[hsl(var(--sidebar-foreground))]/70">Gestión de bookings</span>
+              <span className="text-[11px] font-semibold tracking-[0.18em] text-[hsl(var(--sidebar-foreground))]">ARTIME</span>
             </div>
           </div>
-          <SidebarTrigger className="ml-auto hidden h-8 w-8 text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-foreground)_/_0.16)] md:inline-flex" />
         </SidebarHeader>
 
-        <SidebarContent className="bg-[hsl(var(--sidebar-primary))] px-2 py-3">
-          <div className="space-y-2">
-            {mainSections.map((section) => (
-              <SidebarGroup key={section.label} className="px-2">
-                <SidebarGroupLabel className="px-3 text-[11px] uppercase tracking-[0.08em] text-[hsl(var(--sidebar-foreground))]">
-                  {section.label}
-                </SidebarGroupLabel>
-                <SidebarMenu className="mt-1 space-y-1">
-                  {section.items.map((item) => (
-                    <SidebarMenuItem key={item.href}>
+        <SidebarContent className="bg-[hsl(var(--sidebar-background))] px-2 py-2">
+          <nav className="px-2">
+            <ul className="flex flex-col gap-1">
+              {primaryItems.map((item) => (
+                <li key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(item.href)}
+                    className="group h-9 rounded-md px-3 text-[14px] font-medium text-slate-600 transition-colors hover:bg-slate-100 data-[active=true]:bg-slate-100 data-[active=true]:text-slate-900 data-[active=true]:border-l-2 data-[active=true]:border-slate-300"
+                  >
+                    <Link href={item.href} aria-current={isActive(item.href) ? 'page' : undefined} className="flex items-center gap-3">
+                      <item.icon className="size-4 text-slate-400 group-data-[active=true]:text-slate-700" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </li>
+              ))}
+
+              {profileItem && (
+                <li key={profileItem.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(profileItem.href)}
+                    className="group h-9 rounded-md px-3 text-[14px] font-medium text-slate-600 transition-colors hover:bg-slate-100 data-[active=true]:bg-slate-100 data-[active=true]:text-slate-900 data-[active=true]:border-l-2 data-[active=true]:border-slate-300"
+                  >
+                    <Link
+                      href={profileItem.href}
+                      aria-current={isActive(profileItem.href) ? 'page' : undefined}
+                      className="flex items-center gap-3"
+                    >
+                      <profileItem.icon className="size-4 text-slate-400 group-data-[active=true]:text-slate-700" />
+                      <span>{profileItem.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </li>
+              )}
+
+              {accountItems.length > 0 && (
+                <>
+                  <li>
+                    <SidebarSeparator className="my-3 bg-sidebar-border/60" />
+                  </li>
+                  {accountItems.map((item) => (
+                    <li key={item.href}>
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.href)}
-                        className="group h-10 rounded-lg px-3 text-[15px] font-medium text-[hsl(var(--sidebar-foreground))]/70 transition-colors hover:bg-[hsl(var(--sidebar-foreground)_/_0.12)] data-[active=true]:bg-[hsl(var(--sidebar-foreground)_/_0.18)]"
+                        className="group h-9 rounded-md px-3 text-[14px] font-medium text-slate-600 transition-colors hover:bg-slate-100 data-[active=true]:bg-slate-100 data-[active=true]:text-slate-900 data-[active=true]:border-l-2 data-[active=true]:border-slate-300"
                       >
-                        <Link href={item.href} className="flex items-center gap-3">
-                          <span className="flex size-8 items-center justify-center rounded-lg bg-[hsl(var(--sidebar-foreground)_/_0.14)] text-[hsl(var(--sidebar-foreground))] transition-colors group-data-[active=true]:bg-[hsl(var(--sidebar-foreground)_/_0.22)]">
-                            <item.icon className="size-4" />
-                          </span>
+                        <Link href={item.href} aria-current={isActive(item.href) ? 'page' : undefined} className="flex items-center gap-3">
+                          <item.icon className="size-4 text-slate-400 group-data-[active=true]:text-slate-700" />
                           <span>{item.label}</span>
                         </Link>
                       </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    </li>
                   ))}
-                </SidebarMenu>
-              </SidebarGroup>
-            ))}
-          </div>
-
-          <div className="flex-1" />
-
-          {systemSection ? (
-            <SidebarGroup key={systemSection.label} className="px-2 pt-2">
-              <SidebarGroupLabel className="px-3 text-[11px] uppercase tracking-[0.08em] text-[hsl(var(--sidebar-foreground))]">
-                {systemSection.label}
-              </SidebarGroupLabel>
-              <SidebarMenu className="mt-1 space-y-1">
-                {systemSection.items.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.href)}
-                      className="group h-10 rounded-lg px-3 text-[15px] font-medium text-[hsl(var(--sidebar-foreground))]/70 transition-colors hover:bg-[hsl(var(--sidebar-foreground)_/_0.12)] data-[active=true]:bg-[hsl(var(--sidebar-foreground)_/_0.18)]"
-                    >
-                      <Link href={item.href} className="flex items-center gap-3">
-                        <span className="flex size-8 items-center justify-center rounded-lg bg-[hsl(var(--sidebar-foreground)_/_0.14)] text-[hsl(var(--sidebar-foreground))] transition-colors group-data-[active=true]:bg-[hsl(var(--sidebar-foreground)_/_0.22)]">
-                          <item.icon className="size-4" />
-                        </span>
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroup>
-          ) : null}
+                </>
+              )}
+            </ul>
+          </nav>
         </SidebarContent>
-
-        <SidebarSeparator className="mx-3 bg-sidebar-border/60" />
-
-        <SidebarFooter className="bg-[hsl(var(--sidebar-primary))] p-3 pt-2">
-          <div className="text-sm font-semibold leading-tight text-[hsl(var(--sidebar-foreground))]">{profileName ?? 'Usuario'}</div>
-          <div className="text-[11px] text-[hsl(var(--sidebar-foreground))]">{role ?? 'Sin rol'}</div>
-        </SidebarFooter>
-        <SidebarRail className="bg-[hsl(var(--sidebar-primary))]/70 after:bg-[hsl(var(--sidebar-foreground))]/30 hover:after:bg-[hsl(var(--sidebar-foreground))]/60" />
       </Sidebar>
 
       <SidebarInset className="w-full flex-1 pb-16 md:pb-0">
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur">
-          <SidebarTrigger className="hidden h-8 w-8 text-slate-700 hover:bg-slate-200/60 md:inline-flex" />
-          <Separator orientation="vertical" className="hidden h-6 md:block" />
-          <div className="flex items-center gap-2 md:hidden">
-            <Image src="/favicon.ico" alt="Artime" width={28} height={28} className="h-7 w-7 rounded-md" />
-            <span className="text-sm font-semibold text-foreground">ARTIME</span>
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b bg-white px-6 py-4">
+          <SidebarTrigger className="hidden h-9 w-9 rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 md:inline-flex" />
+          <div className="flex flex-col">
+            <span className="text-lg font-semibold text-slate-900">{headerMeta.title}</span>
+            {headerMeta.subtitle && <span className="text-xs text-slate-500">{headerMeta.subtitle}</span>}
           </div>
-          <RoleBadge role={role} profileName={profileName} />
-          <div className="relative ml-auto flex items-center gap-2">
+          <div className="relative ml-auto flex items-center gap-3">
             <Button
               ref={bellRef}
               variant="ghost"
               size="icon"
-              className="relative rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm hover:bg-slate-50"
+              className="relative rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
               onClick={() => setShowDropdown((s) => !s)}
             >
               <Bell className="size-5" />
@@ -250,6 +280,44 @@ export function MainNav({ children }: { children: ReactNode }) {
               )}
               <span className="sr-only">Abrir notificaciones</span>
             </Button>
+            <Separator orientation="vertical" className="h-6" />
+            <div className="relative flex items-center gap-3" ref={userMenuRef}>
+              <button
+                type="button"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600 hover:bg-slate-200"
+                onClick={() => setShowUserMenu((s) => !s)}
+              >
+                {(profileName ?? 'U').slice(0, 1).toUpperCase()}
+                <span className="sr-only">Abrir menú de usuario</span>
+              </button>
+              <div className="text-sm leading-tight">
+                <div className="font-semibold text-slate-900">{profileName ?? 'Usuario'}</div>
+                <div className="text-[11px] text-slate-500">{role ?? 'Sin rol'}</div>
+              </div>
+
+              {showUserMenu && (
+                <div className="absolute right-0 top-12 w-44 rounded-lg border border-slate-200 bg-white p-2 text-sm shadow-lg">
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left hover:bg-slate-50"
+                    onClick={async () => {
+                      if (loggingOut) return;
+                      setLoggingOut(true);
+                      try {
+                        await supabase.auth.signOut();
+                        router.push('/login');
+                      } finally {
+                        setLoggingOut(false);
+                        setShowUserMenu(false);
+                      }
+                    }}
+                    disabled={loggingOut}
+                  >
+                    {loggingOut ? 'Cerrando…' : 'Cerrar sesión'}
+                  </button>
+                </div>
+              )}
+            </div>
 
             {showDropdown && (
               <div
@@ -403,68 +471,37 @@ export function MainNav({ children }: { children: ReactNode }) {
               </div>
             )}
 
-            <div className="relative" ref={userMenuRef}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative"
-                onClick={() => setShowUserMenu((s) => !s)}
-              >
-                <Settings className="size-5" />
-                <span className="sr-only">Abrir menú de usuario</span>
-              </Button>
-
-              {showUserMenu && (
-                <div className="absolute right-0 top-12 w-48 rounded-lg border bg-popover p-2 text-sm shadow-lg">
-                  <Link
-                    href="/settings"
-                    className="flex items-center gap-2 rounded-md px-3 py-2 hover:bg-muted"
-                    onClick={() => setShowUserMenu(false)}
-                  >
-                    Ajustes
-                  </Link>
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left hover:bg-muted"
-                    onClick={async () => {
-                      if (loggingOut) return;
-                      setLoggingOut(true);
-                      try {
-                        await supabase.auth.signOut();
-                        router.push('/login');
-                      } finally {
-                        setLoggingOut(false);
-                        setShowUserMenu(false);
-                      }
-                    }}
-                    disabled={loggingOut}
-                  >
-                    {loggingOut ? 'Cerrando…' : 'Cerrar sesión'}
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         </header>
 
-        <div className="w-full flex-1 p-4">{children}</div>
+        <div className="w-full flex-1 px-6 py-6 md:px-8 md:py-8">
+          <div className="mx-auto w-full max-w-[1200px]">{children}</div>
+        </div>
       </SidebarInset>
 
-      <BottomNav items={mainSections.flatMap((section) => section.items)} />
+      <BottomNav items={mainItems} />
     </SidebarProvider>
   );
 }
 
-function RoleBadge({ role, profileName }: { role?: string | null; profileName?: string | null }) {
-  if (!role) return null;
-  return (
-    <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm md:inline-flex">
-      <CircleDot className="h-3.5 w-3.5 text-slate-500" />
-      <span>{role}</span>
-      {profileName && <span className="text-slate-400">·</span>}
-      {profileName && <span className="text-slate-600">{profileName}</span>}
-    </div>
-  );
+function getHeaderMeta(pathname: string, role?: string | null) {
+  const base = pathname.split('?')[0];
+  if (base.includes('/dashboard')) {
+    return { title: 'Dashboard', subtitle: role === 'ARTIST' ? 'Control operativo del artista' : 'Resumen operativo' };
+  }
+  if (base.includes('/bookings')) {
+    return { title: 'Bookings', subtitle: 'Contrataciones en curso' };
+  }
+  if (base.includes('/calendar')) {
+    return { title: 'Calendario', subtitle: 'Disponibilidad y fechas' };
+  }
+  if (base.includes('/events')) {
+    return { title: 'Calendario', subtitle: 'Eventos y convocatorias' };
+  }
+  if (base.includes('/profile') || base === '/artists' || base === '/venues' || base === '/manager/profile' || base === '/promoter/profile') {
+    return { title: 'Perfil', subtitle: 'Configuración profesional' };
+  }
+  return { title: 'Panel', subtitle: '' };
 }
 
 function NotificationItem({ notification, onClick }: { notification: any; onClick: () => void }) {

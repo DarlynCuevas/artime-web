@@ -67,38 +67,85 @@ export default function IndexPage() {
         </div>
       </header>
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 24px' }}>
+      <main className="landing">
         {/* Hero Section */}
-        <section style={{ maxWidth: '800px', textAlign: 'center', marginBottom: '80px' }}>
-          <h1 style={{ fontSize: '56px', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.03em', marginBottom: '24px' }}>
-            La infraestructura operativa para la industria artística.
-          </h1>
-          <p style={{ fontSize: '20px', lineHeight: 1.6, color: '#475569', maxWidth: '640px', margin: '0 auto 40px auto' }}>
-            Centralice la gestión de contratos, pagos y negociaciones en una plataforma B2B diseñada para la trazabilidad y el rigor profesional.
-          </p>
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-            <Link href="/register" style={{ padding: '14px 28px', borderRadius: '8px', background: '#0f172a', color: '#fff', fontWeight: 600, textDecoration: 'none', fontSize: '16px' }}>
+        <section className="hero">
+          <div className="hero-copy">
+            <p className="eyebrow">ARTIME — Plataforma B2B</p>
+            <h1>La infraestructura operativa detrás de cada contratación artística.</h1>
+            <p className="subheadline">
+              Centralice bookings, contratos y pagos en una única fuente de verdad diseñada para la industria musical profesional.
+            </p>
+            <p className="niche">Para artistas, managers, salas y promotores.</p>
+            <div className="cta-group cta-desktop">
+              <Link href="/register" className="cta primary">
+                Comenzar ahora
+              </Link>
+              <Link href="/login" className="cta secondary">
+                Acceso profesional
+              </Link>
+            </div>
+          </div>
+          <div className="hero-visual">
+            <div className="hero-image">
+              {/* TODO: Reemplazar hero-backstage.jpg por una imagen real */}
+              <img
+                src="/hero-backstage.jpg"
+                alt="Backstage de un evento en preparación"
+              />
+              <div className="hero-image-overlay" aria-hidden="true" />
+              <div className="hero-overlay booking-overlay">
+                <pre>
+{`Booking #1042
+Estado: Oferta final aceptada
+Contrato: Firmado
+Pago: Pago pendiente`}
+                </pre>
+              </div>
+            </div>
+            <div className="hero-booking-card booking-card">
+              <pre>
+{`Booking #1042
+Estado: Oferta final aceptada
+Contrato: Firmado
+Pago: Pago pendiente`}
+              </pre>
+            </div>
+          </div>
+          <div className="cta-mobile">
+            <Link href="/register" className="cta primary">
               Comenzar ahora
             </Link>
-            <Link href="/login" style={{ padding: '14px 28px', borderRadius: '8px', border: '1px solid #e2e8f0', color: '#0f172a', fontWeight: 600, textDecoration: 'none', fontSize: '16px' }}>
-              Iniciar sesión
-            </Link>
+            <p className="login-inline">
+              ¿Ya tienes cuenta? <Link href="/login">Accede aquí</Link>
+            </p>
+          </div>
+        </section>
+
+        <section className="how">
+          <h2>Cómo funciona</h2>
+          <div className="how-grid">
+            <div className="how-step"><span className="how-step-number">01</span>Se crea un booking</div>
+            <div className="how-step"><span className="how-step-number">02</span>Se negocia dentro del sistema</div>
+            <div className="how-step"><span className="how-step-number">03</span>Oferta final explícita</div>
+            <div className="how-step"><span className="how-step-number">04</span>Contrato firmado</div>
+            <div className="how-step"><span className="how-step-number">05</span>Pagos centralizados y trazables</div>
           </div>
         </section>
 
         {/* Features Grid */}
-        <section style={{ maxWidth: '1100px', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '48px', padding: '64px 0', borderTop: '1px solid #f1f5f9' }}>
+        <section className="features">
           <div>
-            <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b' }}>Trazabilidad Total</h3>
-            <p style={{ fontSize: '16px', color: '#475569', lineHeight: 1.6 }}>Mantenga un historial inalterable de negociaciones y acuerdos. Elimine la ambigüedad y centralice la documentación de sus contrataciones en un solo lugar.</p>
+            <h3>Trazabilidad Total</h3>
+            <p>Mantenga un historial inalterable de negociaciones y acuerdos. Elimine la ambigüedad y centralice la documentación de sus contrataciones en un solo lugar.</p>
           </div>
           <div>
-            <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b' }}>Gestión de Pagos</h3>
-            <p style={{ fontSize: '16px', color: '#475569', lineHeight: 1.6 }}>Flujos de liquidación claros y seguros. Automatice el seguimiento de pagos y garantice el cumplimiento de las condiciones pactadas para todas las partes.</p>
+            <h3>Gestión de Pagos</h3>
+            <p>Flujos de liquidación claros y seguros. Automatice el seguimiento de pagos y garantice el cumplimiento de las condiciones pactadas para todas las partes.</p>
           </div>
           <div>
-            <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b' }}>Ecosistema B2B</h3>
-            <p style={{ fontSize: '16px', color: '#475569', lineHeight: 1.6 }}>Un entorno profesional verificado donde artistas, managers, salas y promotores interactúan bajo estándares de claridad, rigor y eficiencia operativa.</p>
+            <h3>Ecosistema B2B</h3>
+            <p>Un entorno profesional verificado donde artistas, managers, salas y promotores interactúan bajo estándares de claridad, rigor y eficiencia operativa.</p>
           </div>
         </section>
       </main>

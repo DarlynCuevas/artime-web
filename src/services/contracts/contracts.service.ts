@@ -42,3 +42,30 @@ export async function signContract(
     throw new Error('No se pudo firmar el contrato');
   }
 }
+
+export function getContractPdfUrl(bookingId: string) {
+  return `${API_BASE_URL}/bookings/${bookingId}/contract/pdf`;
+}
+
+export async function downloadContractPdf(bookingId: string, token: string) {
+  const res = await fetch(getContractPdfUrl(bookingId), {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error('No se pudo descargar el contrato');
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `contract-${bookingId}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}

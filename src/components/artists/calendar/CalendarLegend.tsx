@@ -1,24 +1,16 @@
 export function CalendarLegend() {
   const items = [
-    { label: 'Disponible', color: '#e8f5e9' },
-    { label: 'Reservado', color: '#ffe8e6' },
-    { label: 'Bloqueado', color: '#f3f4f6' },
+    { label: 'Disponible', tone: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+    { label: 'Reservado', tone: 'bg-amber-50 border-amber-200 text-amber-700' },
+    { label: 'Bloqueado', tone: 'bg-slate-100 border-slate-200 text-slate-500' },
   ];
 
   return (
-    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+    <div className="flex flex-wrap gap-2">
       {items.map((item) => (
-        <div key={item.label} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span
-            style={{
-              width: 14,
-              height: 14,
-              borderRadius: 4,
-              background: item.color,
-              border: '1px solid #ccc',
-            }}
-          />
-          <span style={{ fontSize: 13, color: '#444' }}>{item.label}</span>
+        <div key={item.label} className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] ${item.tone}`}>
+          <span className="h-2.5 w-2.5 rounded-full bg-current opacity-60" />
+          <span>{item.label}</span>
         </div>
       ))}
     </div>
