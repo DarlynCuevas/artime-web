@@ -4,13 +4,19 @@ import type { UserRole } from '@/types/user-role';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { acceptFinalOffer } from '@/services/bookings/negotiations.service';
 import { acceptBooking } from '@/services/bookings/bookings.service';
+import {
+  isArtistSideRole,
+  isVenueSideRole,
+  isMyTurnByLastMessage,
+  isArtistSideOwnerLocked,
+} from '@/components/bookings/booking-turns';
 
 type Props = {
   bookingId: string;
-  isHandledByOther: boolean;
   bookingStatus: string;
   userRole: UserRole;
   handledByRole?: UserRole | null;
+  handledByUserId?: string | null;
   onBookingUpdated: () => void;
   refreshContract: () => void;
   onCancelBooking: () => void;
@@ -18,20 +24,22 @@ type Props = {
 
 export function NegotiationPanel({
   bookingId,
-  isHandledByOther,
   userRole,
   bookingStatus,
   handledByRole,
+  handledByUserId,
   onBookingUpdated,
   refreshContract,
   onCancelBooking,
 }: Props) {
   const isClosed = [
+    'ACCEPTED',
     'PAID_PARTIAL',
     'PAID_FULL',
     'COMPLETED',
     'CANCELLED',
     'CANCELLED_PENDING_REVIEW',
+    'REJECTED',
   ].includes(bookingStatus);
   if (isClosed) {
     return null;
@@ -56,28 +64,23 @@ export function NegotiationPanel({
   const lastMessage =
     messages.length > 0 ? messages[messages.length - 1] : null;
 
-  const isArtistSide =
-    userRole === 'ARTIST' || userRole === 'MANAGER';
-
-  const isVenueSide =
-    userRole === 'VENUE' || userRole === 'PROMOTER';
+  const isArtistSide = isArtistSideRole(userRole);
+  const isVenueSide = isVenueSideRole(userRole);
 
   const lastSenderRole = lastMessage?.senderRole as UserRole | undefined;
-  const isLastFromArtistSide =
-    lastSenderRole === 'ARTIST' || lastSenderRole === 'MANAGER';
-  const isLastFromVenueSide =
-    lastSenderRole === 'VENUE' || lastSenderRole === 'PROMOTER';
+  const isMyTurnByMessages = isMyTurnByLastMessage({
+    lastSenderRole,
+    currentRole: userRole,
+  });
 
-  const isMyTurnByMessages =
-    !lastSenderRole
-      ? true
-      : isArtistSide
-        ? isLastFromVenueSide
-        : isLastFromArtistSide;
-
-  // Si el backend define el turno, úsalo como fuente principal.
-  const lockedToOther = handledByRole && handledByRole !== userRole;
-  const isMyTurn = lockedToOther ? false : isMyTurnByMessages;
+  // Bloqueo solo dentro del lado artista/manager (dueño del booking).
+  const isOwnerLocked = isArtistSideOwnerLocked({
+    currentRole: userRole,
+    currentUserId: user?.id,
+    ownerRole: handledByRole ?? null,
+    ownerUserId: handledByUserId ?? null,
+  });
+  const isMyTurn = isOwnerLocked ? false : isMyTurnByMessages;
 
   const canWrite =
     ['PENDING', 'NEGOTIATING'].includes(bookingStatus) &&
@@ -199,7 +202,7 @@ export function NegotiationPanel({
               onClick={async () => {
                 if (bookingStatus === 'FINAL_OFFER_SENT') {
                   await acceptFinalOffer(bookingId, user?.token);
-                } else if (bookingStatus === 'PENDING') {
+                } else if (bookingStatus === 'PENDING' || bookingStatus === 'NEGOTIATING') {
                   await acceptBooking(bookingId, user?.token);
                 }
 

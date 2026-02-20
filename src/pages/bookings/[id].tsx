@@ -29,6 +29,11 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
 
 import { getStatusMessage } from '@/components/bookings/booking-ui.helpers';
+import {
+  isArtistSideRole,
+  isMyTurnByLastMessage,
+  isArtistSideOwnerLocked,
+} from '@/components/bookings/booking-turns';
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -131,22 +136,32 @@ function BookingDetailPage() {
   // Turno: si hay handler asignado a otra parte, no es tu turno; si no, se decide por últimos mensajes
   const lastNegotiation = negotiationMessages.length > 0 ? negotiationMessages[negotiationMessages.length - 1] : null;
   const lastSenderRole = lastNegotiation?.senderRole as Role | undefined;
-  const isArtistSide = role === 'ARTIST' || role === 'MANAGER';
-  const isLastFromArtistSide = lastSenderRole === 'ARTIST' || lastSenderRole === 'MANAGER';
-  const isLastFromVenueSide = lastSenderRole === 'VENUE' || lastSenderRole === 'PROMOTER';
-  const isMyTurnByMessages = !lastSenderRole
-    ? true
-    : isArtistSide
-      ? isLastFromVenueSide
-      : isLastFromArtistSide;
-  const lockedToOther = booking.handledByRole && booking.handledByRole !== role;
-  const hasTurn = lockedToOther ? false : isMyTurnByMessages;
+  const lastFinalOffer = [...negotiationMessages].reverse().find((m) => m.isFinalOffer);
+  const lastFinalOfferSenderRole = lastFinalOffer?.senderRole as Role | undefined;
+  const isArtistSide = isArtistSideRole(role);
+  const isMyTurnByMessages = isMyTurnByLastMessage({
+    lastSenderRole,
+    currentRole: role,
+  });
+  const isOwnerLocked = isArtistSideOwnerLocked({
+    currentRole: role,
+    currentUserId: user?.id,
+    ownerRole: booking.handledByRole,
+    ownerUserId: booking.handledByUserId,
+  });
+
+  const hasTurn = isOwnerLocked
+    ? false
+    : booking.status === 'PENDING'
+      ? isArtistSide
+      : isMyTurnByMessages;
 
   const statusMessage = getStatusMessage({
     bookingStatus: booking.status,
     contractStatus: contract?.status,
     role: role as Role,
     hasTurn,
+    lastFinalOfferSenderRole,
   });
 
   const handledByLabel =
@@ -160,11 +175,37 @@ function BookingDetailPage() {
             ? 'manager'
             : null;
 
-  const actionTurnMessage = hasTurn
-    ? 'Es tu turno para responder o cancelar la propuesta.'
-    : handledByLabel
-      ? `Turno de ${handledByLabel}.`
-      : 'La otra parte estÃ¡ gestionando este booking.';
+  const actionTurnMessage =
+    booking.status === 'REJECTED'
+      ? 'La propuesta fue rechazada.'
+      : booking.status === 'CANCELLED' ||
+        booking.status === 'CANCELLED_PENDING_REVIEW'
+        ? 'La contratación ha sido cancelada.'
+        : booking.status === 'ACCEPTED'
+          ? 'Contratación aceptada. Pendiente de firma de contrato.'
+        : booking.status === 'FINAL_OFFER_SENT'
+          ? hasTurn
+            ? 'Tienes una oferta final pendiente de aceptar o rechazar.'
+            : handledByLabel
+              ? `Turno de ${handledByLabel} para aceptar o rechazar la oferta final.`
+              : 'La otra parte debe aceptar o rechazar la oferta final.'
+          : hasTurn
+            ? 'Es tu turno para responder o cancelar la propuesta.'
+            : handledByLabel
+              ? `Turno de ${handledByLabel}.`
+          : 'La otra parte está gestionando este booking.';
+
+  const turnLabel =
+    booking.status === 'REJECTED' ||
+    booking.status === 'CANCELLED' ||
+    booking.status === 'CANCELLED_PENDING_REVIEW' ||
+    booking.status === 'ACCEPTED'
+      ? '—'
+      : hasTurn
+        ? 'Tu turno'
+        : handledByLabel
+          ? `Turno de ${handledByLabel}`
+          : '—';
 
   const hasContract = Boolean(contract);
   const canSignContract =
@@ -201,13 +242,17 @@ function BookingDetailPage() {
   const firstVenueOffer = timelineEvents.find(
     (event) => event.role === 'VENUE' && typeof event.amount === 'number'
   );
-  const lastNumericOffer = [...timelineEvents]
+  const lastNumericOffer = [...negotiationMessages]
     .reverse()
-    .find((event) => typeof event.amount === 'number');
+    .find((m) => typeof m.proposedFee === 'number');
+  const agreedAmount =
+    typeof lastNumericOffer?.proposedFee === 'number'
+      ? lastNumericOffer.proposedFee
+      : bookingAmount;
   const bookingData = {
     conditions: {
       originalPrice: firstVenueOffer?.amount ?? null,
-      currentOffer: lastNumericOffer?.amount ?? firstVenueOffer?.amount ?? null,
+      currentOffer: agreedAmount ?? null,
       currency: bookingCurrency,
       includes: ['Alojamiento', 'Backline básico', 'Cena para el artista'],
       excludes: ['Transporte', 'Sonido PA'],
@@ -256,13 +301,13 @@ function BookingDetailPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
           <KpiCard label="Estado" value={booking.status} />
-          <KpiCard label="Importe" value={formatCurrency(bookingAmount, bookingCurrency)} />
+          <KpiCard label="Importe" value={formatCurrency(agreedAmount, bookingCurrency)} />
           <KpiCard
             label="Pago"
             value={paymentSummary ? (paymentSummary.percent >= 100 ? 'Pagado completo' : `Pagado ${paymentSummary.percent}%`) : '—'}
             helper={paymentSummary ? `${formatCurrency(paymentSummary.paidAmount, bookingCurrency)} de ${formatCurrency(paymentSummary.totalAmount, bookingCurrency)}` : undefined}
           />
-          <KpiCard label="Turno" value={hasTurn ? 'Tu turno' : handledByLabel ? `Turno de ${handledByLabel}` : 'En gestión'} />
+          <KpiCard label="Turno" value={turnLabel} />
         </div>
       </section>
 
@@ -271,9 +316,9 @@ function BookingDetailPage() {
           <Card title="Evento y condiciones" subtitle="Fuente: backend" icon={<Calendar className="h-4 w-4 text-slate-600" />}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InfoRow label="Fecha" value={formatDate(eventDate)} icon={<Calendar className="h-4 w-4 text-slate-500" />} />
-              <InfoRow label="Turno" value={booking.handledByRole ?? '—'} icon={<Clock className="h-4 w-4 text-slate-500" />} />
+              <InfoRow label="Turno" value={turnLabel} icon={<Clock className="h-4 w-4 text-slate-500" />} />
               <InfoRow label="Sala" value={`${venueName}${venueCity ? `, ${venueCity}` : ''}`} icon={<MapPin className="h-4 w-4 text-slate-500" />} />
-              <InfoRow label="Importe" value={formatCurrency(bookingAmount, bookingCurrency)} icon={<CreditCard className="h-4 w-4 text-slate-500" />} />
+              <InfoRow label="Importe" value={formatCurrency(agreedAmount, bookingCurrency)} icon={<CreditCard className="h-4 w-4 text-slate-500" />} />
             </div>
 
             {(counterpartyHref || promoterId) && (
@@ -420,12 +465,21 @@ function BookingDetailPage() {
 
           <Card title="Acciones" subtitle="Turno y cancelación" icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}>
             <p className="text-sm text-slate-700 mb-3">{actionTurnMessage}</p>
+            {booking.status === 'ACCEPTED' && canCancelBooking && (
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(true)}
+                className="inline-flex items-center rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                Cancelar booking
+              </button>
+            )}
             <NegotiationPanel
               bookingId={booking.id}
               bookingStatus={booking.status}
               userRole={role as any}
               handledByRole={booking.handledByRole as any}
-              isHandledByOther={isHandledByOther}
+              handledByUserId={booking.handledByUserId}
               onBookingUpdated={refresh}
               refreshContract={refreshContract}
               onCancelBooking={() => {
@@ -670,6 +724,3 @@ function formatCurrency(amount: number | null, currency: string) {
   if (amount === null || amount === undefined) return '—';
   return new Intl.NumberFormat('es-ES', { style: 'currency', currency }).format(amount);
 }
-
-
-

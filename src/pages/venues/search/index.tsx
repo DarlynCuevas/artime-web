@@ -145,7 +145,7 @@ export default function VenueDiscoverPage() {
                 const res = await createArtistCall(
                   {
                     date,
-                    city,
+                    city: city || undefined,
                     filters: {
                       genre: genre || undefined,
                       minPrice,

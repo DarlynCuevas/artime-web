@@ -4,11 +4,13 @@ export function getStatusMessage({
     contractStatus,
     role,
     hasTurn,
+    lastFinalOfferSenderRole,
 }: {
     bookingStatus: BookingStatus;
     contractStatus?: ContractStatus;
     role: Role;
     hasTurn: boolean;
+    lastFinalOfferSenderRole?: Role | null;
 }): string | null {
     //CANCELADO
     if (bookingStatus === 'CANCELLED') {
@@ -41,10 +43,19 @@ export function getStatusMessage({
 
     // OFERTA FINAL
     if (bookingStatus === 'FINAL_OFFER_SENT') {
+        if (lastFinalOfferSenderRole) {
+            const sentByArtistSide =
+                lastFinalOfferSenderRole === 'ARTIST' || lastFinalOfferSenderRole === 'MANAGER';
+            const viewerIsArtistSide = role === 'ARTIST' || role === 'MANAGER';
+            if (sentByArtistSide === viewerIsArtistSide) {
+                return 'Oferta final enviada. Esperando respuesta.';
+            }
+            return 'Oferta final recibida.';
+        }
         if (role === 'ARTIST' || role === 'MANAGER') {
             return 'Oferta final recibida.';
         }
-        return 'Oferta final enviada. Esperando firma del artista.';
+        return 'Oferta final enviada. Esperando respuesta.';
     }
 
     // PENDING (booking inicial)
@@ -119,11 +130,11 @@ export function getPrimaryAction({
         return null;
     }
 
-    // PENDING — artista/manager no pueden cancelar
-    if (
-        bookingStatus === 'PENDING' &&
-        (role === 'ARTIST' || role === 'MANAGER')
-    ) {
+    // PENDING
+    if (bookingStatus === 'PENDING') {
+        if (role === 'VENUE' || role === 'PROMOTER') {
+            return { type: 'CANCEL_BOOKING' };
+        }
         return null;
     }
 
@@ -194,11 +205,8 @@ export function getSecondaryActions({
         return [{ type: 'CANCEL_BOOKING' }];
     }
 
-    // PENDING — artista/manager sin acciones secundarias
-    if (
-        bookingStatus === 'PENDING' &&
-        (role === 'ARTIST' || role === 'MANAGER' || role === 'PROMOTER' || role === 'VENUE')
-    ) {
+    // PENDING — sin acciones secundarias
+    if (bookingStatus === 'PENDING') {
         return [];
     }
 
@@ -207,4 +215,3 @@ export function getSecondaryActions({
 
     ];
 }
-

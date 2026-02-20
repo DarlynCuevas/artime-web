@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { getEventBookings } from '@/services/events/events.service';
 import { useAuth } from '@/hooks/auth/useAuth';
 
@@ -9,21 +9,29 @@ export function useEventBookings(eventId?: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!eventId || !user?.token) return;
-
-    getEventBookings(eventId, user.token)
+  const fetchBookings = useCallback(() => {
+    if (!eventId || !user?.token) return Promise.resolve();
+    return getEventBookings(eventId, user.token)
       .then(setBookings)
       .catch(() =>
         setError('No se pudieron cargar las contrataciones del evento'),
-      )
-      .finally(() => setLoading(false));
+      );
   }, [eventId, user?.token]);
+
+  useEffect(() => {
+    if (!eventId || !user?.token) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    fetchBookings().finally(() => setLoading(false));
+  }, [eventId, user?.token, fetchBookings]);
 
   return {
     bookings,
     loading,
     error,
+    refetch: fetchBookings,
   };
 }
-

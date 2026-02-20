@@ -35,12 +35,6 @@ export function useEventInvitations(eventId?: string | null) {
     setLoading(true);
     fetchInvitations()
       .finally(() => setLoading(false));
-
-    const interval = setInterval(() => {
-      fetchInvitations().catch(() => undefined);
-    }, 10_000);
-
-    return () => clearInterval(interval);
   }, [eventId, user?.token, fetchInvitations]);
 
   return { invitations, loading, setInvitations, refetch: fetchInvitations };

@@ -24,11 +24,12 @@ export default function EventDetailPage() {
     bookings: eventBookings,
     loading: bookingsLoading,
     error: bookingsError,
+    refetch: refetchBookings,
   } = useEventBookings(event?.id);
 
   const { artists, artistsLoading, artistsError } = useArtists();
 
-  const { invitations, loading: invitationsLoading } =
+  const { invitations, loading: invitationsLoading, refetch: refetchInvitations } =
     useEventInvitations(event?.id);
 
   const canSearchArtists =
@@ -47,6 +48,28 @@ export default function EventDetailPage() {
       .catch(() => setError('No se pudo cargar el evento.'))
       .finally(() => setLoading(false));
   }, [id, user?.token]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      refetchBookings?.();
+      refetchInvitations?.();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [refetchBookings, refetchInvitations]);
+
+  useEffect(() => {
+    if (!router.events) return;
+    const handleRouteChange = () => {
+      refetchBookings?.();
+      refetchInvitations?.();
+    };
+    router.events.on('routeChangeComplete', handleRouteChange);
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [router.events, refetchBookings, refetchInvitations]);
 
   if (loading) return <div className="p-8 text-slate-700">Cargando evento…</div>;
   if (error) return <div className="p-8 text-red-600">{error}</div>;
@@ -131,20 +154,39 @@ export default function EventDetailPage() {
       .filter(Boolean),
   );
 
-  const acceptedInvitationsFiltered = acceptedInvitations.filter(
-    (inv) =>
-      !rejectedArtistIds.has(inv.artistId) &&
-      !contractSignedArtistIds.has(inv.artistId),
-  );
-
   const bookingByArtistId = new Map(
     eventBookings
       .map((booking) => ({
-        artistId: (booking as any).artistId ?? booking.artist?.id ?? '',
+        artistId: (booking as any).artistId ?? (booking as any).artist_id ?? booking.artist?.id ?? '',
         bookingId: booking.id,
         status: booking.status,
       }))
       .filter((item) => item.artistId),
+  );
+
+  const bookingInProgressStatuses = new Set([
+    'PENDING',
+    'NEGOTIATING',
+    'FINAL_OFFER_SENT',
+  ]);
+
+  const bookingByArtistIdInProgress = new Set(
+    [...bookingByArtistId.entries()]
+      .filter(([, booking]) => booking && bookingInProgressStatuses.has(booking.status))
+      .map(([artistId]) => artistId),
+  );
+
+  const acceptedInvitationsFiltered = acceptedInvitations.filter(
+    (inv) =>
+      !rejectedArtistIds.has(inv.artistId) &&
+      !contractSignedArtistIds.has(inv.artistId) &&
+      !bookingByArtistId.has(inv.artistId),
+  );
+
+  const inProgressInvitations = acceptedInvitations.filter(
+    (inv) =>
+      bookingByArtistIdInProgress.has(inv.artistId) &&
+      !rejectedArtistIds.has(inv.artistId),
   );
 
   const rejectedItems = [
@@ -231,8 +273,15 @@ export default function EventDetailPage() {
 
         {!invitationsLoading && invitations.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <InvitationColumn title="Pendientes" items={pendingInvitations} emptyCopy="Sin pendientes">
-              {(inv) => <span className="text-sm text-slate-700">{artistNameById(inv.artistId)}</span>}
+            <InvitationColumn title="Pendientes" items={[...pendingInvitations, ...inProgressInvitations]} emptyCopy="Sin pendientes">
+              {(inv) => (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-slate-700">{artistNameById(inv.artistId)}</span>
+                  {bookingByArtistId.has(inv.artistId) && (
+                    <span className="text-xs text-slate-500">Contratación en curso</span>
+                  )}
+                </div>
+              )}
             </InvitationColumn>
 
             <InvitationColumn title="Aceptados" items={visibleAcceptedInvitations} emptyCopy="Sin aceptados">

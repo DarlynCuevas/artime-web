@@ -11,8 +11,12 @@ type NavItem = {
 export function BottomNav({ items }: { items: NavItem[] }) {
   const router = useRouter();
 
-  const isActive = (href: string) =>
-    router.pathname === href || router.pathname.startsWith(`${href}/`);
+  const pathname = router.pathname;
+  const activeHref = items
+    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
+  const isActive = (href: string) => activeHref === href;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white md:hidden">
