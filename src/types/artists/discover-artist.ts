@@ -1,5 +1,6 @@
 export type DiscoverArtist = {
   id: string;
+  profileImageUrl?: string | null;
   name: string;
   city: string;
   genres: string[];

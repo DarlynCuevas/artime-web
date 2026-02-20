@@ -1,11 +1,21 @@
 import { cn } from "@/lib/utils";
 
-type BookingStatusVariant = "pending" | "confirmed" | "paid" | "negotiating" | "cancelled" | "completed" | "rejected";
+type BookingStatusVariant =
+  | "pending"
+  | "confirmed"
+  | "paid"
+  | "negotiating"
+  | "final_offer"
+  | "cancelled"
+  | "completed"
+  | "rejected";
 
 interface StatusBadgeProps {
   status: string;
   paidPercent?: number | null;
   className?: string;
+  currentRole?: string;
+  finalOfferSenderRole?: string | null;
 }
 
 const statusConfig: Record<BookingStatusVariant, { label: string; className: string }> = {
@@ -25,6 +35,10 @@ const statusConfig: Record<BookingStatusVariant, { label: string; className: str
     label: "Negociando",
     className: "status-negotiating",
   },
+  final_offer: {
+    label: "Oferta final enviada",
+    className: "status-negotiating",
+  },
   cancelled: {
     label: "Cancelado",
     className: "status-cancelled",
@@ -42,6 +56,12 @@ const statusConfig: Record<BookingStatusVariant, { label: string; className: str
 function normalizeStatus(status: string | undefined | null): BookingStatusVariant {
   const value = status?.toLowerCase();
   switch (value) {
+    case "final_offer_sent":
+      return "final_offer";
+    case "final_offer_accepted":
+      return "confirmed";
+    case "final_offer_rejected":
+      return "rejected";
     case "contract_signed":
       return "confirmed";
     case "paid_partial":
@@ -74,7 +94,13 @@ function normalizeStatus(status: string | undefined | null): BookingStatusVarian
   }
 }
 
-export function StatusBadge({ status, paidPercent, className }: StatusBadgeProps) {
+export function StatusBadge({
+  status,
+  paidPercent,
+  className,
+  currentRole,
+  finalOfferSenderRole,
+}: StatusBadgeProps) {
   const variant = normalizeStatus(status);
   const config = statusConfig[variant];
   const showPaidPercent =
@@ -82,10 +108,23 @@ export function StatusBadge({ status, paidPercent, className }: StatusBadgeProps
     typeof paidPercent === "number" &&
     paidPercent > 0 &&
     paidPercent < 100;
+  const isFinalOffer = variant === "final_offer";
+  const finalOfferLabel =
+    isFinalOffer && currentRole && finalOfferSenderRole
+      ? currentRole === finalOfferSenderRole
+        ? "Oferta final enviada"
+        : "Oferta final recibida"
+      : isFinalOffer
+        ? "Oferta final enviada"
+        : null;
 
   return (
     <span className={cn("status-badge", config.className, className)}>
-      {showPaidPercent ? `Pagado ${paidPercent}%` : config.label}
+      {showPaidPercent
+        ? `Pagado ${paidPercent}%`
+        : isFinalOffer
+          ? finalOfferLabel
+          : config.label}
     </span>
   );
 }

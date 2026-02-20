@@ -37,6 +37,7 @@ const navByRole: Record<
     main: [
       { label: 'Dashboard', href: '/venues/dashboard', icon: LayoutDashboard },
       { label: 'Bookings', href: '/venues/bookings', icon: Ticket },
+      { label: 'Artistas', href: '/venues/discover', icon: Users },
       { label: 'Perfil', href: '/venues/profile', icon: UserRound },
     ],
     account: [{ label: 'Configuración', href: '/settings', icon: UserRound }],
@@ -115,32 +116,128 @@ export function MainNav({ children }: { children: ReactNode }) {
     if (!latest || latest.id === lastToastIdRef.current) return;
     lastToastIdRef.current = latest.id;
 
-    if (latest.type === 'BOOKING_REQUEST') {
-      const requester =
-        latest.payload?.eventName ||
-        latest.payload?.venueName ||
-        latest.payload?.promoterName ||
-        'Un organizador';
-      const bookingId = latest.payload?.bookingId;
-      let href: string | undefined;
-      if (bookingId) {
-        if (role === 'MANAGER') {
-          href = `/bookings/${bookingId}`;
-        } else {
-          const base =
-            role === 'VENUE'
-              ? '/venues/bookings'
-              : role === 'PROMOTER'
-                ? '/promoter/bookings'
-                : '/artists/bookings';
-          href = `${base}?bookingId=${bookingId}`;
-        }
+    const bookingId = latest.payload?.bookingId ?? latest.payload?.booking_id;
+    let href: string | undefined;
+    if (bookingId) {
+      if (role === 'MANAGER') {
+        href = `/bookings/${bookingId}`;
+      } else {
+        const base =
+          role === 'VENUE'
+            ? '/venues/bookings'
+            : role === 'PROMOTER'
+              ? '/promoter/bookings'
+              : '/artists/bookings';
+        href = `${base}?bookingId=${bookingId}`;
       }
+    }
 
+    const actorName =
+      latest.payload?.actorName ||
+      latest.payload?.eventName ||
+      latest.payload?.venueName ||
+      latest.payload?.promoterName ||
+      latest.payload?.artistName ||
+      'Una parte';
+
+    const eventName = latest.payload?.eventName;
+    const date = latest.payload?.date;
+    const contextText = eventName ? ` para ${eventName}` : date ? ` para el ${date}` : '';
+
+    if (latest.type === 'BOOKING_REQUEST') {
       toast({
         title: 'Nueva solicitud de contratación',
-        description: `${requester} te ha enviado una solicitud de contratación.`,
+        description: `${actorName} te ha enviado una solicitud de contratación${contextText}.`,
         href,
+      });
+    }
+
+    if (latest.type === 'NEGOTIATION_MESSAGE_SENT') {
+      toast({
+        title: 'Nueva contraoferta',
+        description: `${actorName} ha enviado una nueva propuesta${contextText}.`,
+        href,
+      });
+    }
+
+    if (latest.type === 'FINAL_OFFER_SENT') {
+      toast({
+        title: 'Oferta final enviada',
+        description: `${actorName} ha enviado una oferta final${contextText}.`,
+        href,
+      });
+    }
+
+    if (latest.type === 'BOOKING_ACCEPTED') {
+      toast({
+        title: 'Contratación aceptada',
+        description: `${actorName} ha aceptado la contratación${contextText}.`,
+        href,
+      });
+    }
+
+    if (latest.type === 'BOOKING_REJECTED') {
+      toast({
+        title: 'Contratación rechazada',
+        description: `${actorName} ha rechazado la contratación${contextText}.`,
+        href,
+      });
+    }
+
+    if (latest.type === 'BOOKING_CANCELLED') {
+      toast({
+        title: 'Booking cancelado',
+        description: `${actorName} ha cancelado el booking${contextText}.`,
+        href,
+      });
+    }
+
+    if (latest.type === 'CONTRACT_SIGNED') {
+      toast({
+        title: 'Contrato firmado',
+        description: `${actorName} ha firmado el contrato${contextText}.`,
+        href,
+      });
+    }
+
+    if (latest.type === 'PAYMENT_CONFIRMED') {
+      const paymentStatus = latest.payload?.paymentStatus;
+      const paymentLabel = paymentStatus === 'FULL' ? 'pago final' : 'pago parcial';
+      toast({
+        title: 'Pago confirmado',
+        description: `${actorName} ha confirmado un ${paymentLabel}${contextText}.`,
+        href,
+      });
+    }
+
+    if (latest.type === 'EVENT_INVITATION_CREATED') {
+      const eventName = latest.payload?.eventName;
+      toast({
+        title: 'Invitación a evento',
+        description: `Has recibido una invitación${eventName ? ` para ${eventName}` : ''}.`,
+        href: latest.payload?.invitationId
+          ? `/artists/bookings/invitations?invitationId=${latest.payload.invitationId}`
+          : '/artists/bookings/invitations',
+      });
+    }
+
+    if (latest.type === 'EVENT_INVITATION_ACCEPTED') {
+      const artistName = latest.payload?.artistName ?? 'Un artista';
+      const eventName = latest.payload?.eventName;
+      toast({
+        title: 'Invitación aceptada',
+        description: `${artistName} ha aceptado la invitación${eventName ? ` para ${eventName}` : ''}.`,
+        href: latest.payload?.eventId ? `/events/${latest.payload.eventId}#event-invitations` : '/events',
+      });
+    }
+
+    if (latest.type === 'EVENT_INVITATION_DECLINED') {
+      const artistName = latest.payload?.artistName ?? 'Un artista';
+      const eventName = latest.payload?.eventName;
+      toast({
+        title: 'Invitación rechazada',
+        description: `${artistName} ha rechazado la invitación${eventName ? ` para ${eventName}` : ''}.`,
+        href: latest.payload?.eventId ? `/events/${latest.payload.eventId}#event-invitations` : '/events',
       });
     }
   }, [latestNotifications]);
@@ -412,20 +509,21 @@ export function MainNav({ children }: { children: ReactNode }) {
                               return;
                             }
 
-                            if (n.type === 'BOOKING_REQUEST') {
-                              const bookingId = n.payload?.bookingId;
-                              if (role === 'MANAGER' && bookingId) {
-                                router.push(`/bookings/${bookingId}`);
-                              } else {
-                                const base =
-                                  role === 'VENUE'
-                                    ? '/venues/bookings'
-                                    : role === 'PROMOTER'
-                                      ? '/promoter/bookings'
-                                      : '/artists/bookings';
-                                const target = bookingId ? `${base}?bookingId=${bookingId}` : base;
-                                router.push(target);
-                              }
+                            const bookingTypes = new Set([
+                              'BOOKING_REQUEST',
+                              'NEGOTIATION_MESSAGE_SENT',
+                              'FINAL_OFFER_SENT',
+                              'BOOKING_ACCEPTED',
+                              'BOOKING_REJECTED',
+                              'BOOKING_CANCELLED',
+                              'CONTRACT_SIGNED',
+                              'PAYMENT_CONFIRMED',
+                            ]);
+
+                            if (bookingTypes.has(n.type)) {
+                              const bookingId = n.payload?.bookingId ?? n.payload?.booking_id;
+                              const target = getBookingTarget({ role, bookingId });
+                              router.push(target);
                               setShowDropdown(false);
                               return;
                             }
@@ -573,4 +671,20 @@ function NotificationItem({ notification, onClick }: { notification: any; onClic
       </div>
     </button>
   );
+}
+
+function getBookingTarget(params: { role?: string | null; bookingId?: string }) {
+  const { role, bookingId } = params;
+  if (bookingId) {
+    return `/bookings/${bookingId}`;
+  }
+  const fallback =
+    role === 'VENUE'
+      ? '/venues/bookings'
+      : role === 'PROMOTER'
+        ? '/promoter/bookings'
+        : role === 'MANAGER'
+          ? '/manager/dashboard'
+          : '/artists/bookings';
+  return fallback;
 }

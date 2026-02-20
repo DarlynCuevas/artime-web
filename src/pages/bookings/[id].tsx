@@ -230,9 +230,7 @@ function BookingDetailPage() {
       ? '—'
       : hasTurn
         ? 'Tu turno'
-        : handledByLabel
-          ? `Turno de ${handledByLabel}`
-          : '—';
+        : 'En espera';
 
   const hasContract = Boolean(contract);
   const canDownloadContract = contract?.status === 'SIGNED';
@@ -330,7 +328,11 @@ function BookingDetailPage() {
               <div>
                 <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{artistName ?? 'Artista'}</h1>
               </div>
-              <StatusBadge status={booking.status} />
+              <StatusBadge
+                status={booking.status}
+                currentRole={role}
+                finalOfferSenderRole={lastFinalOfferSenderRole ?? null}
+              />
             </div>
             <div className="text-sm text-slate-600 space-y-1">
               <p>
@@ -351,7 +353,10 @@ function BookingDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-          <KpiCard label="Estado" value={formatBookingStatusLabel(booking.status)} />
+          <KpiCard
+            label="Estado"
+            value={formatBookingStatusLabel(booking.status, role, lastFinalOfferSenderRole ?? null)}
+          />
           <KpiCard label="Importe" value={formatCurrency(agreedAmount, bookingCurrency)} />
           <KpiCard
             label="Pago"
@@ -364,62 +369,105 @@ function BookingDetailPage() {
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Card title="Evento y condiciones" subtitle="Fuente: backend" icon={<Calendar className="h-4 w-4 text-slate-600" />}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InfoRow label="Fecha" value={formatDate(eventDate)} icon={<Calendar className="h-4 w-4 text-slate-500" />} />
-              <InfoRow label="Turno" value={turnLabel} icon={<Clock className="h-4 w-4 text-slate-500" />} />
-              <InfoRow label="Sala" value={`${venueName}${venueCity ? `, ${venueCity}` : ''}`} icon={<MapPin className="h-4 w-4 text-slate-500" />} />
-              <InfoRow label="Importe" value={formatCurrency(agreedAmount, bookingCurrency)} icon={<CreditCard className="h-4 w-4 text-slate-500" />} />
-            </div>
-
-            {(counterpartyHref || promoterId) && (
-              <div className="flex flex-wrap gap-3 pt-4">
-                {counterpartyHref && (
-                  <Link href={counterpartyHref} className="inline-flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-slate-900">
-                    {counterpartyLabel}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                )}
-                {promoterId && role !== 'PROMOTER' && (
-                  <Link href={`/promoter/profile/${promoterId}`} className="inline-flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-slate-900">
-                    Ver promotor
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                )}
-              </div>
+          <Card title="Acciones" subtitle="Turno y cancelación" icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}>
+            <p className="text-sm text-slate-700 mb-3">{actionTurnMessage}</p>
+            {booking.status === 'ACCEPTED' && canCancelBooking && (
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(true)}
+                className="inline-flex items-center rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                Cancelar booking
+              </button>
             )}
+            <NegotiationPanel
+              bookingId={booking.id}
+              bookingStatus={booking.status}
+              userRole={role as any}
+              handledByRole={booking.handledByRole as any}
+              handledByUserId={booking.handledByUserId}
+              onBookingUpdated={refresh}
+              refreshContract={refreshContract}
+              onCancelBooking={() => {
+                if (canCancelBooking) setShowCancelModal(true);
+              }}
+            />
           </Card>
 
-          <Card title="Condiciones en negociación" subtitle="Incluido / no incluido" icon={<CreditCard className="h-4 w-4 text-slate-600" />}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-              <InfoRow label="Propuesta inicial" value={formatCurrency(bookingData.conditions.originalPrice, bookingData.conditions.currency)} muted strike />
-              <InfoRow label="Oferta actual" value={formatCurrency(bookingData.conditions.currentOffer, bookingData.conditions.currency)} strong />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <p className="text-sm font-medium text-slate-800 mb-2">Incluido</p>
-                <ul className="space-y-1">
-                  {bookingData.conditions.includes.map((item) => (
-                    <li key={item} className="text-sm text-slate-600 flex items-center gap-2">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+          <details className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <summary className="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-base font-semibold text-slate-900">
+              <span className="inline-flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-slate-600" />
+                Evento y condiciones
+              </span>
+              <span className="text-xs font-medium text-slate-500">Fuente: backend</span>
+            </summary>
+            <div className="px-5 pb-5 pt-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InfoRow label="Fecha" value={formatDate(eventDate)} icon={<Calendar className="h-4 w-4 text-slate-500" />} />
+                <InfoRow label="Turno" value={turnLabel} icon={<Clock className="h-4 w-4 text-slate-500" />} />
+                <InfoRow label="Sala" value={`${venueName}${venueCity ? `, ${venueCity}` : ''}`} icon={<MapPin className="h-4 w-4 text-slate-500" />} />
+                <InfoRow label="Importe" value={formatCurrency(agreedAmount, bookingCurrency)} icon={<CreditCard className="h-4 w-4 text-slate-500" />} />
               </div>
-              <div>
-                <p className="text-sm font-medium text-slate-800 mb-2">No incluido</p>
-                <ul className="space-y-1">
-                  {bookingData.conditions.excludes.map((item) => (
-                    <li key={item} className="text-sm text-slate-600 flex items-center gap-2">
-                      <XCircle className="h-3.5 w-3.5 text-red-500" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+
+              {(counterpartyHref || promoterId) && (
+                <div className="flex flex-wrap gap-3 pt-4">
+                  {counterpartyHref && (
+                    <Link href={counterpartyHref} className="inline-flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-slate-900">
+                      {counterpartyLabel}
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  )}
+                  {promoterId && role !== 'PROMOTER' && (
+                    <Link href={`/promoter/profile/${promoterId}`} className="inline-flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-slate-900">
+                      Ver promotor
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+          </details>
+
+          <details className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <summary className="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-base font-semibold text-slate-900">
+              <span className="inline-flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-slate-600" />
+                Condiciones en negociación
+              </span>
+              <span className="text-xs font-medium text-slate-500">Incluido / no incluido</span>
+            </summary>
+            <div className="px-5 pb-5 pt-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                <InfoRow label="Propuesta inicial" value={formatCurrency(bookingData.conditions.originalPrice, bookingData.conditions.currency)} muted strike />
+                <InfoRow label="Oferta actual" value={formatCurrency(bookingData.conditions.currentOffer, bookingData.conditions.currency)} strong />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm font-medium text-slate-800 mb-2">Incluido</p>
+                  <ul className="space-y-1">
+                    {bookingData.conditions.includes.map((item) => (
+                      <li key={item} className="text-sm text-slate-600 flex items-center gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-800 mb-2">No incluido</p>
+                  <ul className="space-y-1">
+                    {bookingData.conditions.excludes.map((item) => (
+                      <li key={item} className="text-sm text-slate-600 flex items-center gap-2">
+                        <XCircle className="h-3.5 w-3.5 text-red-500" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
-          </Card>
+          </details>
 
           {contract?.status === 'SIGNED' && (role === 'VENUE' || role === 'PROMOTER') && !['PAID_FULL', 'COMPLETED'].includes(booking.status) && (
             <Card title="Pagos" subtitle="Procesa milestones pendientes" icon={<CreditCard className="h-4 w-4 text-slate-600" />}>
@@ -512,31 +560,6 @@ function BookingDetailPage() {
                 </div>
               </div>
             )}
-          </Card>
-
-          <Card title="Acciones" subtitle="Turno y cancelación" icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}>
-            <p className="text-sm text-slate-700 mb-3">{actionTurnMessage}</p>
-            {booking.status === 'ACCEPTED' && canCancelBooking && (
-              <button
-                type="button"
-                onClick={() => setShowCancelModal(true)}
-                className="inline-flex items-center rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-              >
-                Cancelar booking
-              </button>
-            )}
-            <NegotiationPanel
-              bookingId={booking.id}
-              bookingStatus={booking.status}
-              userRole={role as any}
-              handledByRole={booking.handledByRole as any}
-              handledByUserId={booking.handledByUserId}
-              onBookingUpdated={refresh}
-              refreshContract={refreshContract}
-              onCancelBooking={() => {
-                if (canCancelBooking) setShowCancelModal(true);
-              }}
-            />
           </Card>
         </div>
 
@@ -772,7 +795,7 @@ function formatShortTime(value?: string | null) {
   return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 }
 
-function formatBookingStatusLabel(status: string) {
+function formatBookingStatusLabel(status: string, currentRole?: string | null, finalOfferSenderRole?: string | null) {
   const labels: Record<string, string> = {
     PENDING: 'Pendiente',
     NEGOTIATING: 'En negociación',
@@ -789,6 +812,10 @@ function formatBookingStatusLabel(status: string) {
     CANCELLED_PENDING_REVIEW: 'Cancelado (revisión)',
     REJECTED: 'Rechazado',
   };
+
+  if (status === 'FINAL_OFFER_SENT') {
+    return 'Oferta final';
+  }
 
   return labels[status] ?? status;
 }

@@ -11,6 +11,7 @@ type DiscoverArtist = {
   id: string;
   artistId?: string;
   artist_id?: string;
+  profileImageUrl?: string | null;
   name: string;
   city: string;
   genres?: string[];
@@ -270,7 +271,17 @@ export default function VenueDiscoverArtistsPage() {
                 className="flex items-center gap-4 px-4 py-3 hover:bg-slate-50 transition group"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="w-10 h-10 rounded-full bg-slate-100 shrink-0" />
+                <div className="w-10 h-10 rounded-full bg-slate-100 shrink-0 overflow-hidden flex items-center justify-center text-slate-500 font-semibold">
+                  {artist.profileImageUrl ? (
+                    <img
+                      src={artist.profileImageUrl}
+                      alt={`Foto de ${artist.name}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{artist.name?.slice(0, 1)?.toUpperCase() ?? '?'}</span>
+                  )}
+                </div>
 
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-slate-900">{artist.name}</p>
