@@ -23,6 +23,7 @@ import {
   Users,
   X,
   XCircle,
+  type LucideIcon,
 } from 'lucide-react';
 
 import { BottomNav } from '@/components/layout/BottomNav';
@@ -45,14 +46,15 @@ import {
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/hooks/auth/useMe';
 import { useArtistNotifications } from '@/hooks/artists/useArtistNotifications';
+import type { ArtistNotification } from '@/services/notifications/artist-notifications.service';
 import { formatCurrency } from '@/lib/utils';
 import { supabase } from '@/services/supabase/supabaseClient';
 
 const navByRole: Record<
   string,
   {
-    main: { label: string; href: string; icon: any }[];
-    account: { label: string; href: string; icon: any }[];
+    main: { label: string; href: string; icon: LucideIcon }[];
+    account: { label: string; href: string; icon: LucideIcon }[];
   }
 > = {
   VENUE: {
@@ -76,6 +78,9 @@ const navByRole: Record<
   MANAGER: {
     main: [
       { label: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
+      { label: 'Bookings', href: '/manager/bookings', icon: Ticket },
+      { label: 'Artistas', href: '/manager/discover', icon: Users },
+      { label: 'Calendario', href: '/manager/calendar', icon: CalendarDays },
       { label: 'Perfil', href: '/manager/profile', icon: UserRound },
     ],
     account: [{ label: 'Configuración', href: '/settings', icon: UserRound }],
@@ -100,7 +105,7 @@ const navByRole: Record<
 
 export function MainNav({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const { role, loading, profileId, profileName } = useMe();
+  const { role, loading, profileName } = useMe();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
@@ -128,7 +133,7 @@ export function MainNav({ children }: { children: ReactNode }) {
   const { notifications: latestNotifications = [], unreadCount, markAsRead } = useArtistNotifications({
     userId: user?.id,
     token: user?.token,
-    role: (role as any) || undefined,
+    role: role || undefined,
     limit: 20,
   });
 
@@ -777,7 +782,7 @@ function formatRelativeTime(dateStr?: string): string {
   return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
 }
 
-function NotificationItem({ notification, onClick }: { notification: any; onClick: () => void }) {
+function NotificationItem({ notification, onClick }: { notification: ArtistNotification; onClick: () => void }) {
   const isUnread = notification.status === 'UNREAD';
   const config = NOTIFICATION_CONFIG[notification.type] ?? DEFAULT_CONFIG;
 
