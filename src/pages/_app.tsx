@@ -13,7 +13,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
   if (hideNav) {
     return (
-      <MeProvider>
+      <MeProvider enabled={false}>
         <Component {...pageProps} />
         <Toaster />
       </MeProvider>
@@ -21,7 +21,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   }
 
   return (
-    <MeProvider>
+    <MeProvider enabled>
       <MainNav>
         <Component {...pageProps} />
       </MainNav>

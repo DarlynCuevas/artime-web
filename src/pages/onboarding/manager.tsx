@@ -4,6 +4,7 @@ import { BadgeCheck, CheckCircle2, HandCoins, Loader2, ShieldPlus } from 'lucide
 
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/context/MeContext';
+import { AuthShell } from '@/components/auth/AuthShell';
 
 export default function ManagerOnboardingPage() {
   const { user } = useAuth();
@@ -59,20 +60,17 @@ export default function ManagerOnboardingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-2xl space-y-8">
-        <header className="space-y-2 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg">
-            <ShieldPlus className="h-6 w-6" />
-          </div>
-          <h1 className="text-3xl font-semibold text-slate-900">Onboarding Manager</h1>
-          <p className="text-sm text-slate-600">Configura tus términos antes de operar.</p>
-        </header>
+    <AuthShell
+      title="Onboarding · Manager"
+      subtitle="Define tu comisión de representación para operar en ARTIME."
+      eyebrow="Onboarding"
+      icon={<ShieldPlus className="h-6 w-6" />}
+      backHref="/"
+      footer={<p className="text-xs text-slate-500">La comisión es fija por representación (v1).</p>}
+    >
+      {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 font-medium">{error}</div>}
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
-          {error && <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
-
-          <form onSubmit={onSubmit} className="space-y-6">
+      <form onSubmit={onSubmit} className="space-y-6 mt-4">
             <Card title="Datos básicos" icon={<BadgeCheck className="h-4 w-4 text-slate-600" />}>
               <Field label="Nombre">
                 <input className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Laura García" />
@@ -94,24 +92,22 @@ export default function ManagerOnboardingPage() {
             <button
               type="submit"
               disabled={loading || !hasToken}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-70"
+              className="w-full h-12 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-6 text-xs font-black uppercase tracking-[0.2em] text-white shadow-lg shadow-slate-900/10 hover:bg-slate-800 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0 transition-all duration-300"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               {loading ? 'Guardando…' : 'Finalizar onboarding'}
             </button>
           </form>
-        </section>
-      </div>
-    </main>
+    </AuthShell>
   );
 }
 
 function Card({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
-      <header className="flex items-center gap-2 text-slate-900 font-semibold">
+    <section className="rounded-3xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
+      <header className="flex items-center gap-2 text-slate-900 font-black">
         {icon}
-        <h2>{title}</h2>
+        <h2 className="text-sm uppercase tracking-widest">{title}</h2>
       </header>
       {children}
     </section>
@@ -121,7 +117,7 @@ function Card({ title, icon, children }: { title: string; icon?: ReactNode; chil
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="space-y-1 text-sm text-slate-700 block">
-      <span className="font-medium text-slate-800">{label}</span>
+      <span className="font-semibold text-slate-800">{label}</span>
       {children}
     </label>
   );

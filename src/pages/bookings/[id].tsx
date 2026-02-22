@@ -409,7 +409,7 @@ function BookingDetailPage() {
                   <button
                     type="button"
                     onClick={() => setShowCancelModal(true)}
-                    className="h-10 px-5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-red-600 hover:border-red-100 font-bold text-[11px] uppercase tracking-widest transition-all duration-300"
+                    className="h-11 w-full sm:w-auto px-5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-red-600 hover:border-red-100 font-bold text-[11px] uppercase tracking-widest transition-all duration-300 text-center"
                   >
                     Cancelar booking
                   </button>
@@ -441,20 +441,22 @@ function BookingDetailPage() {
                             setPaymentError(err instanceof Error ? err.message : 'Error creando PaymentIntent');
                           }
                         }}
-                        className="h-11 px-6 rounded-xl border border-amber-400 text-amber-700 hover:bg-amber-50 font-bold text-sm transition-all duration-200 flex items-center gap-2"
+                        className="h-11 w-full sm:w-auto px-6 rounded-xl border border-amber-400 text-amber-700 hover:bg-amber-50 font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 text-center"
                       >
                         <CreditCard className="w-4 h-4" /> Proceder al pago
                       </button>
                     )}
                     {clientSecret && milestoneId && (
                       <Elements stripe={stripePromise} options={{ clientSecret }}>
-                        <SimpleCardPaymentForm
-                          clientSecret={clientSecret}
-                          bookingId={booking.id}
-                          milestoneId={milestoneId}
-                          token={user.token}
-                          onSuccess={refresh}
-                        />
+                        <div className="w-full">
+                          <SimpleCardPaymentForm
+                            clientSecret={clientSecret}
+                            bookingId={booking.id}
+                            milestoneId={milestoneId}
+                            token={user.token}
+                            onSuccess={refresh}
+                          />
+                        </div>
                       </Elements>
                     )}
                     {paymentInfo && <p className="text-sm text-slate-600">{paymentInfo}</p>}
@@ -754,7 +756,7 @@ function NegotiationHistory({
                     {event.isFinal && <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 border-2 border-white rounded-full animate-bounce" />}
                   </div>
 
-                  <div className={`max-w-[85%] sm:max-w-[70%] flex flex-col gap-2 ${isOwn ? 'items-end text-right' : 'items-start text-left'}`}>
+                  <div className={`w-full max-w-full sm:max-w-[72%] flex flex-col gap-2 ${isOwn ? 'items-end text-right' : 'items-start text-left'}`}>
                     {/* Header Burbuja */}
                     <div className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 ${isOwn ? 'flex-row-reverse' : ''}`}>
                       <span className={isOwn ? 'text-amber-600' : 'text-slate-600'}>{roleLabel[event.role] ?? event.role}</span>
@@ -768,7 +770,7 @@ function NegotiationHistory({
                     </div>
 
                     {/* Burbuja Glass */}
-                    <div className={`relative group rounded-3xl px-5 py-4 transition-all duration-300 ${isOwn
+                    <div className={`relative group rounded-3xl px-5 py-4 transition-all duration-300 break-words ${isOwn
                       ? 'bg-gradient-to-br from-amber-50/50 to-white/50 border border-amber-200/50 shadow-sm rounded-tr-sm hover:shadow-md'
                       : 'bg-white border border-slate-100 shadow-sm rounded-tl-sm hover:shadow-md'
                       }`}>

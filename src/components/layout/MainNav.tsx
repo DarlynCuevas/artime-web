@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import {
   AlertCircle,
   BadgeCheck,
@@ -104,11 +105,15 @@ export function MainNav({ children }: { children: ReactNode }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [mobileSwipeX, setMobileSwipeX] = useState(0);
+  const [mobileSwipeActive, setMobileSwipeActive] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const bellRef = useRef<HTMLButtonElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const lastToastIdRef = useRef<string | null>(null);
   const hasBootstrappedToasts = useRef(false);
+  const mobileTouchStartRef = useRef<{ x: number; y: number } | null>(null);
   const router = useRouter();
 
   const navSections = useMemo(() => navByRole[role ?? ''], [role]);
@@ -302,6 +307,18 @@ export function MainNav({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showDropdown, showUserMenu]);
 
+  useEffect(() => {
+    if (!showDropdown) {
+      mobileTouchStartRef.current = null;
+      setMobileSwipeX(0);
+      setMobileSwipeActive(false);
+    }
+  }, [showDropdown]);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   if (loading) return null;
 
   return (
@@ -421,6 +438,14 @@ export function MainNav({ children }: { children: ReactNode }) {
 
               {showUserMenu && (
                 <div className="absolute right-0 top-12 w-44 rounded-lg border border-slate-200 bg-white p-2 text-sm shadow-lg">
+                  <Link
+                    href="/settings"
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left hover:bg-slate-50"
+                    onClick={() => setShowUserMenu(false)}
+                  >
+                    <Settings className="h-4 w-4 text-slate-400" />
+                    Configuración
+                  </Link>
                   <button
                     type="button"
                     className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left hover:bg-slate-50"
@@ -443,195 +468,246 @@ export function MainNav({ children }: { children: ReactNode }) {
               )}
             </div>
 
-            {showDropdown && (
-              <div
-                ref={dropdownRef}
-                className="absolute right-0 top-14 z-50 w-[400px] overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur-xl ring-1 ring-slate-900/5"
-              >
-                {/* ─── Header ─── */}
-                <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900">
-                      <Bell className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Centro de alertas</p>
-                      <p className="text-base font-black text-slate-900 leading-none">Notificaciones</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {unreadCount > 0 && (
-                      <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-amber-100 px-2 text-[11px] font-black text-amber-700">
-                        {unreadCount}
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      className="text-xs font-bold text-slate-500 hover:text-amber-600 disabled:opacity-40 transition-colors"
-                      disabled={markingAll || unreadCount === 0}
-                      onClick={async () => {
-                        if (unreadCount === 0) return;
-                        setMarkingAll(true);
-                        try {
-                          const unread = latestNotifications.filter((n) => n.status === 'UNREAD');
-                          await Promise.all(unread.map((n) => markAsRead(n.id)));
-                        } finally {
-                          setMarkingAll(false);
-                        }
-                      }}
-                    >
-                      Marcar todo leído
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowDropdown(false)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* ─── Body ─── */}
-                <div className="max-h-[480px] overflow-y-auto">
-                  {latestNotifications.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center gap-4 py-14 px-6 text-center">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
-                        <Bell className="h-8 w-8 text-slate-300" />
+            {showDropdown && isMounted && createPortal(
+              <div className="fixed inset-0 z-[999] bg-white sm:inset-auto sm:right-6 sm:top-20 sm:w-[400px] sm:rounded-3xl sm:border sm:border-slate-200/80 sm:bg-white/95 sm:shadow-2xl sm:backdrop-blur-xl sm:ring-1 sm:ring-slate-900/5">
+                <div
+                  ref={dropdownRef}
+                  className="h-full w-full sm:h-auto"
+                  onTouchStart={(e) => {
+                    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches) return;
+                    const t = e.touches[0];
+                    if (!t) return;
+                    mobileTouchStartRef.current = { x: t.clientX, y: t.clientY };
+                    setMobileSwipeActive(true);
+                    setMobileSwipeX(0);
+                  }}
+                  onTouchMove={(e) => {
+                    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches) return;
+                    const start = mobileTouchStartRef.current;
+                    const t = e.touches[0];
+                    if (!start || !t) return;
+                    const dx = t.clientX - start.x;
+                    const dy = t.clientY - start.y;
+                    if (Math.abs(dy) > Math.abs(dx) + 12) {
+                      mobileTouchStartRef.current = null;
+                      setMobileSwipeActive(false);
+                      setMobileSwipeX(0);
+                      return;
+                    }
+                    if (dx > 0) setMobileSwipeX(Math.min(dx, 360));
+                  }}
+                  onTouchEnd={() => {
+                    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches) return;
+                    const shouldClose = mobileSwipeX > 90;
+                    mobileTouchStartRef.current = null;
+                    setMobileSwipeActive(false);
+                    if (shouldClose) setShowDropdown(false);
+                    setMobileSwipeX(0);
+                  }}
+                  onTouchCancel={() => {
+                    mobileTouchStartRef.current = null;
+                    setMobileSwipeActive(false);
+                    setMobileSwipeX(0);
+                  }}
+                  style={{
+                    transform: mobileSwipeX ? `translateX(${mobileSwipeX}px)` : undefined,
+                    transition: mobileSwipeActive ? 'none' : 'transform 180ms ease-out',
+                    willChange: mobileSwipeActive ? 'transform' : undefined,
+                  }}
+                >
+                  <div className="flex h-full flex-col sm:h-auto">
+                    <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => setShowDropdown(false)}
+                          className="sm:hidden flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 active:bg-slate-50"
+                        >
+                          <span aria-hidden="true" className="text-lg leading-none">&lt;</span>
+                          <span className="sr-only">Volver</span>
+                        </button>
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900">
+                          <Bell className="h-4 w-4 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Centro de alertas</p>
+                          <p className="text-base font-black text-slate-900 leading-none truncate">Notificaciones</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-black text-slate-700">Todo al día</p>
-                        <p className="text-xs font-medium text-slate-400 mt-0.5">Te avisaremos cuando llegue algo nuevo.</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-slate-50 px-2 py-2">
-                      {latestNotifications.map((n) => (
-                        <NotificationItem
-                          key={n.id}
-                          notification={n}
+                      <div className="flex items-center gap-2">
+                        {unreadCount > 0 && (
+                          <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-amber-100 px-2 text-[11px] font-black text-amber-700">
+                            {unreadCount}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          className="text-xs font-bold text-slate-500 hover:text-amber-600 disabled:opacity-40 transition-colors"
+                          disabled={markingAll || unreadCount === 0}
                           onClick={async () => {
+                            if (unreadCount === 0) return;
+                            setMarkingAll(true);
                             try {
-                              if (n.status === 'UNREAD') {
-                                try {
-                                  await markAsRead(n.id);
-                                } catch (e) {
-                                  // no bloquear navegación por error de backend
-                                }
-                              }
-
-                              const callId = n.payload?.callId;
-                              if (callId) {
-                                const query = new URLSearchParams();
-                                if (n.payload?.city) query.set('city', n.payload.city);
-                                if (n.payload?.date) query.set('date', n.payload.date);
-                                if (n.payload?.offeredMaxPrice) query.set('price', String(n.payload.offeredMaxPrice));
-                                if (n.payload?.venueName) query.set('venueName', n.payload.venueName);
-                                router.push(`/artists/calls/${callId}?${query.toString()}`);
-                                setShowDropdown(false);
-                                return;
-                              }
-
-                              if (n.type === 'REPRESENTATION_REQUEST_CREATED') {
-                                const repRequestId =
-                                  n.payload?.requestId ||
-                                  n.payload?.request_id ||
-                                  n.payload?.id;
-
-                                const path = repRequestId
-                                  ? `/artists/representation-requests/${repRequestId}`
-                                  : '/artists/representation-requests';
-
-                                const qs = new URLSearchParams();
-                                const mgrName = n.payload?.managerName || n.payload?.manager_name;
-                                const commission = n.payload?.commissionPercentage || n.payload?.commission_percentage;
-                                if (mgrName) qs.set('managerName', mgrName);
-                                if (commission) qs.set('commission', String(commission));
-                                const suffix = qs.toString();
-
-                                router.push(`${path}${suffix ? `?${suffix}` : ''}`);
-                                setShowDropdown(false);
-                                return;
-                              }
-
-                              if (n.type === 'REPRESENTATION_REQUEST_RESOLVED') {
-                                const target = role === 'MANAGER' ? '/manager/artists' : '/artists/representation-requests';
-                                router.push(target);
-                                setShowDropdown(false);
-                                return;
-                              }
-
-                              const bookingTypes = new Set([
-                                'BOOKING_REQUEST',
-                                'NEGOTIATION_MESSAGE_SENT',
-                                'FINAL_OFFER_SENT',
-                                'BOOKING_ACCEPTED',
-                                'BOOKING_REJECTED',
-                                'BOOKING_CANCELLED',
-                                'CONTRACT_SIGNED',
-                                'PAYMENT_CONFIRMED',
-                              ]);
-
-                              if (bookingTypes.has(n.type)) {
-                                const bookingId = n.payload?.bookingId ?? n.payload?.booking_id;
-                                const target = getBookingTarget({ role, bookingId });
-                                router.push(target);
-                                setShowDropdown(false);
-                                return;
-                              }
-
-                              if (n.type === 'EVENT_INVITATION_CREATED') {
-                                const eventId = n.payload?.eventId || n.payload?.event_id;
-                                const invitationId = n.payload?.invitationId || n.payload?.invitation_id;
-                                const target = invitationId
-                                  ? `/artists/bookings/invitations?invitationId=${invitationId}`
-                                  : eventId
-                                    ? `/events/${eventId}#event-invitations`
-                                    : '/artists/bookings/invitations';
-                                router.push(target);
-                                setShowDropdown(false);
-                                return;
-                              }
-
-                              const invitationId = n.payload?.invitationId;
-                              const eventId = n.payload?.eventId;
-                              if (n.type === 'EVENT_INVITATION_ACCEPTED' || n.type === 'EVENT_INVITATION_DECLINED') {
-                                if (eventId) {
-                                  router.push(`/events/${eventId}#event-invitations`);
-                                  setShowDropdown(false);
-                                  return;
-                                }
-                              }
-
-                              if (invitationId) {
-                                router.push(`/artists/bookings/invitations?invitationId=${invitationId}`);
-                                setShowDropdown(false);
-                                return;
-                              }
-
-                              setShowDropdown(false);
-                            } catch (e) {
-                              setShowDropdown(false);
+                              const unread = latestNotifications.filter((n) => n.status === 'UNREAD');
+                              await Promise.all(unread.map((n) => markAsRead(n.id)));
+                            } finally {
+                              setMarkingAll(false);
                             }
                           }}
-                        />
-                      ))}
+                        >
+                          Marcar todo leído
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowDropdown(false)}
+                          className="hidden sm:flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
 
-                {/* ─── Footer ─── */}
-                <div className="border-t border-slate-100 px-5 py-3">
-                  <Link
-                    href="/settings?tab=notifications"
-                    onClick={() => setShowDropdown(false)}
-                    className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-amber-600 transition-colors"
-                  >
-                    <Settings className="h-3.5 w-3.5" />
-                    Preferencias de notificación
-                  </Link>
+                    <div className="flex-1 overflow-y-auto sm:max-h-[480px]">
+                      {latestNotifications.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center gap-4 py-14 px-6 text-center">
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+                            <Bell className="h-8 w-8 text-slate-300" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-slate-700">Todo al día</p>
+                            <p className="text-xs font-medium text-slate-400 mt-0.5">Te avisaremos cuando llegue algo nuevo.</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-50 px-2 py-2">
+                          {latestNotifications.map((n) => (
+                            <NotificationItem
+                              key={n.id}
+                              notification={n}
+                              onClick={async () => {
+                                try {
+                                  if (n.status === 'UNREAD') {
+                                    try {
+                                      await markAsRead(n.id);
+                                    } catch (e) {
+                                      // no bloquear navegación por error de backend
+                                    }
+                                  }
+
+                                  const callId = n.payload?.callId;
+                                  if (callId) {
+                                    const query = new URLSearchParams();
+                                    if (n.payload?.city) query.set('city', n.payload.city);
+                                    if (n.payload?.date) query.set('date', n.payload.date);
+                                    if (n.payload?.offeredMaxPrice) query.set('price', String(n.payload.offeredMaxPrice));
+                                    if (n.payload?.venueName) query.set('venueName', n.payload.venueName);
+                                    router.push(`/artists/calls/${callId}?${query.toString()}`);
+                                    setShowDropdown(false);
+                                    return;
+                                  }
+
+                                  if (n.type === 'REPRESENTATION_REQUEST_CREATED') {
+                                    const repRequestId =
+                                      n.payload?.requestId ||
+                                      n.payload?.request_id ||
+                                      n.payload?.id;
+
+                                    const path = repRequestId
+                                      ? `/artists/representation-requests/${repRequestId}`
+                                      : '/artists/representation-requests';
+
+                                    const qs = new URLSearchParams();
+                                    const mgrName = n.payload?.managerName || n.payload?.manager_name;
+                                    const commission = n.payload?.commissionPercentage || n.payload?.commission_percentage;
+                                    if (mgrName) qs.set('managerName', mgrName);
+                                    if (commission) qs.set('commission', String(commission));
+                                    const suffix = qs.toString();
+
+                                    router.push(`${path}${suffix ? `?${suffix}` : ''}`);
+                                    setShowDropdown(false);
+                                    return;
+                                  }
+
+                                  if (n.type === 'REPRESENTATION_REQUEST_RESOLVED') {
+                                    const target = role === 'MANAGER' ? '/manager/artists' : '/artists/representation-requests';
+                                    router.push(target);
+                                    setShowDropdown(false);
+                                    return;
+                                  }
+
+                                  const bookingTypes = new Set([
+                                    'BOOKING_REQUEST',
+                                    'NEGOTIATION_MESSAGE_SENT',
+                                    'FINAL_OFFER_SENT',
+                                    'BOOKING_ACCEPTED',
+                                    'BOOKING_REJECTED',
+                                    'BOOKING_CANCELLED',
+                                    'CONTRACT_SIGNED',
+                                    'PAYMENT_CONFIRMED',
+                                  ]);
+
+                                  if (bookingTypes.has(n.type)) {
+                                    const bookingId = n.payload?.bookingId ?? n.payload?.booking_id;
+                                    const target = getBookingTarget({ role, bookingId });
+                                    router.push(target);
+                                    setShowDropdown(false);
+                                    return;
+                                  }
+
+                                  if (n.type === 'EVENT_INVITATION_CREATED') {
+                                    const eventId = n.payload?.eventId || n.payload?.event_id;
+                                    const invitationId = n.payload?.invitationId || n.payload?.invitation_id;
+                                    const target = invitationId
+                                      ? `/artists/bookings/invitations?invitationId=${invitationId}`
+                                      : eventId
+                                        ? `/events/${eventId}#event-invitations`
+                                        : '/artists/bookings/invitations';
+                                    router.push(target);
+                                    setShowDropdown(false);
+                                    return;
+                                  }
+
+                                  const invitationId = n.payload?.invitationId;
+                                  const eventId = n.payload?.eventId;
+                                  if (n.type === 'EVENT_INVITATION_ACCEPTED' || n.type === 'EVENT_INVITATION_DECLINED') {
+                                    if (eventId) {
+                                      router.push(`/events/${eventId}#event-invitations`);
+                                      setShowDropdown(false);
+                                      return;
+                                    }
+                                  }
+
+                                  if (invitationId) {
+                                    router.push(`/artists/bookings/invitations?invitationId=${invitationId}`);
+                                    setShowDropdown(false);
+                                    return;
+                                  }
+
+                                  setShowDropdown(false);
+                                } catch (e) {
+                                  setShowDropdown(false);
+                                }
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-t border-slate-100 px-5 py-3">
+                      <Link
+                        href="/settings?tab=notifications"
+                        onClick={() => setShowDropdown(false)}
+                        className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-amber-600 transition-colors"
+                      >
+                        <Settings className="h-3.5 w-3.5" />
+                        Preferencias de notificación
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </div>,
+              document.body,
             )}
 
           </div>

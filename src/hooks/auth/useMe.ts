@@ -12,16 +12,23 @@ type MeResponse = {
   };
 };
 
-export function useMe() {
+export function useMe(opts?: { enabled?: boolean }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<Role>(null);
   const [profileId, setProfileId] = useState<string | undefined>(undefined);
   const [profileName, setProfileName] = useState<string | undefined>(undefined);
   const [refreshIndex, setRefreshIndex] = useState(0);
+  const enabled = opts?.enabled ?? true;
 
   useEffect(() => {
-    console.log('[useMe] mount', { user, loading, role });
+    if (!enabled) {
+      setRole(null);
+      setProfileId(undefined);
+      setProfileName(undefined);
+      setLoading(false);
+      return;
+    }
 
     if (!user?.token) {
       setRole(null);
@@ -56,7 +63,6 @@ export function useMe() {
         }
 
         const data: MeResponse = await res.json();
-        console.log('Respuesta /me', data);
         const profiles = data?.profiles;
 
         // Prioritize manager to avoid "acceso no autorizado" when the user also has other profiles.
@@ -64,31 +70,26 @@ export function useMe() {
           setRole('MANAGER');
           setProfileId(profiles.manager.id);
           setProfileName(profiles.manager.name);
-          console.log('Set role MANAGER');
         } else if (profiles?.venue) {
           setRole('VENUE');
           setProfileId(profiles.venue.id);
           setProfileName(profiles.venue.name);
-          console.log('Set role VENUE');
         } else if (profiles?.artist) {
           setRole('ARTIST');
           setProfileId(profiles.artist.id);
           setProfileName(profiles.artist.name);
-          console.log('Set role ARTIST');
         } else if (profiles?.promoter) {
           setRole('PROMOTER');
           setProfileId(profiles.promoter.id);
           setProfileName(profiles.promoter.name);
-          console.log('Set role PROMOTER');
         } else {
           setRole(null);
           setProfileId(undefined);
           setProfileName(undefined);
-          console.log('Set role null');
         }
-        console.log('Role final:', profiles, role);
       } catch (err) {
-        console.error('[useMe] error', err);
+        // Network errors (backend down / CORS / wrong baseUrl) should not crash the app.
+        console.warn('[useMe] no se pudo resolver /me');
         setRole(null);
         setProfileId(undefined);
         setProfileName(undefined);
@@ -98,9 +99,8 @@ export function useMe() {
     })();
 
     return () => {
-      console.log('[useMe] unmount');
     };
-  }, [user?.token, refreshIndex]);
+  }, [enabled, user?.token, refreshIndex]);
 
   return {
     loading,

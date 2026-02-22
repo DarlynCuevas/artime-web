@@ -5,8 +5,8 @@ type MeContextValue = ReturnType<typeof useMeHook>;
 
 const MeContext = createContext<MeContextValue | null>(null);
 
-export function MeProvider({ children }: { children: ReactNode }) {
-  const me = useMeHook();
+export function MeProvider({ children, enabled = true }: { children: ReactNode; enabled?: boolean }) {
+  const me = useMeHook({ enabled });
   // Memoize to avoid unnecessary rerenders
   const value = useMemo(
     () => me,

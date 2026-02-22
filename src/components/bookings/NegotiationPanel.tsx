@@ -210,13 +210,14 @@ export function NegotiationPanel({
       )}
 
       {canAcceptOrReject && (
-        <section className="flex items-center gap-4 bg-emerald-50/30 border border-emerald-100 rounded-2xl p-4">
-          <div className="flex-1">
-            <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest mb-1 ml-1">Acción rápida</p>
-            <p className="text-xs text-emerald-600 font-medium ml-1">Has recibido una propuesta. ¿Cómo quieres proceder?</p>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <button
+        <section className="bg-emerald-50/30 border border-emerald-100 rounded-2xl p-4">
+          <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest text-center sm:text-left">
+            Acción rápida
+          </p>
+
+          <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="order-1 sm:order-2 flex items-center justify-center sm:justify-end gap-3 flex-wrap">
+              <button
               type="button"
               disabled={sending}
               onClick={async () => {
@@ -233,9 +234,9 @@ export function NegotiationPanel({
               className="h-10 px-6 inline-flex items-center justify-center rounded-xl bg-emerald-600 text-[11px] font-black text-white uppercase tracking-widest shadow-lg shadow-emerald-600/10 hover:bg-emerald-700 hover:shadow-xl transition-all duration-300"
             >
               Aceptar
-            </button>
+              </button>
 
-            <button
+              <button
               type="button"
               disabled={sending}
               onClick={async () => {
@@ -245,7 +246,12 @@ export function NegotiationPanel({
               className="h-10 px-6 inline-flex items-center justify-center rounded-xl bg-white border border-slate-200 text-[11px] font-black text-slate-700 uppercase tracking-widest hover:bg-slate-50 transition-all duration-300"
             >
               Rechazar
-            </button>
+              </button>
+            </div>
+
+            <p className="order-2 sm:order-1 text-xs text-emerald-600 font-medium text-center sm:text-left">
+              Has recibido una propuesta. ¿Cómo quieres proceder?
+            </p>
           </div>
         </section>
       )}
