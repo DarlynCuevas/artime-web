@@ -1,5 +1,5 @@
 
-import { usePayouts } from '../../hooks/usePayouts';
+import { usePayouts } from '@/hooks/payouts/usePayouts';
 import { PayoutItem } from './PayoutItem';
 
 export default function PayoutsPage() {

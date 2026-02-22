@@ -6,6 +6,8 @@ interface CapacityCardProps {
     buttonText?: string;
     onActionClick?: () => void;
     className?: string;
+    disabled?: boolean;
+    disabledMessage?: string;
 }
 
 export function CapacityCard({
@@ -13,6 +15,8 @@ export function CapacityCard({
     buttonText = 'Enviar Propuesta',
     onActionClick,
     className = '',
+    disabled = false,
+    disabledMessage,
 }: CapacityCardProps) {
     return (
         <div className={`bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-6 flex flex-col shadow-2xl ${className}`}>
@@ -38,12 +42,23 @@ export function CapacityCard({
             <div className="w-full h-px bg-slate-700/50 mb-4" />
 
             {/* Lower part: Action/Info */}
-            <button
-                className="w-full h-11 rounded-xl bg-brand-amber hover:bg-amber-400 text-amber-950 font-bold text-sm shadow-[0_4px_14px_0_rgba(245,158,11,0.39)] hover:shadow-[0_6px_20px_rgba(245,158,11,0.23)] hover:-translate-y-0.5 transition-all duration-200"
-                onClick={onActionClick}
-            >
-                {buttonText}
-            </button>
+            <div className="flex flex-col gap-2">
+                <button
+                    disabled={disabled}
+                    className={`w-full h-11 rounded-xl font-bold text-sm transition-all duration-200 ${disabled
+                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                        : 'bg-brand-amber hover:bg-amber-400 text-amber-950 shadow-[0_4px_14px_0_rgba(245,158,11,0.39)] hover:shadow-[0_6px_20px_rgba(245,158,11,0.23)] hover:-translate-y-0.5'
+                        }`}
+                    onClick={onActionClick}
+                >
+                    {buttonText}
+                </button>
+                {disabled && disabledMessage && (
+                    <p className="text-[10px] text-center text-brand-amber font-bold uppercase tracking-wider">
+                        {disabledMessage}
+                    </p>
+                )}
+            </div>
         </div>
     );
 }

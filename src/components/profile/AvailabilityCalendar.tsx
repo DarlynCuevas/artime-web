@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { Calendar, ChevronRight } from 'lucide-react';
 
 import { useArtistAvailability } from '@/hooks/artists/useArtistAvailability';
+import { useVenueAvailability } from '@/hooks/venues/useVenueAvailability';
 import { getPublicArtistCalendarBlocks } from '@/services/artists/calendar.service';
 
 interface AvailabilityCalendarProps {
     artistId?: string;
+    venueId?: string;
     token?: string;
     /** Llamado cuando el usuario hace clic en un día DISPONIBLE */
     onDayClick?: (date: string) => void;
@@ -15,6 +17,7 @@ interface AvailabilityCalendarProps {
 
 export function AvailabilityCalendar({
     artistId,
+    venueId,
     token,
     onDayClick,
     readOnly = false,
@@ -25,14 +28,27 @@ export function AvailabilityCalendar({
 
     const monthLabel = month.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
 
-    const { days: availability, loading: availabilityLoading } = useArtistAvailability(
+    const { days: artistAvailability, loading: artistLoading } = useArtistAvailability(
         artistId || undefined,
-        artistId ? month : undefined,
+        artistId || venueId ? month : undefined,
         token,
     );
 
+    const { days: venueAvailability, loading: venueLoading } = useVenueAvailability(
+        venueId || undefined,
+        artistId || venueId ? month : undefined,
+        token,
+    );
+
+    const availability = artistId ? artistAvailability : venueAvailability;
+    const availabilityLoading = artistId ? artistLoading : venueLoading;
+
     useEffect(() => {
-        if (!artistId || !token) return;
+        if (!artistId || !token) {
+            setBlockedDates(new Set());
+            return;
+        }
+
         const from = new Date(Date.UTC(month.getFullYear(), month.getMonth(), 1))
             .toISOString()
             .slice(0, 10);

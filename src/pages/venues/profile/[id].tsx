@@ -4,6 +4,7 @@ import { MapPin, Users, Headphones, Info, Image as ImageIcon, Loader2, Link2, Ma
 
 import { getVenueById } from '@/services/venues/venues.service';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { useMe } from '@/hooks/auth/useMe';
 import { ProfileHero } from '@/components/profile/ProfileHero';
 import { CapacityCard } from '@/components/profile/CapacityCard';
 import { AvailabilityCalendar } from '@/components/profile/AvailabilityCalendar';
@@ -30,6 +31,7 @@ export default function VenuePublicProfilePage() {
   const { id } = router.query as { id: string };
   const artistName = (router.query?.artistName as string) || null;
   const { user } = useAuth();
+  const { role } = useMe();
 
   const [venue, setVenue] = useState<VenueProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -87,7 +89,15 @@ export default function VenuePublicProfilePage() {
   const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(venue.name || 'S')}&background=1e293b&color=fff&size=256`;
   const locationString = [venue.address, venue.city].filter(Boolean).join(' · ');
 
-  const capacityCard = <CapacityCard capacity={venue.capacity} />;
+  const isManager = role === 'MANAGER';
+
+  const capacityCard = (
+    <CapacityCard
+      capacity={venue.capacity}
+      disabled={!isManager}
+      disabledMessage={!isManager ? "Solo managers pueden enviar propuestas" : undefined}
+    />
+  );
 
   return (
     <>
@@ -162,7 +172,7 @@ export default function VenuePublicProfilePage() {
                 }
               >
                 <AvailabilityCalendar
-                  artistId={undefined} // Forzamos carga vacía ya que las salas usan su propio sistema de reservas
+                  venueId={venue.id}
                   readOnly={true}
                 />
               </GlassCard>

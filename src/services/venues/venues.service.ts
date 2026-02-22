@@ -79,3 +79,26 @@ export async function updateMyVenueProfile(payload: VenueProfilePayload, token: 
   return res.json();
 }
 
+export async function getVenueAvailability(
+  venueId: string,
+  from: string,
+  to: string,
+  token?: string,
+) {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/venues/${venueId}/availability?from=${from}&to=${to}`,
+    token
+      ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+      : undefined,
+  );
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch venue availability');
+  }
+
+  return res.json();
+}
