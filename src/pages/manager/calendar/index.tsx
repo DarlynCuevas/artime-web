@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Loader2, Users } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, ShieldCheck, Users } from 'lucide-react';
 
 import { withRole } from '@/components/auth/withRole';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -122,109 +122,127 @@ function ManagerCalendarPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-7 w-7 animate-spin text-slate-400" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto animate-pulse">
+            <ShieldCheck className="w-6 h-6 text-amber-500" />
+          </div>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Cargando calendario...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <main className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
-      <header className="space-y-2">
-        <p className="text-sm font-medium text-slate-500">Calendario</p>
-        <h1 className="text-3xl font-semibold text-slate-900">Fechas reservadas de artistas representados</h1>
-        <p className="text-slate-600">Visibilidad mensual para anticipar conflictos y gestionar prioridades.</p>
-      </header>
-
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm space-y-4">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
-            <CalendarDays className="h-4 w-4 text-slate-500" />
-            {new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(monthDate)}
+    <div className="min-h-screen bg-slate-50 pb-24">
+      <div className="relative w-full overflow-hidden bg-fintech-dark">
+        <div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-brand-amber rounded-full mix-blend-multiply filter blur-[128px] opacity-15 animate-pulse" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-10" />
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-14 pb-12">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center shrink-0">
+              <CalendarDays className="w-6 h-6 text-amber-400" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-0.5">Calendario</p>
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Agenda de representados</h1>
+            </div>
           </div>
-          <div className="inline-flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setMonthDate((prev) => addMonths(prev, -1))}
-              className="rounded-lg border border-slate-200 p-2 text-slate-700 hover:bg-slate-50"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setMonthDate(startOfMonth(new Date()))}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-            >
-              Hoy
-            </button>
-            <button
-              type="button"
-              onClick={() => setMonthDate((prev) => addMonths(prev, 1))}
-              className="rounded-lg border border-slate-200 p-2 text-slate-700 hover:bg-slate-50"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+
+          <section className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-4 sm:p-5 space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white">
+                <CalendarDays className="h-4 w-4 text-white/70" />
+                {new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(monthDate)}
+              </div>
+              <div className="inline-flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMonthDate((prev) => addMonths(prev, -1))}
+                  className="rounded-xl border border-white/15 bg-white/5 p-2 text-white hover:bg-white/10"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMonthDate(startOfMonth(new Date()))}
+                  className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10"
+                >
+                  Hoy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMonthDate((prev) => addMonths(prev, 1))}
+                  className="rounded-xl border border-white/15 bg-white/5 p-2 text-white hover:bg-white/10"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <label className="text-xs font-black uppercase tracking-widest text-white/60 inline-flex items-center gap-2">
+                <Users className="h-4 w-4 text-white/70" />
+                Artista
+              </label>
+              <select
+                value={artistFilter}
+                onChange={(e) => setArtistFilter(e.target.value)}
+                className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white focus:border-amber-400/50 focus:outline-none"
+              >
+                <option value="ALL" className="text-slate-900">Todos</option>
+                {artists.map((artist) => (
+                  <option key={artist.id} value={artist.name} className="text-slate-900">
+                    {artist.name}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs font-bold uppercase tracking-widest text-white/70">{totalMonthBookings} bookings este mes</span>
+            </div>
+          </section>
         </div>
+      </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          <label className="text-sm text-slate-600 inline-flex items-center gap-2">
-            <Users className="h-4 w-4 text-slate-500" />
-            Artista
-          </label>
-          <select
-            value={artistFilter}
-            onChange={(e) => setArtistFilter(e.target.value)}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
-          >
-            <option value="ALL">Todos</option>
-            {artists.map((artist) => (
-              <option key={artist.id} value={artist.name}>
-                {artist.name}
-              </option>
-            ))}
-          </select>
-          <span className="text-xs text-slate-500">{totalMonthBookings} bookings en este mes</span>
-        </div>
-      </section>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 mt-6 space-y-6">
+        {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
 
-      {error && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+        {!error && (
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {monthDays.map((date) => {
+              const key = formatIsoDay(date);
+              const dayBookings = bookingsByDate.get(key) ?? [];
+              return (
+                <article key={key} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(0,0,0,0.04)] min-h-[170px]">
+                  <header className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-black text-slate-900 uppercase tracking-wide">{formatDayLabel(date)}</p>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{dayBookings.length} reservas</span>
+                  </header>
 
-      {!error && (
-        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {monthDays.map((date) => {
-            const key = formatIsoDay(date);
-            const dayBookings = bookingsByDate.get(key) ?? [];
-            return (
-              <article key={key} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm min-h-[150px]">
-                <header className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-semibold text-slate-900">{formatDayLabel(date)}</p>
-                  <span className="text-[11px] text-slate-500">{dayBookings.length} reservas</span>
-                </header>
-
-                {dayBookings.length === 0 ? (
-                  <p className="text-xs text-slate-400">Sin reservas.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {dayBookings.map((booking) => (
-                      <div key={booking.id} className="rounded-lg border border-slate-100 bg-slate-50 p-2">
-                        <p className="text-xs font-semibold text-slate-900">{booking.artistName}</p>
-                        <p className="text-[11px] text-slate-500 truncate">
-                          {booking.eventName || booking.venueName || 'Booking'}
-                        </p>
-                        <div className="mt-1">
-                          <StatusBadge status={booking.status} />
+                  {dayBookings.length === 0 ? (
+                    <p className="text-xs text-slate-400">Sin reservas.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {dayBookings.map((booking) => (
+                        <div key={booking.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                          <p className="text-xs font-black uppercase tracking-wide text-slate-900">{booking.artistName}</p>
+                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                            {booking.eventName || booking.venueName || 'Booking'}
+                          </p>
+                          <div className="mt-2">
+                            <StatusBadge status={booking.status} />
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </article>
-            );
-          })}
-        </section>
-      )}
-    </main>
+                      ))}
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </section>
+        )}
+      </main>
+    </div>
   );
 }
 

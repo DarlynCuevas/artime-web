@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Filter, Loader2, Ticket, Users } from 'lucide-react';
+import { ArrowRight, CalendarDays, Filter, ShieldCheck, Ticket, Users } from 'lucide-react';
 
 import { withRole } from '@/components/auth/withRole';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -104,84 +104,102 @@ function ManagerBookingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="h-7 w-7 animate-spin text-slate-400" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto animate-pulse">
+            <ShieldCheck className="w-6 h-6 text-amber-500" />
+          </div>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Cargando bookings...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <main className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
-      <header className="space-y-2">
-        <p className="text-sm font-medium text-slate-500">Bookings</p>
-        <h1 className="text-3xl font-semibold text-slate-900">Bookings de artistas representados</h1>
-        <p className="text-slate-600">Ordenados por artista para operar rápido desde el rol de manager.</p>
-      </header>
+    <div className="min-h-screen bg-slate-50 pb-24">
+      <div className="relative w-full overflow-hidden bg-fintech-dark">
+        <div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-brand-amber rounded-full mix-blend-multiply filter blur-[128px] opacity-15 animate-pulse" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-10" />
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-14 pb-12">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center shrink-0">
+              <Ticket className="w-6 h-6 text-amber-400" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-0.5">Bookings</p>
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Operativa por artista</h1>
+            </div>
+          </div>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-3 text-sm font-semibold text-slate-700">
-          <Filter className="h-4 w-4" />
-          Filtros
+          <section className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-3 text-xs font-black uppercase tracking-widest text-white/60">
+              <Filter className="h-4 w-4" />
+              Filtros
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <select
+                value={artistFilter}
+                onChange={(e) => setArtistFilter(e.target.value)}
+                className="rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-amber-400/50 focus:outline-none"
+              >
+                {artistOptions.map((artist) => (
+                  <option key={artist} value={artist} className="text-slate-900">
+                    {artist === 'ALL' ? 'Todos los artistas' : artist}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-amber-400/50 focus:outline-none"
+              >
+                {statusOptions.map((status) => (
+                  <option key={status} value={status} className="text-slate-900">
+                    {status === 'ALL' ? 'Todos los estados' : status}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </section>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <select
-            value={artistFilter}
-            onChange={(e) => setArtistFilter(e.target.value)}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
-          >
-            {artistOptions.map((artist) => (
-              <option key={artist} value={artist}>
-                {artist === 'ALL' ? 'Todos los artistas' : artist}
-              </option>
-            ))}
-          </select>
+      </div>
 
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
-          >
-            {statusOptions.map((status) => (
-              <option key={status} value={status}>
-                {status === 'ALL' ? 'Todos los estados' : status}
-              </option>
-            ))}
-          </select>
-        </div>
-      </section>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 mt-6 space-y-6">
+        {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
 
-      {error && <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+        {!error && filtered.length === 0 && (
+          <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center text-sm text-slate-500">
+            No hay bookings para los filtros seleccionados.
+          </div>
+        )}
 
-      {!error && filtered.length === 0 && (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-sm text-slate-500">
-          No hay bookings para los filtros seleccionados.
-        </div>
-      )}
+        {!error &&
+          orderedArtists.map((artist) => (
+            <section key={artist} className="rounded-3xl border border-slate-200 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.04)] overflow-hidden">
+              <header className="px-5 py-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-slate-900">
+                  <div className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center">
+                    <Users className="h-4 w-4 text-slate-600" />
+                  </div>
+                  <h2 className="text-xs font-black uppercase tracking-widest">{artist}</h2>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{groupedByArtist[artist].length} bookings</span>
+              </header>
 
-      {!error &&
-        orderedArtists.map((artist) => (
-          <section key={artist} className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <header className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-slate-900">
-                <Users className="h-4 w-4 text-slate-600" />
-                <h2 className="font-semibold">{artist}</h2>
-              </div>
-              <span className="text-xs text-slate-500">{groupedByArtist[artist].length} bookings</span>
-            </header>
-
-            <div className="divide-y divide-slate-100">
-              {groupedByArtist[artist]
-                .slice()
-                .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-                .map((booking) => (
-                  <Link
-                    key={booking.id}
-                    href={`/bookings/${booking.id}`}
-                    className="block px-5 py-4 hover:bg-slate-50 transition-colors"
-                  >
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="divide-y divide-slate-100">
+                {groupedByArtist[artist]
+                  .slice()
+                  .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+                  .map((booking) => (
+                    <Link
+                      key={booking.id}
+                      href={`/bookings/${booking.id}`}
+                      className="group flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-4 hover:bg-slate-50/70 transition-colors"
+                    >
                       <div className="space-y-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">
+                        <p className="text-sm font-bold text-slate-900 truncate">
                           {booking.eventName || booking.venueName || booking.partnerName}
                         </p>
                         <p className="text-xs text-slate-500 flex items-center gap-2">
@@ -190,16 +208,18 @@ function ManagerBookingsPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Ticket className="h-4 w-4 text-slate-500" />
                         <StatusBadge status={booking.status} />
+                        <span className="w-8 h-8 rounded-xl border border-slate-200 flex items-center justify-center group-hover:border-amber-300 group-hover:bg-amber-50 transition-all">
+                          <ArrowRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-amber-600" />
+                        </span>
                       </div>
-                    </div>
-                  </Link>
-                ))}
-            </div>
-          </section>
-        ))}
-    </main>
+                    </Link>
+                  ))}
+              </div>
+            </section>
+          ))}
+      </main>
+    </div>
   );
 }
 
