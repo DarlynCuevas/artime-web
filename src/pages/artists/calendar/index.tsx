@@ -153,29 +153,38 @@ function ArtistCalendarPage() {
         />
       )}
 
-      {selectedDay && selectedDay.status === 'BOOKED' && (
+      {selectedDay && (selectedDay.status === 'BOOKED' || selectedDay.status === 'BLOCKED') && (
         <section style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
-          <h3 style={{ marginTop: 0, marginBottom: 8 }}>Detalle de booking</h3>
+          <h3 style={{ marginTop: 0, marginBottom: 8 }}>
+            {selectedDay.status === 'BOOKED' ? 'Detalle de booking' : 'Detalle de bloqueo'}
+          </h3>
           <p style={{ margin: 0, color: '#555' }}>Fecha: {selectedDay.date}</p>
-          {bookingLoading && <p style={{ marginTop: 8 }}>Cargando booking…</p>}
-          {!bookingLoading && bookingDetail && (
-            <div style={{ marginTop: 8, display: 'grid', gap: 4 }}>
-              <div><strong>Estado:</strong> {bookingDetail.status}</div>
-              <div><strong>Monto:</strong> {bookingDetail.totalAmount ?? '—'} {bookingDetail.currency ?? ''}</div>
-              {bookingDetail.venue && (
-                <div>
-                  <strong>Sala:</strong> {bookingDetail.venue.name ?? '—'}{bookingDetail.venue.city ? ` · ${bookingDetail.venue.city}` : ''}
-                </div>
-              )}
-              {!bookingDetail.venue && (
-                <div>
-                  <strong>Sala:</strong> —
-                </div>
-              )}
-            </div>
+          {selectedDay.status === 'BLOCKED' && (
+            <p style={{ marginTop: 8, color: '#555' }}>Día bloqueado por ti. No se aceptan nuevas propuestas.</p>
           )}
-          {!bookingLoading && !bookingDetail && (
-            <p style={{ marginTop: 8, color: '#b71c1c' }}>No se encontró información del booking.</p>
+          {selectedDay.status === 'BOOKED' && (
+            <>
+              {bookingLoading && <p style={{ marginTop: 8 }}>Cargando booking…</p>}
+              {!bookingLoading && bookingDetail && (
+                <div style={{ marginTop: 8, display: 'grid', gap: 4 }}>
+                  <div><strong>Estado:</strong> {bookingDetail.status}</div>
+                  <div><strong>Monto:</strong> {bookingDetail.totalAmount ?? '—'} {bookingDetail.currency ?? ''}</div>
+                  {bookingDetail.venue && (
+                    <div>
+                      <strong>Sala:</strong> {bookingDetail.venue.name ?? '—'}{bookingDetail.venue.city ? ` · ${bookingDetail.venue.city}` : ''}
+                    </div>
+                  )}
+                  {!bookingDetail.venue && (
+                    <div>
+                      <strong>Sala:</strong> —
+                    </div>
+                  )}
+                </div>
+              )}
+              {!bookingLoading && !bookingDetail && (
+                <p style={{ marginTop: 8, color: '#b71c1c' }}>No se encontró información del booking.</p>
+              )}
+            </>
           )}
         </section>
       )}

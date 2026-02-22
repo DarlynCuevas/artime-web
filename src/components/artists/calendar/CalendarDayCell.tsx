@@ -8,7 +8,7 @@ type Props = {
 
 const STATUS_CLASSES: Record<CalendarDay['status'], string> = {
   AVAILABLE: 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:border-emerald-300',
-  BOOKED: 'bg-amber-50 text-amber-800 border-amber-200 cursor-not-allowed',
+  BOOKED: 'bg-amber-50 text-amber-800 border-amber-200 hover:border-amber-300',
   BLOCKED: 'bg-slate-100 text-slate-500 border-slate-200',
 };
 
@@ -24,7 +24,6 @@ export function CalendarDayCell({ day, selected, onSelectDate }: Props) {
         isSelected ? 'ring-2 ring-slate-900/30' : ''
       }`}
       onClick={() => onSelectDate?.(day.date)}
-      disabled={day.status === 'BOOKED'}
     >
       <div className="text-sm font-semibold mb-1">{day.date.slice(-2)}</div>
       {day.bookings && day.bookings.length > 0 && (

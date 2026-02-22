@@ -25,7 +25,7 @@ export default function IndexPage() {
       return;
     }
     if (role === 'PROMOTER') {
-      router.replace('/events');
+      router.replace('/promoter/dashboard');
       return;
     }
     if (role === 'MANAGER') {

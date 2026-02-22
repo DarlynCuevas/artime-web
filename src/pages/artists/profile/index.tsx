@@ -189,9 +189,8 @@ function ArtistPrivateProfilePage() {
 	return (
 		<main className="p-6 md:p-8 max-w-5xl mx-auto space-y-8">
 			<header className="space-y-2">
-				<p className="text-sm font-medium text-slate-500">Perfil</p>
-				<h1 className="text-3xl font-semibold text-slate-900">Identidad del artista</h1>
-				<p className="text-slate-600">Refleja lo que ven salas y promoters. El backend sigue siendo la fuente de verdad.</p>
+				<h1 className="text-3xl font-semibold text-slate-900">Perfil profesional</h1>
+				<p className="text-slate-600">Refleja lo que ven salas y promoters.</p>
 			</header>
 
 			<section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 space-y-4">
@@ -272,6 +271,7 @@ function ArtistPrivateProfilePage() {
 							className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none min-h-[120px]"
 							value={profile.bio}
 							onChange={(e) => handleChange('bio', e.target.value)}
+							maxLength={1000}
 							placeholder="Describe tu propuesta en 3-5 frases claras."
 						/>
 					</div>
