@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { CalendarSearch, CheckCircle2, Loader2, MapPin, ShieldPlus, Sparkles } from 'lucide-react';
 
@@ -17,12 +17,19 @@ export default function PromoterOnboardingPage() {
   const { user } = useAuth();
   const { refresh } = useMe();
   const router = useRouter();
-  const [name, setName] = useState('');
+  const [profileName, setProfileName] = useState('');
   const [city, setCity] = useState('');
   const [eventTypes, setEventTypes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasToken = Boolean(user?.token);
+  const queryDisplayName = typeof router.query.displayName === 'string' ? router.query.displayName.trim() : '';
+
+  useEffect(() => {
+    if (!profileName && queryDisplayName) {
+      setProfileName(queryDisplayName);
+    }
+  }, [profileName, queryDisplayName]);
 
   const toggleEventType = (value: string) => {
     setEventTypes((prev) => (prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]));
@@ -35,7 +42,7 @@ export default function PromoterOnboardingPage() {
       setError('Inicia sesion para continuar.');
       return;
     }
-    if (!name || !city) {
+    if (!profileName || !city) {
       setError('Completa los campos obligatorios.');
       return;
     }
@@ -49,7 +56,7 @@ export default function PromoterOnboardingPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name,
+          name: profileName,
           city,
           eventTypes,
         }),
@@ -58,8 +65,8 @@ export default function PromoterOnboardingPage() {
 
       refresh();
       await router.push('/promoter/dashboard');
-    } catch (err: any) {
-      setError(err?.message ?? 'Error al guardar el perfil.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al guardar el perfil.');
     } finally {
       setLoading(false);
     }
@@ -78,9 +85,15 @@ export default function PromoterOnboardingPage() {
 
       <form onSubmit={onSubmit} className="space-y-6 mt-4">
             <Card title="Identidad" icon={<Sparkles className="h-4 w-4 text-slate-600" />}>
-              <Field label="Nombre profesional / marca">
-                <input className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Evento Sur" />
-              </Field>
+              {profileName ? (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  Nombre visible: <span className="font-semibold text-slate-900">{profileName}</span>
+                </div>
+              ) : (
+                <Field label="Nombre profesional / marca">
+                  <input className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none" value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Ej. Evento Sur" />
+                </Field>
+              )}
               <Field label="Ciudad base">
                 <div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2">
                   <MapPin className="h-4 w-4 text-slate-500" />

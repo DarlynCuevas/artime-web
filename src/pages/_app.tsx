@@ -8,7 +8,11 @@ import { Toaster } from '../components/ui/toaster';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const hideNav = router.pathname === '/' || router.pathname === '/login' || router.pathname === '/register';
+  const hideNav =
+    router.pathname === '/' ||
+    router.pathname === '/login' ||
+    router.pathname === '/register' ||
+    router.pathname.startsWith('/onboarding/');
 
 
   if (hideNav) {

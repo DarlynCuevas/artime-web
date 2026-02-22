@@ -67,9 +67,9 @@ export default function RegisterPage() {
       });
 
       if (!res.ok) throw new Error('No se pudo completar el registro.');
-      await router.push(`/onboarding/${role.toLowerCase()}`);
-    } catch (err: any) {
-      setError(err?.message ?? 'Error al registrarse.');
+      await router.push(`/onboarding/${role.toLowerCase()}?displayName=${encodeURIComponent(displayName)}`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al registrarse.');
     } finally {
       setLoading(false);
     }
@@ -170,7 +170,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-700">Nombre visible</label>
+          <label className="text-sm font-semibold text-slate-700">Nombre publico inicial</label>
           <input
             type="text"
             className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-100 transition-all"
@@ -179,7 +179,7 @@ export default function RegisterPage() {
             placeholder="Cómo te verán en ARTIME"
             required
           />
-          {role ? <p className="text-xs text-slate-500">{ROLE_LABELS[role].subtitle}</p> : null}
+          {role ? <p className="text-xs text-slate-500">{ROLE_LABELS[role].subtitle}. Podras editarlo despues.</p> : null}
         </div>
 
         <button
@@ -198,4 +198,3 @@ export default function RegisterPage() {
     </AuthShell>
   );
 }
-

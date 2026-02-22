@@ -20,9 +20,10 @@ import { AccountSection } from '@/components/settings/AccountSection';
 import { NotificationsSection } from '@/components/settings/NotificationsSection';
 import { SecuritySection } from '@/components/settings/SecuritySection';
 import { VerificationSection } from '@/components/settings/VerificationSection';
+import { StripeSection } from '@/components/settings/StripeSection';
 import type { UserRole } from '@/types/user-role';
 
-type TabId = 'fiscal' | 'account' | 'notifications' | 'security' | 'verification';
+type TabId = 'fiscal' | 'stripe' | 'account' | 'notifications' | 'security' | 'verification';
 
 interface Tab {
     id: TabId;
@@ -32,6 +33,7 @@ interface Tab {
 
 const tabs: Tab[] = [
     { id: 'fiscal', label: 'Datos fiscales', icon: <Building2 className="w-4 h-4" /> },
+    { id: 'stripe', label: 'Pagos Stripe', icon: <KeyRound className="w-4 h-4" /> },
     { id: 'account', label: 'Mi cuenta', icon: <User className="w-4 h-4" /> },
     { id: 'notifications', label: 'Notificaciones', icon: <Bell className="w-4 h-4" /> },
     { id: 'security', label: 'Seguridad', icon: <Shield className="w-4 h-4" /> },
@@ -42,6 +44,10 @@ const tabTitles: Record<TabId, { title: string; subtitle: string }> = {
     fiscal: {
         title: 'Datos fiscales',
         subtitle: 'Tu información fiscal para la generación de facturas y pagos.',
+    },
+    stripe: {
+        title: 'Pagos con Stripe',
+        subtitle: 'Conecta y gestiona Stripe Connect para cobros y liquidaciones.',
     },
     account: {
         title: 'Mi cuenta',
@@ -63,7 +69,7 @@ const tabTitles: Record<TabId, { title: string; subtitle: string }> = {
 
 export default function SettingsPage() {
     const { user, loading: authLoading } = useAuth();
-    const { role, loading: roleLoading } = useMe();
+    const { role, profileId, loading: roleLoading } = useMe();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<TabId>('fiscal');
 
@@ -181,6 +187,9 @@ export default function SettingsPage() {
                                         token={user.token}
                                         onLogout={handleLogout}
                                     />
+                                )}
+                                {activeTab === 'stripe' && role && (
+                                    <StripeSection token={user.token} role={role as UserRole} profileId={profileId} />
                                 )}
                                 {activeTab === 'notifications' && (
                                     <NotificationsSection token={user.token} />
