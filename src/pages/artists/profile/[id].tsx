@@ -355,12 +355,14 @@ export default function ArtistProfilePage() {
               )}
 
               {/* Representación */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-                <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-brand-amber" />
-                  Representación
-                </h3>
-                <div className="space-y-3 text-sm text-slate-700">
+              <div className="bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.04)] overflow-hidden">
+                <div className="px-6 py-5 border-b border-slate-50 bg-slate-50/50 flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Representación</h3>
+                </div>
+                <div className="p-6 space-y-3 text-sm text-slate-700">
                   <div className="flex items-center gap-3">
                     <RepresentationStatusBadge status={representationStatus} />
                     {artist.managerName && representationStatus === 'ACTIVE' && (
@@ -407,27 +409,29 @@ export default function ArtistProfilePage() {
               </div>
 
               {/* Condiciones */}
-              <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-                <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  <Music className="h-4 w-4 text-brand-amber" />
-                  Condiciones
-                </h3>
-                <div className="space-y-3">
-                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-start gap-3">
-                    <div className="mt-0.5">
+              <div className="bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.04)] overflow-hidden">
+                <div className="px-6 py-5 border-b border-slate-50 bg-slate-50/50 flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                    <Music className="h-3.5 w-3.5 text-slate-600" />
+                  </div>
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Condiciones</h3>
+                </div>
+                <div className="p-6 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1.5 shrink-0">
                       <div className={`w-2 h-2 rounded-full ${artist.isNegotiable ? 'bg-amber-400 ring-4 ring-amber-100' : 'bg-slate-300 ring-4 ring-slate-100'}`} />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{artist.isNegotiable ? 'El mánager acepta negociar' : 'Caché Fijo'}</p>
+                      <p className="text-sm font-bold text-slate-900">{artist.isNegotiable ? 'Precio negociable' : 'Caché fijo'}</p>
                       <p className="text-xs text-slate-500 mt-0.5">Las contraofertas se evaluarán según el aforo y el tipo de evento.</p>
                     </div>
                   </div>
-                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-start gap-3">
-                    <div className="mt-0.5">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1.5 shrink-0">
                       <div className="w-2 h-2 rounded-full bg-emerald-400 ring-4 ring-emerald-100" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">Pagos Seguros vía ARTIME</p>
+                      <p className="text-sm font-bold text-slate-900">Pagos seguros vía ARTIME</p>
                       <p className="text-xs text-slate-500 mt-0.5">El pago se retiene de forma segura hasta la finalización del evento.</p>
                     </div>
                   </div>

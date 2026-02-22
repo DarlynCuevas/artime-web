@@ -6,7 +6,7 @@ interface ProfileHeroProps {
     typeLabel: string;
     location: string;
     genres: string[];
-    managerName: string;
+    managerName?: string;
     avatarUrl: string;
     actionElement?: ReactNode; // Espacio para el PricingCard o menú de acción
 }
@@ -59,11 +59,15 @@ export function ProfileHero({
                                     <Music2 className="w-4 h-4" />
                                     <span>{genres.join(' • ')}</span>
                                 </div>
-                                <div className="w-1 h-1 rounded-full bg-white/30 hidden md:block" />
-                                <div className="flex items-center gap-1.5">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                                    <span>Representado por {managerName}</span>
-                                </div>
+                                {managerName && (
+                                    <>
+                                        <div className="w-1 h-1 rounded-full bg-white/30 hidden md:block" />
+                                        <div className="flex items-center gap-1.5">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                            <span>Representado por {managerName}</span>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>

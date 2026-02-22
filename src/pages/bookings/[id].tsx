@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Calendar, MapPin, Clock, CreditCard, FileText, AlertTriangle, MessageSquare, HandCoins, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Calendar, MapPin, Clock, CreditCard, FileText, AlertTriangle, MessageSquare, HandCoins, CheckCircle2, XCircle, Music2, Flag, Ban, Download, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 
 import { CancelBookingModal } from '@/components/bookings/CancelBookingModal';
 import { NegotiationPanel } from '@/components/bookings/NegotiationPanel';
@@ -60,6 +60,7 @@ function BookingDetailPage() {
 
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showSignContractModal, setShowSignContractModal] = useState(false);
+  const [showConditions, setShowConditions] = useState(false);
   const [eventName, setEventName] = useState<string | null>(null);
 
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -195,38 +196,39 @@ function BookingDetailPage() {
   const actionTurnMessage =
     booking.status === 'REJECTED'
       ? 'La propuesta fue rechazada.'
-      : booking.status === 'CANCELLED' ||
-        booking.status === 'CANCELLED_PENDING_REVIEW'
-        ? 'La contratación ha sido cancelada.'
-        : booking.status === 'CONTRACT_SIGNED'
-          ? 'Contrato firmado. Pendiente de pagos.'
-        : booking.status === 'PAID_PARTIAL'
-          ? 'Pagos en curso. Pendiente de completar el importe.'
-        : booking.status === 'PAID_FULL' || booking.status === 'COMPLETED'
-          ? 'Pagos completados.'
-        : booking.status === 'ACCEPTED'
-          ? 'Contratación aceptada. Pendiente de firma de contrato.'
-        : booking.status === 'FINAL_OFFER_SENT'
-          ? hasTurn
-            ? 'Tienes una oferta final pendiente de aceptar o rechazar.'
-            : handledByLabel
-              ? `Turno de ${handledByLabel} para aceptar o rechazar la oferta final.`
-              : 'La otra parte debe aceptar o rechazar la oferta final.'
-          : hasTurn
-            ? 'Es tu turno para responder o cancelar la propuesta.'
-            : handledByLabel
-              ? `Turno de ${handledByLabel}.`
-          : 'La otra parte está gestionando este booking.';
+      : booking.status === 'CANCELLED_PENDING_REVIEW'
+        ? 'La contratación ha sido cancelada y se encuentra bajo revisión por el equipo de Artime para procesar la resolución.'
+        : booking.status === 'CANCELLED'
+          ? 'La contratación ha sido cancelada.'
+          : booking.status === 'CONTRACT_SIGNED'
+            ? 'Contrato firmado. Pendiente de pagos.'
+            : booking.status === 'PAID_PARTIAL'
+              ? 'Pagos en curso. Pendiente de completar el importe.'
+              : booking.status === 'PAID_FULL' || booking.status === 'COMPLETED'
+                ? 'Contratación finalizada. El booking está cerrado y los pagos se han completado con éxito.'
+                : booking.status === 'ACCEPTED'
+                  ? 'Contratación aceptada. Pendiente de firma de contrato.'
+                  : booking.status === 'FINAL_OFFER_SENT'
+                    ? hasTurn
+                      ? 'Tienes una oferta final pendiente de aceptar o rechazar.'
+                      : handledByLabel
+                        ? `Turno de ${handledByLabel} para aceptar o rechazar la oferta final.`
+                        : 'La otra parte debe aceptar o rechazar la oferta final.'
+                    : hasTurn
+                      ? 'Es tu turno para responder o cancelar la propuesta.'
+                      : handledByLabel
+                        ? `Turno de ${handledByLabel}.`
+                        : 'La otra parte está gestionando este booking.';
 
   const turnLabel =
     booking.status === 'REJECTED' ||
-    booking.status === 'CANCELLED' ||
-    booking.status === 'CANCELLED_PENDING_REVIEW' ||
-    booking.status === 'ACCEPTED' ||
-    booking.status === 'CONTRACT_SIGNED' ||
-    booking.status === 'PAID_PARTIAL' ||
-    booking.status === 'PAID_FULL' ||
-    booking.status === 'COMPLETED'
+      booking.status === 'CANCELLED' ||
+      booking.status === 'CANCELLED_PENDING_REVIEW' ||
+      booking.status === 'ACCEPTED' ||
+      booking.status === 'CONTRACT_SIGNED' ||
+      booking.status === 'PAID_PARTIAL' ||
+      booking.status === 'PAID_FULL' ||
+      booking.status === 'COMPLETED'
       ? '—'
       : hasTurn
         ? 'Tu turno'
@@ -315,288 +317,292 @@ function BookingDetailPage() {
 
 
   return (
-    <main className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
-      <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors">
-        <ArrowLeft className="h-4 w-4" />
-        Volver a bookings
-      </Link>
+    <div className="min-h-screen bg-slate-50 pb-24">
 
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div>
-                <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{artistName ?? 'Artista'}</h1>
+      {/* ── TOP NAVIGATION ──────────────────────────────────────── */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
+        <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Volver a bookings
+        </Link>
+      </div>
+
+      {/* ── BOOKING HERO ────────────────────────────────────────── */}
+      <div className="relative w-full overflow-hidden bg-fintech-dark">
+        <div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-brand-amber rounded-full mix-blend-multiply filter blur-[128px] opacity-15 animate-pulse" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-15" />
+
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-8 pb-8">
+
+          {/* Artista → Sala / Estado */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                  <Music2 className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-white/50 font-semibold uppercase tracking-widest">Contratación</p>
+                  <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">{artistName ?? 'Artista'}</h1>
+                </div>
               </div>
-              <StatusBadge
-                status={booking.status}
-                currentRole={role}
-                finalOfferSenderRole={lastFinalOfferSenderRole ?? null}
-              />
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-white/60 text-sm ml-[52px]">
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {venueName}{venueCity ? ` · ${venueCity}` : ''}
+                </span>
+                {eventDate && (
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {new Date(eventDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="text-sm text-slate-600 space-y-1">
-              <p>
-                {artistName ?? 'Artista'} → {headerTargetName}
-                {headerTargetMeta ? ` · ${headerTargetMeta}` : ''}
-              </p>
-              {resolvedEventName && (
-                <p className="text-xs text-slate-500">
-                  {promoterId ? 'Promotor' : 'Sala'}{venueName ? ` · ${venueName}` : ''}{venueCity ? `, ${venueCity}` : ''}
-                </p>
+
+            {/* Status badge + última actividad */}
+            <div className="flex flex-col items-start sm:items-end gap-2 ml-[52px] sm:ml-0">
+              <HeroStatusBadge status={booking.status} />
+              {lastActivity && (
+                <span className="text-xs text-white/40 flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> {formatRelativeTime(lastActivity)}
+                </span>
               )}
             </div>
           </div>
-          <div className="text-right text-sm text-slate-600">
-            <p className="font-medium text-slate-900">Última actividad</p>
-            <p>{lastActivity ? formatRelativeTime(lastActivity) : 'Sin actividad'}</p>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-          <KpiCard
-            label="Estado"
-            value={formatBookingStatusLabel(booking.status, role, lastFinalOfferSenderRole ?? null)}
-          />
-          <KpiCard label="Importe" value={formatCurrency(agreedAmount, bookingCurrency)} />
-          <KpiCard
-            label="Pago"
-            value={paymentSummary ? (paymentSummary.percent >= 100 ? '100%' : `${paymentSummary.percent}%`) : '—'}
-            helper={paymentSummary ? `${formatCurrency(paymentSummary.paidAmount, bookingCurrency)} de ${formatCurrency(paymentSummary.totalAmount, bookingCurrency)}` : undefined}
-          />
-          <KpiCard label="Turno" value={turnLabel} />
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card title="Acciones" subtitle="Turno y cancelación" icon={<AlertTriangle className="h-4 w-4 text-amber-600" />}>
-            <p className="text-sm text-slate-700 mb-3">{actionTurnMessage}</p>
-            {booking.status === 'ACCEPTED' && canCancelBooking && (
-              <button
-                type="button"
-                onClick={() => setShowCancelModal(true)}
-                className="inline-flex items-center rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-              >
-                Cancelar booking
-              </button>
-            )}
-            <NegotiationPanel
-              bookingId={booking.id}
-              bookingStatus={booking.status}
-              userRole={role as any}
-              handledByRole={booking.handledByRole as any}
-              handledByUserId={booking.handledByUserId}
-              onBookingUpdated={refresh}
-              refreshContract={refreshContract}
-              onCancelBooking={() => {
-                if (canCancelBooking) setShowCancelModal(true);
-              }}
+          {/* KPI Pills — 3 métricas sin redundar el status */}
+          <div className="grid grid-cols-3 gap-3">
+            <KpiPill label="Importe" value={formatCurrency(agreedAmount, bookingCurrency)} />
+            <KpiPill
+              label="Pago"
+              value={paymentSummary ? (paymentSummary.percent >= 100 ? '100%' : `${paymentSummary.percent}%`) : '—'}
             />
-          </Card>
+            <KpiPill label="Turno" value={turnLabel} accent={hasTurn && !['REJECTED', 'CANCELLED', 'CANCELLED_PENDING_REVIEW', 'ACCEPTED', 'CONTRACT_SIGNED', 'PAID_PARTIAL', 'PAID_FULL', 'COMPLETED'].includes(booking.status)} />
+          </div>
+        </div>
+      </div>
 
-          <details className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <summary className="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-base font-semibold text-slate-900">
-              <span className="inline-flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-slate-600" />
-                Evento y condiciones
-              </span>
-              <span className="text-xs font-medium text-slate-500">Fuente: backend</span>
-            </summary>
-            <div className="px-5 pb-5 pt-1">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InfoRow label="Fecha" value={formatDate(eventDate)} icon={<Calendar className="h-4 w-4 text-slate-500" />} />
-                <InfoRow label="Turno" value={turnLabel} icon={<Clock className="h-4 w-4 text-slate-500" />} />
-                <InfoRow label="Sala" value={`${venueName}${venueCity ? `, ${venueCity}` : ''}`} icon={<MapPin className="h-4 w-4 text-slate-500" />} />
-                <InfoRow label="Importe" value={formatCurrency(agreedAmount, bookingCurrency)} icon={<CreditCard className="h-4 w-4 text-slate-500" />} />
-              </div>
+      {/* ── MAIN CONTENT ────────────────────────────────────────── */}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-              {(counterpartyHref || promoterId) && (
-                <div className="flex flex-wrap gap-3 pt-4">
-                  {counterpartyHref && (
-                    <Link href={counterpartyHref} className="inline-flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-slate-900">
-                      {counterpartyLabel}
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  )}
-                  {promoterId && role !== 'PROMOTER' && (
-                    <Link href={`/promoter/profile/${promoterId}`} className="inline-flex items-center gap-2 text-sm font-medium text-slate-800 hover:text-slate-900">
-                      Ver promotor
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  )}
-                </div>
-              )}
-            </div>
-          </details>
+          {/* ── Columna Principal ─────────────────────────────── */}
+          <div className="lg:col-span-2 space-y-6">
 
-          <details className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <summary className="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-base font-semibold text-slate-900">
-              <span className="inline-flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-slate-600" />
-                Condiciones en negociación
-              </span>
-              <span className="text-xs font-medium text-slate-500">Incluido / no incluido</span>
-            </summary>
-            <div className="px-5 pb-5 pt-1">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                <InfoRow label="Propuesta inicial" value={formatCurrency(bookingData.conditions.originalPrice, bookingData.conditions.currency)} muted strike />
-                <InfoRow label="Oferta actual" value={formatCurrency(bookingData.conditions.currentOffer, bookingData.conditions.currency)} strong />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm font-medium text-slate-800 mb-2">Incluido</p>
-                  <ul className="space-y-1">
-                    {bookingData.conditions.includes.map((item) => (
-                      <li key={item} className="text-sm text-slate-600 flex items-center gap-2">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-800 mb-2">No incluido</p>
-                  <ul className="space-y-1">
-                    {bookingData.conditions.excludes.map((item) => (
-                      <li key={item} className="text-sm text-slate-600 flex items-center gap-2">
-                        <XCircle className="h-3.5 w-3.5 text-red-500" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
+            {/* Panel Acciones */}
+            <div className="bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.04)] overflow-hidden">
+              <div className="px-6 py-5 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <h2 className="font-black text-slate-900 text-xs uppercase tracking-widest">Acción requerida</h2>
                 </div>
               </div>
-            </div>
-          </details>
-
-          {contract?.status === 'SIGNED' && (role === 'VENUE' || role === 'PROMOTER') && !['PAID_FULL', 'COMPLETED'].includes(booking.status) && (
-            <Card title="Pagos" subtitle="Procesa milestones pendientes" icon={<CreditCard className="h-4 w-4 text-slate-600" />}>
-              {!clientSecret && (
-                <Button
-                  variant="default"
-                  onClick={async () => {
-                    try {
-                      setPaymentError(null);
-                      setPaymentInfo(null);
-                      const milestones = await getMilestonesForBooking(booking.id, user.token);
-                      const pending = milestones.find((m: any) => m.props?.status === 'PENDING');
-                      if (!pending) {
-                        setPaymentError('No hay milestones pendientes');
-                        return;
-                      }
-                      const result = await createPaymentIntentForMilestone(pending.props.id, user.token);
-                      if (result.status === 'succeeded') {
-                        setPaymentInfo('Pago confirmado en Stripe. Actualizando booking...');
-                        await confirmPaymentForMilestone({ bookingId: booking.id, milestoneId: pending.props.id, token: user.token });
-                        await refresh();
-                        return;
-                      }
-                      if (result.status) {
-                        setPaymentInfo(`Estado del PaymentIntent: ${result.status}`);
-                      }
-                      setMilestoneId(pending.props.id);
-                      setClientSecret(result.clientSecret);
-                    } catch (err) {
-                      setPaymentError(err instanceof Error ? err.message : 'Error creando PaymentIntent');
-                    }
-                  }}
-                >
-                  Proceder al pago
-                </Button>
-              )}
-
-              {clientSecret && milestoneId && (
-                <Elements stripe={stripePromise} options={{ clientSecret }}>
-                  <SimpleCardPaymentForm
-                    clientSecret={clientSecret}
-                    bookingId={booking.id}
-                    milestoneId={milestoneId}
-                    token={user.token}
-                    onSuccess={refresh}
-                  />
-                </Elements>
-              )}
-
-              {paymentInfo && <p className="mt-2 text-sm text-slate-600">{paymentInfo}</p>}
-              {paymentError && <p className="mt-2 text-sm text-red-600">{paymentError}</p>}
-            </Card>
-          )}
-
-          <Card title="Historial de negociación" subtitle="Lo más reciente primero" icon={<MessageSquare className="h-4 w-4 text-slate-600" />}>
-            {negotiationLoading ? (
-              <p className="text-sm text-slate-500">Cargando historial…</p>
-            ) : timelineEvents.length === 0 ? (
-              <div className="space-y-2 text-sm text-slate-600">
-                <p>Sin actividad de negociación.</p>
-                {statusMessage && <p className="text-slate-900">{statusMessage}</p>}
-              </div>
-            ) : (
-              <div className="relative">
-                {!hasArtistResponse && statusMessage && (
-                  <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                    {statusMessage}
+              <div className="p-6 space-y-4">
+                <div className="bg-amber-50/50 border border-amber-100/50 rounded-2xl p-4">
+                  <p className="text-sm text-slate-700 leading-relaxed font-medium">{actionTurnMessage}</p>
+                </div>
+                {booking.status === 'ACCEPTED' && canCancelBooking && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCancelModal(true)}
+                    className="h-10 px-5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-red-600 hover:border-red-100 font-bold text-[11px] uppercase tracking-widest transition-all duration-300"
+                  >
+                    Cancelar booking
+                  </button>
+                )}
+                {/* Pago Stripe — solo VENUE/PROMOTER con contrato firmado */}
+                {contract?.status === 'SIGNED' && (role === 'VENUE' || role === 'PROMOTER') && !['PAID_FULL', 'COMPLETED', 'CANCELLED', 'CANCELLED_PENDING_REVIEW'].includes(booking.status) && (
+                  <div className="space-y-3">
+                    {!clientSecret && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            setPaymentError(null);
+                            setPaymentInfo(null);
+                            const milestones = await getMilestonesForBooking(booking.id, user.token);
+                            const pending = milestones.find((m: any) => m.props?.status === 'PENDING');
+                            if (!pending) { setPaymentError('No hay milestones pendientes'); return; }
+                            const result = await createPaymentIntentForMilestone(pending.props.id, user.token);
+                            if (result.status === 'succeeded') {
+                              setPaymentInfo('Pago confirmado en Stripe. Actualizando booking...');
+                              await confirmPaymentForMilestone({ bookingId: booking.id, milestoneId: pending.props.id, token: user.token });
+                              await refresh();
+                              return;
+                            }
+                            if (result.status) setPaymentInfo(`Estado del PaymentIntent: ${result.status}`);
+                            setMilestoneId(pending.props.id);
+                            setClientSecret(result.clientSecret);
+                          } catch (err) {
+                            setPaymentError(err instanceof Error ? err.message : 'Error creando PaymentIntent');
+                          }
+                        }}
+                        className="h-11 px-6 rounded-xl border border-amber-400 text-amber-700 hover:bg-amber-50 font-bold text-sm transition-all duration-200 flex items-center gap-2"
+                      >
+                        <CreditCard className="w-4 h-4" /> Proceder al pago
+                      </button>
+                    )}
+                    {clientSecret && milestoneId && (
+                      <Elements stripe={stripePromise} options={{ clientSecret }}>
+                        <SimpleCardPaymentForm
+                          clientSecret={clientSecret}
+                          bookingId={booking.id}
+                          milestoneId={milestoneId}
+                          token={user.token}
+                          onSuccess={refresh}
+                        />
+                      </Elements>
+                    )}
+                    {paymentInfo && <p className="text-sm text-slate-600">{paymentInfo}</p>}
+                    {paymentError && <p className="text-sm text-red-600">{paymentError}</p>}
                   </div>
                 )}
-                <div className="absolute left-[19px] top-2 bottom-2 w-px bg-slate-200" />
-                <div className="space-y-4">
-                  {timelineEvents.map((event, index) => (
-                    <div key={event.id} className="relative flex items-start gap-4" style={{ animationDelay: `${index * 40}ms` }}>
-                      <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center ${getTimelineColor(event)}`}>
-                        {getTimelineIcon(event)}
-                      </div>
-                      <div className="flex-1 min-w-0 pt-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-slate-900">{event.isFinal ? 'Oferta final' : event.amount ? 'Propuesta' : 'Mensaje'}</p>
-                          {typeof event.amount === 'number' && (
-                            <p className="font-medium text-slate-900">{formatCurrency(event.amount, bookingCurrency)}</p>
-                          )}
+                <NegotiationPanel
+                  bookingId={booking.id}
+                  bookingStatus={booking.status}
+                  userRole={role as any}
+                  handledByRole={booking.handledByRole as any}
+                  handledByUserId={booking.handledByUserId}
+                  onBookingUpdated={refresh}
+                  refreshContract={refreshContract}
+                  onCancelBooking={() => { if (canCancelBooking) setShowCancelModal(true); }}
+                />
+              </div>
+            </div>
+
+            {/* Historial de Negociación en burbujas */}
+            <NegotiationHistory
+              timelineEvents={timelineEvents}
+              role={role as string}
+              bookingCurrency={bookingCurrency}
+              negotiationLoading={negotiationLoading}
+            />
+
+            {/* Condiciones */}
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+              <button
+                onClick={() => setShowConditions(!showConditions)}
+                className="w-full px-5 py-4 border-b border-slate-100 flex items-center justify-between hover:bg-slate-50 transition-colors"
+                type="button"
+              >
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-slate-500" />
+                  <h2 className="font-bold text-slate-900 text-sm">Condiciones en negociación</h2>
+                </div>
+                {showConditions ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+              </button>
+
+              {showConditions && (
+                <div className="p-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      {bookingData.conditions.originalPrice !== null && (
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                          <p className="text-xs text-slate-500 font-semibold uppercase tracking-widest mb-1">Propuesta inicial</p>
+                          <p className="text-xl font-black text-slate-400 line-through tabular-nums">
+                            {formatCurrency(bookingData.conditions.originalPrice, bookingData.conditions.currency)}
+                          </p>
                         </div>
-                        <p className="text-sm text-slate-500 capitalize">{event.role.toLowerCase()}</p>
-                        {event.note && <p className="text-sm text-slate-600 mt-1">{event.note}</p>}
-                        <p className="text-xs text-slate-500 mt-1">{formatShortDate(event.createdAt)} · {formatShortTime(event.createdAt)}</p>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Incluido</p>
+                        <ul className="space-y-1.5">
+                          {bookingData.conditions.includes.map((item) => (
+                            <li key={item} className="flex items-center gap-2 text-sm text-slate-600">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">No incluido</p>
+                        <ul className="space-y-1.5">
+                          {bookingData.conditions.excludes.map((item) => (
+                            <li key={item} className="flex items-center gap-2 text-sm text-slate-600">
+                              <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Links a contrapartes */}
+                  {(counterpartyHref || promoterId) && (
+                    <div className="pt-4 border-t border-slate-100 mt-4 flex flex-wrap gap-3">
+                      {counterpartyHref && (
+                        <Link href={counterpartyHref} className="text-xs font-bold text-slate-700 hover:text-brand-amber transition-colors flex items-center gap-1">
+                          {counterpartyLabel} <ChevronRight className="w-3 h-3" />
+                        </Link>
+                      )}
+                      {promoterId && role !== 'PROMOTER' && (
+                        <Link href={`/promoter/profile/${promoterId}`} className="text-xs font-bold text-slate-700 hover:text-brand-amber transition-colors flex items-center gap-1">
+                          Ver promotor <ChevronRight className="w-3 h-3" />
+                        </Link>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card title="Contrato" subtitle="Estado contractual" icon={<FileText className="h-4 w-4 text-slate-600" />}>
-            <p className="text-sm text-slate-600">{hasContract ? `Contrato ${contract?.status ?? 'en preparación'}` : 'Aún no hay contrato generado.'}</p>
-            {canSignContract && (
-              <div className="mt-3">
-                <Button onClick={() => setShowSignContractModal(true)} variant="default">
-                  Firmar contrato
-                </Button>
-              </div>
-            )}
-            {canDownloadContract && (
-              <div className="mt-3">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await downloadContractPdf(booking.id, user.token);
-                  }}
-                  className="inline-flex items-center rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  Descargar contrato
-                </button>
-              </div>
-            )}
-          </Card>
-
-          <Card title="Metadatos" subtitle="Auditoría" icon={<HandCoins className="h-4 w-4 text-slate-600" />}>
-            <div className="space-y-2 text-sm text-slate-700">
-              <InfoRow label="Booking ID" value={booking.id} />
-              <InfoRow label="Última actividad" value={lastActivity ? formatDateTime(lastActivity) : '—'} />
+              )}
             </div>
-          </Card>
-        </div>
-      </section>
 
+            {/* Sidebar mobile */}
+            <div className="block lg:hidden space-y-6">
+              <BookingSidebar
+                booking={booking}
+                contract={contract}
+                hasContract={hasContract}
+                canSignContract={canSignContract}
+                canDownloadContract={canDownloadContract}
+                paymentSummary={paymentSummary}
+                bookingCurrency={bookingCurrency}
+                eventDate={eventDate}
+                venueName={venueName}
+                venueCity={venueCity}
+                counterpartyHref={counterpartyHref}
+                counterpartyLabel={counterpartyLabel}
+                promoterId={promoterId}
+                role={role as string}
+                setShowSignContractModal={setShowSignContractModal}
+                user={user}
+              />
+            </div>
+          </div>
+
+          {/* ── Sidebar (desktop) ─────────────────────────────── */}
+          <aside className="hidden lg:block space-y-6">
+            <BookingSidebar
+              booking={booking}
+              contract={contract}
+              hasContract={hasContract}
+              canSignContract={canSignContract}
+              canDownloadContract={canDownloadContract}
+              paymentSummary={paymentSummary}
+              bookingCurrency={bookingCurrency}
+              eventDate={eventDate}
+              venueName={venueName}
+              venueCity={venueCity}
+              counterpartyHref={counterpartyHref}
+              counterpartyLabel={counterpartyLabel}
+              promoterId={promoterId}
+              role={role as string}
+              setShowSignContractModal={setShowSignContractModal}
+              user={user}
+            />
+          </aside>
+
+        </div>
+      </main>
+
+      {/* ── Modales (sin cambios) ──────────────────────────── */}
       {canCancelBooking && (
         <CancelBookingModal
           open={showCancelModal}
@@ -630,7 +636,7 @@ function BookingDetailPage() {
           await refresh();
         }}
       />
-    </main>
+    </div>
   );
 }
 
@@ -654,13 +660,268 @@ function Card({ title, subtitle, icon, children, tone = 'slate' }: { title: stri
   );
 }
 
-function KpiCard({ label, value, helper }: { label: string; value: string | number; helper?: string }) {
+function KpiPill({ label, value, accent = false }: { label: string; value: string | number; accent?: boolean }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm px-4 py-3">
-      <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">{label}</p>
-      <p className="text-xl font-semibold text-slate-900">{value}</p>
-      {helper && <p className="text-xs text-slate-500 mt-0.5">{helper}</p>}
+    <div className={`rounded-xl px-4 py-3 border ${accent
+      ? 'bg-amber-500/20 border-amber-400/30 text-amber-300'
+      : 'bg-white/5 border-white/10 text-white'
+      }`}>
+      <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5">{label}</p>
+      <p className={`text-base font-black tabular-nums ${accent ? 'text-amber-300' : 'text-white'}`}>{value}</p>
     </div>
+  );
+}
+
+function HeroStatusBadge({ status }: { status: string }) {
+  const config: Record<string, { label: string; dot: string; border: string; text: string; pulse?: boolean }> = {
+    PENDING: { label: 'Pendiente', dot: 'bg-amber-400', border: 'border-amber-400/40', text: 'text-amber-300', pulse: true },
+    NEGOTIATING: { label: 'Negociando', dot: 'bg-amber-400', border: 'border-amber-400/40', text: 'text-amber-300', pulse: true },
+    FINAL_OFFER_SENT: { label: 'Oferta Final', dot: 'bg-orange-400', border: 'border-orange-400/40', text: 'text-orange-300', pulse: true },
+    ACCEPTED: { label: 'Aceptado', dot: 'bg-emerald-400', border: 'border-emerald-400/40', text: 'text-emerald-300' },
+    REJECTED: { label: 'Rechazado', dot: 'bg-red-400', border: 'border-red-400/40', text: 'text-red-300' },
+    CONTRACT_SIGNED: { label: 'Contrato Firmado', dot: 'bg-blue-400', border: 'border-blue-400/40', text: 'text-blue-300' },
+    PAID_PARTIAL: { label: 'Pago Parcial', dot: 'bg-sky-400', border: 'border-sky-400/40', text: 'text-sky-300' },
+    PAID_FULL: { label: 'Pagado', dot: 'bg-green-400', border: 'border-green-400/40', text: 'text-green-300' },
+    COMPLETED: { label: 'Completado', dot: 'bg-green-400', border: 'border-green-400/40', text: 'text-green-300' },
+    CANCELLED: { label: 'Cancelado', dot: 'bg-slate-400', border: 'border-slate-400/40', text: 'text-slate-300' },
+    CANCELLED_PENDING_REVIEW: { label: 'Cancelación Revisión', dot: 'bg-slate-400', border: 'border-slate-400/40', text: 'text-slate-300' },
+  };
+  const c = config[status] ?? { label: status, dot: 'bg-slate-400', border: 'border-slate-400/40', text: 'text-slate-300' };
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-white/10 backdrop-blur-sm text-xs font-bold uppercase tracking-wider ${c.border} ${c.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${c.dot} ${c.pulse ? 'animate-pulse' : ''}`} />
+      {c.label}
+    </span>
+  );
+}
+
+function NegotiationHistory({
+  timelineEvents, role, bookingCurrency, negotiationLoading,
+}: {
+  timelineEvents: { id: string; role: string; amount?: number; isFinal: boolean; note?: string; createdAt: string }[];
+  role: string; bookingCurrency: string; negotiationLoading: boolean;
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const roleInitial: Record<string, string> = { VENUE: 'S', ARTIST: 'A', MANAGER: 'M', PROMOTER: 'P' };
+  const roleLabel: Record<string, string> = { VENUE: 'Sala', ARTIST: 'Artista', MANAGER: 'Manager', PROMOTER: 'Promotor' };
+
+  const visible = showAll ? timelineEvents : timelineEvents.slice(0, 1);
+  const hidden = timelineEvents.length - 1;
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-slate-500" />
+          <h2 className="font-bold text-slate-900 text-sm">Historial de negociación</h2>
+          {timelineEvents.length > 0 && (
+            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md uppercase tracking-wider">{timelineEvents.length} mensaje{timelineEvents.length !== 1 ? 's' : ''}</span>
+          )}
+        </div>
+        {!showAll && hidden > 0 && (
+          <button
+            onClick={() => setShowAll(true)}
+            className="group flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:bg-amber-500 hover:text-amber-950 transition-all duration-300"
+          >
+            <ChevronDown className="w-3 h-3 transition-transform group-hover:translate-y-0.5" />
+            Ver {hidden} anterior{hidden !== 1 ? 'es' : ''}
+          </button>
+        )}
+        {showAll && hidden > 0 && (
+          <button
+            onClick={() => setShowAll(false)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:bg-slate-100 hover:text-slate-900 transition-all duration-300"
+          >
+            <ChevronUp className="w-3 h-3" />
+            Colapsar
+          </button>
+        )}
+      </div>
+      <div className="p-5">
+        {negotiationLoading ? (
+          <p className="text-sm text-slate-500">Cargando historial…</p>
+        ) : timelineEvents.length === 0 ? (
+          <p className="text-sm text-slate-500">Sin actividad de negociación todavía.</p>
+        ) : (
+          <div className="space-y-6 relative before:absolute before:inset-y-0 before:left-5 before:w-px before:bg-slate-100/50">
+            {visible.map((event) => {
+              const isOwn = event.role === role;
+              return (
+                <div key={event.id} className={`flex gap-4 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+                  {/* Avatar con Glow */}
+                  <div className={`relative w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-black shrink-0 transition-transform duration-300 hover:scale-110 shadow-lg ${isOwn ? 'bg-amber-500 text-amber-950 ring-2 ring-amber-500/20' : 'bg-slate-200 text-slate-600 ring-2 ring-slate-200/20'}`}>
+                    {roleInitial[event.role] ?? event.role[0]}
+                    {event.isFinal && <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 border-2 border-white rounded-full animate-bounce" />}
+                  </div>
+
+                  <div className={`max-w-[85%] sm:max-w-[70%] flex flex-col gap-2 ${isOwn ? 'items-end text-right' : 'items-start text-left'}`}>
+                    {/* Header Burbuja */}
+                    <div className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 ${isOwn ? 'flex-row-reverse' : ''}`}>
+                      <span className={isOwn ? 'text-amber-600' : 'text-slate-600'}>{roleLabel[event.role] ?? event.role}</span>
+                      <span className="opacity-30">·</span>
+                      <span>{formatShortDate(event.createdAt)}</span>
+                      {event.isFinal && (
+                        <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-md">
+                          <Flag className="w-2.5 h-2.5" /> FINAL
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Burbuja Glass */}
+                    <div className={`relative group rounded-3xl px-5 py-4 transition-all duration-300 ${isOwn
+                      ? 'bg-gradient-to-br from-amber-50/50 to-white/50 border border-amber-200/50 shadow-sm rounded-tr-sm hover:shadow-md'
+                      : 'bg-white border border-slate-100 shadow-sm rounded-tl-sm hover:shadow-md'
+                      }`}>
+                      {typeof event.amount === 'number' && (
+                        <div className="mb-2">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Oferta propuesta</p>
+                          <p className={`text-3xl font-black tabular-nums tracking-tighter ${isOwn ? 'text-amber-600' : 'text-slate-900'}`}>
+                            {formatCurrency(event.amount, bookingCurrency)}
+                          </p>
+                        </div>
+                      )}
+                      {event.note && (
+                        <p className="text-sm leading-relaxed text-slate-600 italic">
+                          "{event.note}"
+                        </p>
+                      )}
+
+                      {/* Decoración Glass */}
+                      <div className="absolute inset-0 rounded-3xl pointer-events-none bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BookingSidebar({
+  booking, contract, hasContract, canSignContract, canDownloadContract,
+  paymentSummary, bookingCurrency, eventDate, venueName, venueCity,
+  counterpartyHref, counterpartyLabel, promoterId, role,
+  setShowSignContractModal, user,
+}: {
+  booking: any; contract: any; hasContract: boolean;
+  canSignContract: boolean; canDownloadContract: boolean;
+  paymentSummary: { paidAmount: number; totalAmount: number; percent: number } | null;
+  bookingCurrency: string; eventDate: string | null | undefined;
+  venueName: string; venueCity: string | null;
+  counterpartyHref: string | null; counterpartyLabel: string;
+  promoterId: string | null; role: string;
+  setShowSignContractModal: (v: boolean) => void;
+  user: any;
+}) {
+  const [isEventOpen, setIsEventOpen] = useState(false);
+  const contractStatusLabel = contract?.status === 'SIGNED' ? 'Firmado' : contract?.status === 'DRAFT' ? 'Borrador — Pendiente de firma' : 'Pendiente de generación';
+  const paidPercent = paymentSummary?.percent ?? 0;
+
+  return (
+    <>
+      {/* Card Contrato */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-amber-500" />
+          <h2 className="font-bold text-slate-900 text-sm">Contrato</h2>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <span className={`w-2 h-2 rounded-full ${contract?.status === 'SIGNED' ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
+            <p className="text-sm text-slate-600">{hasContract ? contractStatusLabel : 'Aún no generado'}</p>
+          </div>
+          {canSignContract && (
+            <button
+              onClick={() => setShowSignContractModal(true)}
+              className="w-full h-10 rounded-xl border border-amber-400 text-amber-700 hover:bg-amber-50 font-bold text-sm transition-all duration-200"
+            >
+              Firmar contrato
+            </button>
+          )}
+          {canDownloadContract && (
+            <button
+              type="button"
+              onClick={async () => { await downloadContractPdf(booking.id, user.token); }}
+              className="w-full h-10 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" /> Descargar PDF
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Card Evento */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+        <button
+          onClick={() => setIsEventOpen(!isEventOpen)}
+          className="w-full px-5 py-4 border-b border-slate-100 flex items-center justify-between hover:bg-slate-50 transition-colors"
+          type="button"
+        >
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-amber-500" />
+            <h2 className="font-bold text-slate-900 text-sm">Evento</h2>
+          </div>
+          {isEventOpen ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+        </button>
+        {isEventOpen && (
+          <div className="p-5 space-y-3">
+            {eventDate && (
+              <div>
+                <p className="text-xs text-slate-500">Fecha del evento</p>
+                <p className="font-bold text-slate-900 text-sm">
+                  {new Date(eventDate).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              </div>
+            )}
+            <div>
+              <p className="text-xs text-slate-500">Sala</p>
+              <p className="font-bold text-slate-900 text-sm">{venueName}</p>
+              {venueCity && <p className="text-xs text-slate-500">{venueCity}</p>}
+            </div>
+            {counterpartyHref && (
+              <Link href={counterpartyHref} className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1">
+                {counterpartyLabel} <ChevronRight className="w-3 h-3" />
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Card Pagos */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+          <CreditCard className="w-4 h-4 text-amber-500" />
+          <h2 className="font-bold text-slate-900 text-sm">Pagos</h2>
+        </div>
+        <div className="p-5">
+          <div className="flex items-end justify-between mb-2">
+            <p className="text-2xl font-black text-slate-900 tabular-nums">
+              {formatCurrency(paymentSummary?.paidAmount ?? 0, bookingCurrency)}
+            </p>
+            <p className="text-sm text-slate-400 tabular-nums">
+              de {formatCurrency(paymentSummary?.totalAmount ?? (booking?.totalAmount ?? 0), bookingCurrency)}
+            </p>
+          </div>
+          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
+            <div
+              className="h-full bg-amber-400 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(paidPercent, 100)}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-slate-500">{paidPercent}% completado</span>
+            {paidPercent < 100 && (
+              <span className="text-amber-600 font-bold">
+                Pendiente: {formatCurrency((paymentSummary?.totalAmount ?? 0) - (paymentSummary?.paidAmount ?? 0), bookingCurrency)}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -760,9 +1021,9 @@ function formatDateTime(value?: string | null) {
   return d.toLocaleString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-function formatRelativeTime(value?: string | null) {
+function formatRelativeTime(value?: string | Date | null) {
   if (!value) return '—';
-  const d = new Date(value);
+  const d = value instanceof Date ? value : new Date(value);
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
 

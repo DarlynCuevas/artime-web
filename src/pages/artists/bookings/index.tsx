@@ -1,12 +1,20 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-
-import { StatusBadge } from '@/components/ui/StatusBadge';
 
 import { withRole } from '@/components/auth/withRole';
 import { useAuth } from '@/hooks/auth/useAuth';
-import { ArrowRight, Calendar, Filter, LayoutList, MapPin, Search, Ticket } from 'lucide-react';
+import {
+  ArrowRight,
+  Calendar,
+  MapPin,
+  Search,
+  Ticket,
+  Clock,
+  TrendingUp,
+  CheckCircle,
+} from 'lucide-react';
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 type BookingDto = {
   id: string;
   status: string;
@@ -21,54 +29,158 @@ type BookingDto = {
   eventName?: string | null;
 };
 
-function groupByStatus(bookings: BookingDto[]) {
-  return bookings.reduce<Record<string, BookingDto[]>>((acc, booking) => {
-    if (!acc[booking.status]) acc[booking.status] = [];
-    acc[booking.status].push(booking);
-    return acc;
-  }, {});
-}
-
+// ─── Constants ────────────────────────────────────────────────────────────────
 const TABS = [
-  {
-    key: 'PENDING',
-    label: 'Pendientes',
-    statuses: ['PENDING'],
-  },
-  {
-    key: 'NEGOTIATING',
-    label: 'En negociación',
-    statuses: ['NEGOTIATING', 'FINAL_OFFER_SENT'],
-  },
-  {
-    key: 'CONFIRMED',
-    label: 'Confirmadas',
-    statuses: ['ACCEPTED', 'CONTRACT_SIGNED'],
-  },
-  {
-    key: 'PAID',
-    label: 'Pagadas',
-    statuses: ['PAID_PARTIAL', 'PAID_FULL', 'PAID', 'PAID_50', 'PAID_75', 'PAID_100', 'PAID_BALANCE'],
-  },
-  {
-    key: 'HISTORIC',
-    label: 'Histórico',
-    statuses: ['COMPLETED', 'REJECTED', 'CANCELLED'],
-  },
+  { key: 'ALL', label: 'Todos', statuses: [] as string[] },
+  { key: 'PENDING', label: 'Pendientes', statuses: ['PENDING'] },
+  { key: 'NEGOTIATING', label: 'En negociación', statuses: ['NEGOTIATING', 'FINAL_OFFER_SENT'] },
+  { key: 'CONFIRMED', label: 'Confirmadas', statuses: ['ACCEPTED', 'CONTRACT_SIGNED'] },
+  { key: 'PAID', label: 'Pagadas', statuses: ['PAID_PARTIAL', 'PAID_FULL', 'PAID', 'PAID_50', 'PAID_75', 'PAID_100', 'PAID_BALANCE'] },
+  { key: 'HISTORIC', label: 'Canceladas', statuses: ['COMPLETED', 'REJECTED', 'CANCELLED', 'CANCELLED_PENDING_REVIEW'] },
 ] as const;
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString();
+type TabKey = (typeof TABS)[number]['key'];
+
+// ─── Status Badge ─────────────────────────────────────────────────────────────
+const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; dot: string }> = {
+  PENDING: { label: 'Pendiente', bg: 'bg-amber-500/10', text: 'text-amber-600', dot: 'bg-amber-500' },
+  NEGOTIATING: { label: 'Negociando', bg: 'bg-amber-500/10', text: 'text-amber-600', dot: 'bg-amber-500' },
+  FINAL_OFFER_SENT: { label: 'Oferta Final', bg: 'bg-orange-500/10', text: 'text-orange-600', dot: 'bg-orange-500' },
+  ACCEPTED: { label: 'Aceptado', bg: 'bg-emerald-500/10', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  CONTRACT_SIGNED: { label: 'Firmado', bg: 'bg-blue-500/10', text: 'text-blue-700', dot: 'bg-blue-500' },
+  PAID_PARTIAL: { label: 'Pago parcial', bg: 'bg-teal-500/10', text: 'text-teal-700', dot: 'bg-teal-500' },
+  PAID_FULL: { label: 'Pagado', bg: 'bg-green-500/10', text: 'text-green-700', dot: 'bg-green-500' },
+  COMPLETED: { label: 'Completado', bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' },
+  REJECTED: { label: 'Rechazado', bg: 'bg-red-500/10', text: 'text-red-600', dot: 'bg-red-500' },
+  CANCELLED: { label: 'Cancelado', bg: 'bg-red-500/10', text: 'text-red-600', dot: 'bg-red-500' },
+  CANCELLED_PENDING_REVIEW: { label: 'Cancelación en revisión', bg: 'bg-orange-500/10', text: 'text-orange-600', dot: 'bg-orange-500' },
+};
+
+function StatusPill({ status }: { status: string }) {
+  const c = STATUS_CONFIG[status] ?? { label: status, bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' };
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${c.bg} ${c.text} text-[10px] font-bold uppercase tracking-wider`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+      {c.label}
+    </span>
+  );
 }
 
+// ─── Booking Card ─────────────────────────────────────────────────────────────
+function BookingCard({ booking }: { booking: BookingDto }) {
+  const displayName = booking.eventName || booking.venueName || booking.venueId || 'Sin nombre';
+  const subName = booking.eventName ? (booking.venueName || booking.venueId || '') : '';
+  const paidPct = booking.paidPercent ?? 0;
+
+  return (
+    <Link
+      href={`/bookings/${booking.id}`}
+      className="group block bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300"
+    >
+      {/* Header */}
+      <div className="flex justify-between items-start gap-3 mb-4">
+        <div className="space-y-0.5 min-w-0">
+          <h3 className="font-bold text-slate-900 group-hover:text-amber-600 transition-colors truncate">
+            {displayName}
+          </h3>
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 truncate">
+            <MapPin className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">
+              {booking.city ? `${booking.city}` : 'Ciudad no indicada'}
+              {subName ? ` · ${subName}` : ''}
+            </span>
+          </div>
+        </div>
+        <StatusPill status={booking.status} />
+      </div>
+
+      {/* Info grid */}
+      <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-50 mb-4">
+        <div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Fecha</p>
+          <div className="flex items-center gap-1.5 text-sm font-bold text-slate-700">
+            <Calendar className="w-4 h-4 text-amber-500 shrink-0" />
+            {booking.start_date
+              ? new Date(booking.start_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: '2-digit' })
+              : 'No definida'}
+          </div>
+        </div>
+        <div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Importe</p>
+          <p className="text-sm font-black text-slate-900 tabular-nums">
+            {booking.totalAmount != null
+              ? `${booking.totalAmount.toLocaleString('es-ES')} ${booking.currency}`
+              : '—'}
+          </p>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Pago</p>
+          <div className="flex items-center gap-2">
+            <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-amber-400 rounded-full transition-all duration-700"
+                style={{ width: `${paidPct}%` }}
+              />
+            </div>
+            <span className="text-[10px] font-bold text-slate-600 tabular-nums">{paidPct}%</span>
+          </div>
+        </div>
+        <span className="flex items-center gap-1 text-[11px] font-black uppercase tracking-widest text-slate-400 group-hover:text-amber-600 transition-colors">
+          Ver detalle <ArrowRight className="w-3.5 h-3.5" />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+// ─── KPI Pill ─────────────────────────────────────────────────────────────────
+function KpiPill({ label, value, icon: Icon, colorClass }: { label: string; value: number; icon: any; colorClass: string }) {
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-md">
+      <div className="flex items-center gap-2 mb-2">
+        <div className={`p-1.5 rounded-lg bg-white/5 ${colorClass}`}>
+          <Icon className="w-3.5 h-3.5" />
+        </div>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">{label}</span>
+      </div>
+      <p className="text-xl font-black text-white tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+// ─── Empty State ──────────────────────────────────────────────────────────────
+function EmptyState({ filtered }: { filtered: boolean }) {
+  return (
+    <div className="bg-white border border-slate-200 rounded-3xl p-16 text-center space-y-4">
+      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
+        <Search className="w-7 h-7 text-slate-300" />
+      </div>
+      <h3 className="text-lg font-bold text-slate-900">
+        {filtered ? 'No hay bookings que coincidan' : 'Aún no tienes contrataciones'}
+      </h3>
+      <p className="text-slate-500 text-sm max-w-xs mx-auto">
+        {filtered
+          ? 'Prueba a cambiar los filtros o el término de búsqueda.'
+          : 'Cuando haya nuevas contrataciones, aparecerán aquí.'}
+      </p>
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 function ArtistBookingsPage() {
   const { user } = useAuth();
   const [bookings, setBookings] = useState<BookingDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]['key']>('PENDING');
+  const [activeTab, setActiveTab] = useState<TabKey>('ALL');
   const [query, setQuery] = useState('');
 
+  // ── Fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user?.token) {
       setLoading(false);
@@ -79,9 +191,7 @@ function ArtistBookingsPage() {
     setError(null);
 
     fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/bookings`, {
-      headers: {
-        Authorization: `Bearer ${user.token}`,
-      },
+      headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => {
         if (!res.ok) throw new Error('No se pudieron cargar las contrataciones');
@@ -107,17 +217,28 @@ function ArtistBookingsPage() {
       .finally(() => setLoading(false));
   }, [user?.token]);
 
+  // ── Derived ────────────────────────────────────────────────────────────────
+  const stats = useMemo(() => ({
+    total: bookings.length,
+    negotiating: bookings.filter(b => ['NEGOTIATING', 'FINAL_OFFER_SENT'].includes(b.status)).length,
+    confirmed: bookings.filter(b => ['ACCEPTED', 'CONTRACT_SIGNED'].includes(b.status)).length,
+  }), [bookings]);
+
   const countsByTab = useMemo(() => {
-    const grouped = groupByStatus(bookings);
     return TABS.reduce<Record<string, number>>((acc, tab) => {
-      acc[tab.key] = tab.statuses.reduce((sum, status) => sum + (grouped[status]?.length ?? 0), 0);
+      acc[tab.key] = tab.statuses.length === 0
+        ? bookings.length
+        : bookings.filter(b => (tab.statuses as readonly string[]).includes(b.status)).length;
       return acc;
     }, {});
   }, [bookings]);
 
   const filteredBookings = useMemo(() => {
     const tab = TABS.find((t) => t.key === activeTab);
-    const byTab = tab ? bookings.filter((b) => tab.statuses.includes(b.status)) : bookings;
+    const byTab = (!tab || tab.statuses.length === 0)
+      ? bookings
+      : bookings.filter((b) => (tab.statuses as readonly string[]).includes(b.status));
+
     if (!query.trim()) return byTab;
     const q = query.toLowerCase();
     return byTab.filter((b) => {
@@ -126,162 +247,105 @@ function ArtistBookingsPage() {
     });
   }, [activeTab, bookings, query]);
 
+  // ── Loading / Error ────────────────────────────────────────────────────────
   if (loading) {
-    return <div className="p-8 text-slate-700">Cargando bookings…</div>;
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <p className="text-white/60 text-sm">Cargando contrataciones…</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="p-8 text-red-600">{error}</div>;
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-red-600 text-sm">{error}</p>
+      </div>
+    );
   }
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <main className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">
-      <header className="space-y-2">
-        <p className="text-sm font-medium text-slate-500">Bookings</p>
-        <h1 className="text-3xl font-semibold text-slate-900">Contrataciones del artista</h1>
-        <p className="text-slate-600">Estados claros, sin ruido.</p>
-      </header>
+    <div className="min-h-screen bg-slate-50 pb-20">
+      {/* ── Hero ── */}
+      <div className="relative w-full overflow-hidden bg-slate-900 pt-14 pb-24 px-4 sm:px-6">
+        <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] left-[-5%] w-64 h-64 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none" />
 
-      <section className="flex flex-wrap items-center gap-3">
-        {TABS.map((tab) => (
-          <FilterChip
-            key={tab.key}
-            label={tab.label}
-            count={countsByTab[tab.key] ?? 0}
-            active={activeTab === tab.key}
-            onClick={() => setActiveTab(tab.key)}
-          />
-        ))}
-      </section>
-
-      <section className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm w-full sm:w-auto">
-          <Search className="h-4 w-4 text-slate-500" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por venue o ciudad"
-            className="w-full sm:w-64 text-sm outline-none placeholder:text-slate-400"
-          />
-        </div>
-        <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 shadow-sm">
-          <Filter className="h-4 w-4 text-slate-500" />
-          <span>{bookings.length} totales</span>
-          <span className="text-slate-400">•</span>
-          <span>{filteredBookings.length} en esta vista</span>
-        </div>
-      </section>
-
-      {bookings.length === 0 && (
-        <Card
-          title="Sin bookings"
-          subtitle="Cuando haya nuevas contrataciones aparecerán aquí"
-          icon={<LayoutList className="h-4 w-4 text-slate-600" />}
-        >
-          <p className="text-sm text-slate-600">Aún no tienes contrataciones activas.</p>
-        </Card>
-      )}
-
-      {bookings.length > 0 && (
-        <Card
-          title={TABS.find((t) => t.key === activeTab)?.label ?? 'Bookings'}
-          subtitle={`${filteredBookings.length} ${filteredBookings.length === 1 ? 'booking' : 'bookings'}`}
-          icon={<Ticket className="h-4 w-4 text-slate-600" />}
-        >
-          <div className="divide-y divide-slate-100">
-            {filteredBookings.map((booking) => (
-              <div key={booking.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 py-4">
-                <div className="md:col-span-5">
-                  <p className="font-semibold text-slate-900">
-                    {booking.eventName || booking.venueName || booking.venueId || 'Venue sin nombre'}
-                  </p>
-                  {booking.eventName && (
-                    <p className="text-xs text-slate-500">Sala: {booking.venueName || booking.venueId || 'Sala sin nombre'}</p>
-                  )}
-                  <p className="flex items-center gap-1 text-xs text-slate-500">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {booking.city ? `Ciudad: ${booking.city}` : 'Ciudad no indicada'}
-                  </p>
-                </div>
-                <div className="md:col-span-3 text-sm text-slate-600 space-y-1">
-                  <div className="flex items-center gap-1 text-xs text-slate-500">
-                    <Calendar className="h-3.5 w-3.5" />
-                    <span>Fecha: {booking.start_date ? formatDate(booking.start_date) : 'No definida'}</span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-slate-500">
-                    <Calendar className="h-3.5 w-3.5" />
-                    <span>Creado: {booking.createdAt ? formatDate(booking.createdAt) : '—'}</span>
-                  </div>
-                </div>
-                <div className="md:col-span-2 flex flex-col gap-2">
-                  <StatusBadge status={booking.status} paidPercent={booking.paidPercent ?? undefined} />
-                  <p className="text-xs text-slate-500">Fee: {booking.totalAmount ? `${booking.totalAmount} ${booking.currency}` : 'No definido'}</p>
-                </div>
-                <div className="md:col-span-2 text-right">
-                  <Link href={`/bookings/${booking.id}`} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-800 hover:text-slate-900">
-                    Ver booking
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
+        <div className="max-w-6xl mx-auto relative z-10">
+          {/* Title + KPIs */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-amber-400 text-xs font-bold uppercase tracking-wider mb-1">
+                <Ticket className="w-3.5 h-3.5" /> Mi Agenda
               </div>
+              <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight">
+                Tus <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500">Bookings</span>
+              </h1>
+              <p className="text-white/50 text-base">
+                Gestiona tus eventos, sigue tus pagos y cierra negociaciones.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 w-full md:w-auto md:min-w-[360px]">
+              <KpiPill label="Total" value={stats.total} icon={TrendingUp} colorClass="text-blue-400" />
+              <KpiPill label="Negociando" value={stats.negotiating} icon={Clock} colorClass="text-amber-400" />
+              <KpiPill label="Confirmados" value={stats.confirmed} icon={CheckCircle} colorClass="text-emerald-400" />
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Tab pills */}
+            <div className="flex items-center p-1.5 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl overflow-x-auto gap-1 shrink-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`whitespace-nowrap px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${activeTab === tab.key
+                    ? 'bg-amber-500 text-amber-950 shadow-[0_4px_16px_rgba(245,158,11,0.3)]'
+                    : 'text-white/50 hover:text-white hover:bg-white/5'
+                    }`}
+                >
+                  {tab.label}
+                  {countsByTab[tab.key] > 0 && (
+                    <span className={`ml-1.5 text-[9px] ${activeTab === tab.key ? 'text-amber-900/70' : 'text-white/30'}`}>
+                      {countsByTab[tab.key]}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Search */}
+            <div className="relative flex-1 group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-amber-400 transition-colors" />
+              <input
+                type="text"
+                placeholder="Buscar por venue, evento o ciudad…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-11 pr-4 py-3 text-sm text-white placeholder:text-white/20 outline-none focus:border-amber-500/40 focus:bg-white/[0.07] transition-all"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Grid ── */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 -mt-10 relative z-20">
+        {filteredBookings.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredBookings.map((booking) => (
+              <BookingCard key={booking.id} booking={booking} />
             ))}
           </div>
-        </Card>
-      )}
-    </main>
+        ) : (
+          <EmptyState filtered={bookings.length > 0} />
+        )}
+      </section>
+    </div>
   );
 }
 
 export default withRole(ArtistBookingsPage, ['ARTIST']);
-
-function Card({
-  title,
-  subtitle,
-  icon,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  icon?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-4">
-      <header className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          {icon && <div className="rounded-lg bg-slate-100 p-2 text-slate-600">{icon}</div>}
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-            {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
-          </div>
-        </div>
-      </header>
-      {children}
-    </section>
-  );
-}
-
-function FilterChip({
-  label,
-  count,
-  active,
-  onClick,
-}: {
-  label: string;
-  count: number;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition shadow-sm ${
-        active ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'
-      }`}
-    >
-      <span>{label}</span>
-      <span className={`text-xs ${active ? 'text-white/80' : 'text-slate-500'}`}>{count}</span>
-    </button>
-  );
-}
