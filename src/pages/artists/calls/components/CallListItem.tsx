@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ArtistCallSummary } from '../hooks/useArtistCalls';
+import type { ArtistCallSummary } from '@/hooks/calls/useArtistCalls';
 
 type Props = {
 	call: ArtistCallSummary;
@@ -34,3 +34,5 @@ export function CallListItem({ call }: Props) {
 		</li>
 	);
 }
+
+export default CallListItem;

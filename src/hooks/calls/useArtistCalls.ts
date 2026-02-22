@@ -85,3 +85,5 @@ export function useArtistCalls(params?: { artistId?: string; excludeResponded?: 
 
 	return { items, loading, error };
 }
+
+export default useArtistCalls;

@@ -1,4 +1,4 @@
-import { useArtistCalls } from './hooks/useArtistCalls';
+import { useArtistCalls } from '@/hooks/calls/useArtistCalls';
 import { CallListItem } from './components/CallListItem';
 import { useMe } from '@/hooks/auth/useMe';
 

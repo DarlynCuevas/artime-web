@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { CallResponseStatus } from '../hooks/useArtistCall';
+import type { CallResponseStatus } from '@/hooks/calls/useArtistCall';
 
 type Props = {
 	status: CallResponseStatus;
@@ -101,3 +101,5 @@ export function CallActions({ status, onRespond }: Props) {
 		</section>
 	);
 }
+
+export default CallActions;

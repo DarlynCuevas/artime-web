@@ -18,3 +18,5 @@ export function PayoutStatusBadge({
     </span>
   );
 }
+
+export default PayoutStatusBadge;

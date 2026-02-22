@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { Calendar, Eye, Plus, Sparkles } from 'lucide-react';
 
 import { useAuth } from '@/hooks/auth/useAuth';
+import { useMe } from '@/hooks/auth/useMe';
 import { eventsService } from '@/services/events/events.service';
 import type { Event } from '@/types/event';
 
@@ -14,7 +15,8 @@ export default function EventsPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const canCreateEvent = user?.role === 'VENUE';
+  const { role } = useMe();
+  const canCreateEvent = role === 'PROMOTER';
 
   useEffect(() => {
     if (!user?.token) return;

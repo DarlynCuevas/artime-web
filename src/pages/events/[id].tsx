@@ -265,10 +265,10 @@ export default function EventDetailPage() {
                     <Calendar className="w-3.5 h-3.5" />
                     {event.start_date ? formatDate(event.start_date) : 'Fecha por definir'}
                   </span>
-                  {event.city && (
+                  {event.location && (
                     <span className="flex items-center gap-1.5">
                       <MapPin className="w-3.5 h-3.5" />
-                      {event.city}
+                      {event.location}
                     </span>
                   )}
                 </div>
@@ -310,7 +310,7 @@ export default function EventDetailPage() {
         {/* Métricas Header */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <MetricCard title="Visibilidad" icon={<Eye className="w-4 h-4 text-amber-600" />}>
-            <Pill label={event.visibility} tone={event.visibility === 'PUBLIC' ? 'emerald' : 'slate'} />
+            <Pill label={event.visibility} tone={event.visibility === 'VISIBLE' ? 'emerald' : 'slate'} />
           </MetricCard>
           <MetricCard title="Estado" icon={<Sparkles className="w-4 h-4 text-blue-600" />}>
             <Pill label={event.status} tone="slate" />

@@ -20,3 +20,5 @@ export function PayoutList({ payouts }: { payouts: Payout[] }) {
     </div>
   );
 }
+
+export default PayoutList;

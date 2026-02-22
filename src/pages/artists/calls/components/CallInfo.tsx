@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ArtistCall } from '../hooks/useArtistCall';
+import type { ArtistCall } from '@/hooks/calls/useArtistCall';
 
 type Props = {
 	call: ArtistCall;
@@ -54,3 +54,5 @@ export function CallInfo({ call }: Props) {
 		</section>
 	);
 }
+
+export default CallInfo;

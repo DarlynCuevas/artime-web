@@ -13,6 +13,8 @@ interface AvailabilityCalendarProps {
     onDayClick?: (date: string) => void;
     /** Si true, los días no son clicables (modo solo lectura) */
     readOnly?: boolean;
+    /** Si true, permite hacer clic en cualquier día (incluso ocupados/bloqueados) para la vista privada */
+    interactiveMode?: boolean;
 }
 
 export function AvailabilityCalendar({
@@ -21,6 +23,7 @@ export function AvailabilityCalendar({
     token,
     onDayClick,
     readOnly = false,
+    interactiveMode = false,
 }: AvailabilityCalendarProps) {
     const [month, setMonth] = useState<Date>(new Date());
     const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
@@ -132,26 +135,33 @@ export function AvailabilityCalendar({
                             const isBlocked = blockedDates.has(day.date);
                             const status = isBlocked ? 'UNAVAILABLE' : day.status;
                             const isSelected = selectedDate === day.date;
-                            const isClickable = status === 'AVAILABLE' && !readOnly;
+
+                            // Determinar si el día puede ser interactuado
+                            const isAvailableClickable = status === 'AVAILABLE' && !readOnly;
+                            const isClickable = interactiveMode ? true : isAvailableClickable;
 
                             let cellClass =
                                 'aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all duration-200 ';
 
                             if (status === 'UNAVAILABLE') {
                                 // Día no disponible — transparente, sin fondo
-                                cellClass += 'text-slate-300 bg-transparent cursor-not-allowed';
+                                cellClass += 'text-slate-300 bg-transparent ';
+                                cellClass += isClickable ? 'hover:bg-slate-100 border border-transparent hover:border-slate-200 cursor-pointer ' : 'cursor-not-allowed ';
                             } else if (status === 'BOOKED') {
                                 // Ocupado — tachado, fondo punteado
-                                cellClass += 'bg-slate-100/50 text-slate-400 line-through cursor-not-allowed border border-dashed border-slate-200';
-                            } else if (isSelected) {
-                                // Seleccionado — ámbar sólido
-                                cellClass += 'bg-amber-500 text-amber-950 shadow-md scale-105 border border-amber-400';
-                            } else if (isClickable) {
-                                // Disponible + clicable — slate-50 con hover ámbar
-                                cellClass += 'text-slate-700 bg-slate-50 hover:bg-amber-50 hover:text-amber-700 hover:shadow-sm hover:scale-105 border border-slate-100 hover:border-amber-200 cursor-pointer';
+                                cellClass += 'bg-slate-100/50 text-slate-400 line-through border border-dashed border-slate-200 ';
+                                cellClass += isClickable ? 'hover:bg-slate-200 cursor-pointer ' : 'cursor-not-allowed ';
+                            } else if (isAvailableClickable || interactiveMode) {
+                                // Disponible + clicable
+                                cellClass += 'text-slate-700 bg-slate-50 hover:bg-amber-50 hover:text-amber-700 hover:shadow-sm hover:scale-105 border border-slate-100 hover:border-amber-200 cursor-pointer ';
                             } else {
-                                // Disponible pero readOnly
-                                cellClass += 'text-slate-700 bg-slate-50 border border-slate-100 cursor-default';
+                                // Disponible pero readOnly y NO interactivo
+                                cellClass += 'text-slate-700 bg-slate-50 border border-slate-100 cursor-default ';
+                            }
+
+                            // Si está seleccionado, sobreescribir estilos para destacarlo (siempre que no esté ocupado/bloqueado en modo NO interactivo)
+                            if (isSelected) {
+                                cellClass = 'aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all duration-200 bg-amber-500 text-amber-950 shadow-md scale-105 border border-amber-400 cursor-pointer';
                             }
 
                             return (

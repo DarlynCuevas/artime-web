@@ -3,11 +3,17 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { createBooking } from '@/services/bookings/bookings.service';
 import { getArtists } from '@/services/artists/artists.service';
 
-export function CreateBookingForm() {
+interface CreateBookingFormProps {
+  eventId?: string;
+  artistId?: string;
+  onSuccess?: () => void;
+}
+
+export function CreateBookingForm({ eventId: initialEventId, artistId: initialArtistId, onSuccess }: CreateBookingFormProps = {}) {
   const { user } = useAuth();
 
   const [artists, setArtists] = useState<any[]>([]);
-  const [artistId, setArtistId] = useState('');
+  const [artistId, setArtistId] = useState(initialArtistId ?? '');
   const [startDate, setStartDate] = useState('');
   const [totalAmount, setTotalAmount] = useState('');
   const [message, setMessage] = useState(
@@ -30,7 +36,7 @@ Quedamos atentos a tu respuesta.`
     if (!user?.token) return;
 
     try {
-      
+
       setLoading(true);
 
       // 3️⃣ llamar al backend

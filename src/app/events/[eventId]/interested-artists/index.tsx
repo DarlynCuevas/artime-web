@@ -8,8 +8,8 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { createBooking } from '@/services/bookings/bookings.service';
 
 function EventInterestedArtistsPage() {
-  const params = useParams();
-  const eventId = params.eventId as string;
+  const params = useParams()!;
+  const eventId = (params?.eventId ?? '') as string;
   const { user } = useAuth();
 
   const [artists, setArtists] = useState<any[]>([]);

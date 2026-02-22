@@ -24,3 +24,5 @@ export function PayoutItem({ payout }: { payout: Payout }) {
     </div>
   );
 }
+
+export default PayoutItem;

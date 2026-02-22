@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/hooks/auth/useMe';
-import { useArtistCall } from './hooks/useArtistCall';
+import { useArtistCall } from '@/hooks/calls/useArtistCall';
 import { CallHeader } from './components/CallHeader';
 import { CallInfo } from './components/CallInfo';
 import { CallActions } from './components/CallActions';

@@ -39,3 +39,5 @@ export function PayoutDetail({ payout }: { payout: Payout }) {
     </div>
   );
 }
+
+export default PayoutDetail;

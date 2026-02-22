@@ -29,19 +29,19 @@ export function useArtistCall({ callId, artistId, token, initialCall }: Params) 
 	const [call, setCall] = useState<ArtistCall | null>(() =>
 		callId
 			? {
-					id: callId,
-					...initialCall,
-				}
+				id: callId,
+				...initialCall,
+			}
 			: null,
 	);
-		useEffect(() => {
-			if (callId) {
-				setCall({
-					id: callId,
-					...initialCall,
-				});
-			}
-		}, [callId, initialCall]);
+	useEffect(() => {
+		if (callId) {
+			setCall({
+				id: callId,
+				...initialCall,
+			});
+		}
+	}, [callId, initialCall]);
 
 	const [responseStatus, setResponseStatus] = useState<CallResponseStatus>('UNANSWERED');
 	const [loading, setLoading] = useState<boolean>(false);
@@ -174,3 +174,5 @@ export function useArtistCall({ callId, artistId, token, initialCall }: Params) 
 
 	return derived;
 }
+
+export default useArtistCall;

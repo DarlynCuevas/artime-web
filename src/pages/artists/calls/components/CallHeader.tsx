@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ArtistCall } from '../hooks/useArtistCall';
+import type { ArtistCall } from '@/hooks/calls/useArtistCall';
 
 type Props = {
 	call: ArtistCall;
@@ -39,3 +39,5 @@ export function CallHeader({ call }: Props) {
 		</header>
 	);
 }
+
+export default CallHeader;
