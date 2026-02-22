@@ -5,7 +5,7 @@ import { CalendarDays, CheckCircle2, ExternalLink, Guitar, Loader2, MapPin, Musi
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/context/MeContext';
 import { AuthShell } from '@/components/auth/AuthShell';
-import { startArtistStripeOnboarding } from '@/services/payments/stripe-onboarding.service';
+import { startStripeOnboarding } from '@/services/payments/stripe-onboarding.service';
 
 export default function ArtistOnboardingPage() {
   const { user } = useAuth();
@@ -68,8 +68,9 @@ export default function ArtistOnboardingPage() {
 
       if (connectStripeAfterSave) {
         const artistId = payload?.id ?? user.id;
-        const stripe = await startArtistStripeOnboarding({
-          artistId,
+        const stripe = await startStripeOnboarding({
+          role: 'ARTIST',
+          profileId: artistId,
           token: user.token,
         });
         window.location.href = stripe.onboardingUrl;

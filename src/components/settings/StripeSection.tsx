@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { AlertTriangle, CheckCircle2, CreditCard, ExternalLink, Loader2 } from 'lucide-react';
+import { CheckCircle2, CreditCard, ExternalLink, Loader2 } from 'lucide-react';
 import type { UserRole } from '@/types/user-role';
-import { startArtistStripeOnboarding } from '@/services/payments/stripe-onboarding.service';
+import { startStripeOnboarding } from '@/services/payments/stripe-onboarding.service';
 
 export function StripeSection({
   token,
@@ -15,15 +15,14 @@ export function StripeSection({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canConnectNow = role === 'ARTIST' && Boolean(profileId);
-  const isUnsupportedRole = role !== 'ARTIST';
+  const canConnectNow = Boolean(profileId);
 
   const handleConnect = async () => {
     if (!profileId) return;
     setError(null);
     setLoading(true);
     try {
-      const data = await startArtistStripeOnboarding({ artistId: profileId, token });
+      const data = await startStripeOnboarding({ role, profileId, token });
       window.location.href = data.onboardingUrl;
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'No se pudo iniciar Stripe.');
@@ -49,20 +48,9 @@ export function StripeSection({
         </div>
       </section>
 
-      {isUnsupportedRole && (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-          <div className="flex items-start gap-2 text-amber-800">
-            <AlertTriangle className="mt-0.5 h-4 w-4" />
-            <p className="text-sm">
-              El onboarding automático de Stripe para este rol estará disponible en una próxima iteración.
-            </p>
-          </div>
-        </section>
-      )}
-
-      {!isUnsupportedRole && !profileId && (
+      {!profileId && (
         <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
-          Guarda primero tu onboarding de artista para activar Stripe.
+          Completa primero tu onboarding para activar Stripe.
         </section>
       )}
 
@@ -95,4 +83,3 @@ export function StripeSection({
     </div>
   );
 }
-
