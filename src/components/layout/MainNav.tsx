@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AlertCircle, Bell, CalendarDays, CheckCircle2, LayoutDashboard, Ticket, UserRound, Users } from 'lucide-react';
+import { AlertCircle, Bell, BellRing, CalendarDays, CheckCircle2, LayoutDashboard, Ticket, UserRound, Users } from 'lucide-react';
 
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/button';
@@ -286,7 +286,10 @@ export function MainNav({ children }: { children: ReactNode }) {
         <SidebarHeader className="flex items-center px-4 pt-5 pb-4">
           <div className="flex items-center gap-2">
             <div className="flex flex-col leading-tight">
-              <span className="text-[11px] font-semibold tracking-[0.18em] text-[hsl(var(--sidebar-foreground))]">ARTIME</span>
+              <span className="text-[15px] font-black tracking-tight text-slate-900">
+                Art<span className="text-brand-amber">·</span>ime
+              </span>
+              <span className="text-[9px] font-semibold tracking-[0.22em] text-slate-400 uppercase">Music Platform</span>
             </div>
           </div>
         </SidebarHeader>
@@ -299,10 +302,10 @@ export function MainNav({ children }: { children: ReactNode }) {
                   <SidebarMenuButton
                     asChild
                     isActive={isActive(item.href)}
-                    className="group h-9 rounded-md px-3 text-[14px] font-medium text-slate-600 transition-colors hover:bg-slate-100 data-[active=true]:bg-slate-100 data-[active=true]:text-slate-900 data-[active=true]:border-l-2 data-[active=true]:border-slate-300"
+                    className="group h-9 rounded-md px-3 text-[14px] font-medium text-slate-600 transition-all hover:bg-amber-50 hover:text-amber-700 data-[active=true]:bg-gradient-to-r data-[active=true]:from-amber-50 data-[active=true]:to-transparent data-[active=true]:text-amber-700 data-[active=true]:border-l-2 data-[active=true]:border-amber-500"
                   >
                     <Link href={item.href} aria-current={isActive(item.href) ? 'page' : undefined} className="flex items-center gap-3">
-                      <item.icon className="size-4 text-slate-400 group-data-[active=true]:text-slate-700" />
+                      <item.icon className="size-4 text-slate-400 group-data-[active=true]:text-amber-600" />
                       <span>{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
@@ -314,7 +317,7 @@ export function MainNav({ children }: { children: ReactNode }) {
                   <SidebarMenuButton
                     asChild
                     isActive={isActive(profileItem.href)}
-                    className="group h-9 rounded-md px-3 text-[14px] font-medium text-slate-600 transition-colors hover:bg-slate-100 data-[active=true]:bg-slate-100 data-[active=true]:text-slate-900 data-[active=true]:border-l-2 data-[active=true]:border-slate-300"
+                    className="group h-9 rounded-md px-3 text-[14px] font-medium text-slate-600 transition-all hover:bg-amber-50 hover:text-amber-700 data-[active=true]:bg-gradient-to-r data-[active=true]:from-amber-50 data-[active=true]:to-transparent data-[active=true]:text-amber-700 data-[active=true]:border-l-2 data-[active=true]:border-amber-500"
                   >
                     <Link
                       href={profileItem.href}
@@ -338,10 +341,10 @@ export function MainNav({ children }: { children: ReactNode }) {
                       <SidebarMenuButton
                         asChild
                         isActive={isActive(item.href)}
-                        className="group h-9 rounded-md px-3 text-[14px] font-medium text-slate-600 transition-colors hover:bg-slate-100 data-[active=true]:bg-slate-100 data-[active=true]:text-slate-900 data-[active=true]:border-l-2 data-[active=true]:border-slate-300"
+                        className="group h-9 rounded-md px-3 text-[14px] font-medium text-slate-600 transition-all hover:bg-amber-50 hover:text-amber-700 data-[active=true]:bg-gradient-to-r data-[active=true]:from-amber-50 data-[active=true]:to-transparent data-[active=true]:text-amber-700 data-[active=true]:border-l-2 data-[active=true]:border-amber-500"
                       >
                         <Link href={item.href} aria-current={isActive(item.href) ? 'page' : undefined} className="flex items-center gap-3">
-                          <item.icon className="size-4 text-slate-400 group-data-[active=true]:text-slate-700" />
+                          <item.icon className="size-4 text-slate-400 group-data-[active=true]:text-amber-600" />
                           <span>{item.label}</span>
                         </Link>
                       </SidebarMenuButton>
@@ -355,9 +358,9 @@ export function MainNav({ children }: { children: ReactNode }) {
       </Sidebar>
 
       <SidebarInset className="w-full flex-1 pb-16 md:pb-0">
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b bg-white px-6 py-4">
+        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200/60 bg-white/80 backdrop-blur-xl px-6 py-4 shadow-[0_1px_0_rgb(0,0,0,0.04)]">
           <SidebarTrigger className="hidden h-9 w-9 rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 md:inline-flex" />
-          <div className="flex flex-col">
+          <div className="flex flex-col border-l-2 border-brand-amber pl-3">
             <span className="text-lg font-semibold text-slate-900">{headerMeta.title}</span>
             {headerMeta.subtitle && <span className="text-xs text-slate-500">{headerMeta.subtitle}</span>}
           </div>
@@ -366,12 +369,12 @@ export function MainNav({ children }: { children: ReactNode }) {
               ref={bellRef}
               variant="ghost"
               size="icon"
-              className="relative rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              className="relative rounded-md border border-slate-200 bg-white/80 text-slate-700 hover:bg-slate-50 hover:border-brand-amber/40 transition-colors"
               onClick={() => setShowDropdown((s) => !s)}
             >
-              <Bell className="size-5" />
+              {unreadCount > 0 ? <BellRing className="size-5 text-brand-amber" /> : <Bell className="size-5" />}
               {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
+                <span className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-brand-amber px-1 text-[10px] font-semibold text-amber-950">
                   {unreadCount}
                 </span>
               )}
@@ -381,7 +384,7 @@ export function MainNav({ children }: { children: ReactNode }) {
             <div className="relative flex items-center gap-3" ref={userMenuRef}>
               <button
                 type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600 hover:bg-slate-200"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-500 text-xs font-bold text-white shadow-sm hover:from-amber-500 hover:to-amber-600 transition-all"
                 onClick={() => setShowUserMenu((s) => !s)}
               >
                 {(profileName ?? 'U').slice(0, 1).toUpperCase()}
@@ -389,7 +392,7 @@ export function MainNav({ children }: { children: ReactNode }) {
               </button>
               <div className="text-sm leading-tight">
                 <div className="font-semibold text-slate-900">{profileName ?? 'Usuario'}</div>
-                <div className="text-[11px] text-slate-500">{role ?? 'Sin rol'}</div>
+                <div className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">{role ?? 'Sin rol'}</div>
               </div>
 
               {showUserMenu && (
@@ -642,11 +645,10 @@ function NotificationItem({ notification, onClick }: { notification: any; onClic
 
   return (
     <button
-      className={`w-full rounded-lg border px-3 py-3 text-left transition ${
-        isUnread
-          ? 'border-slate-300 bg-slate-50 hover:border-slate-400'
-          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-      }`}
+      className={`w-full rounded-lg border px-3 py-3 text-left transition ${isUnread
+        ? 'border-slate-300 bg-slate-50 hover:border-slate-400'
+        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+        }`}
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-2">

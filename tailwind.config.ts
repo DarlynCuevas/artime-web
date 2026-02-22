@@ -5,6 +5,14 @@ export default {
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
+  safelist: [
+    'bg-brand-amber',
+    'text-brand-amber',
+    'hover:text-brand-amber',
+    'bg-fintech-dark',
+    'from-fintech-dark',
+    'to-fintech-dark',
+  ],
   theme: {
     container: {
       center: true,
@@ -15,7 +23,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Outfit', 'Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -23,6 +31,14 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        brand: {
+          amber: "hsl(var(--brand-amber))",
+          DEFAULT: "hsl(var(--brand-amber))",
+        },
+        fintech: {
+          dark: "hsl(var(--fintech-dark))",
+          DEFAULT: "hsl(var(--fintech-dark))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
