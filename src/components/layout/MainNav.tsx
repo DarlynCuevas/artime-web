@@ -1,7 +1,28 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AlertCircle, Bell, BellRing, CalendarDays, CheckCircle2, LayoutDashboard, Sparkles, Ticket, UserRound, Users } from 'lucide-react';
+import {
+  AlertCircle,
+  BadgeCheck,
+  Bell,
+  BellRing,
+  Banknote,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  FileSignature,
+  HandCoins,
+  LayoutDashboard,
+  MessageSquare,
+  PartyPopper,
+  Settings,
+  Sparkles,
+  Ticket,
+  UserRound,
+  Users,
+  X,
+  XCircle,
+} from 'lucide-react';
 
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/button';
@@ -425,18 +446,28 @@ export function MainNav({ children }: { children: ReactNode }) {
             {showDropdown && (
               <div
                 ref={dropdownRef}
-                className="absolute right-0 top-14 w-[360px] rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-xl ring-1 ring-slate-200/80"
+                className="absolute right-0 top-14 z-50 w-[400px] overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-2xl backdrop-blur-xl ring-1 ring-slate-900/5"
               >
-                <div className="mb-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Centro de alertas</p>
-                    <p className="text-base font-semibold text-slate-900">Notificaciones</p>
+                {/* ─── Header ─── */}
+                <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900">
+                      <Bell className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Centro de alertas</p>
+                      <p className="text-base font-black text-slate-900 leading-none">Notificaciones</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600">{unreadCount} nuevas</span>
+                    {unreadCount > 0 && (
+                      <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-amber-100 px-2 text-[11px] font-black text-amber-700">
+                        {unreadCount}
+                      </span>
+                    )}
                     <button
                       type="button"
-                      className="text-xs font-semibold text-slate-700 hover:text-slate-900 disabled:text-slate-400"
+                      className="text-xs font-bold text-slate-500 hover:text-amber-600 disabled:opacity-40 transition-colors"
                       disabled={markingAll || unreadCount === 0}
                       onClick={async () => {
                         if (unreadCount === 0) return;
@@ -451,127 +482,155 @@ export function MainNav({ children }: { children: ReactNode }) {
                     >
                       Marcar todo leído
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDropdown(false)}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
-                {latestNotifications.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-center text-slate-500">
-                    <p className="text-sm font-semibold">Sin notificaciones</p>
-                    <p className="text-xs text-slate-500">Te avisaremos cuando llegue algo nuevo.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {latestNotifications.map((n) => (
-                      <NotificationItem
-                        key={n.id}
-                        notification={n}
-                        onClick={async () => {
-                          try {
-                            if (n.status === 'UNREAD') {
-                              try {
-                                await markAsRead(n.id);
-                              } catch (e) {
-                                // no bloquear navegación por error de backend
+
+                {/* ─── Body ─── */}
+                <div className="max-h-[480px] overflow-y-auto">
+                  {latestNotifications.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-4 py-14 px-6 text-center">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+                        <Bell className="h-8 w-8 text-slate-300" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-slate-700">Todo al día</p>
+                        <p className="text-xs font-medium text-slate-400 mt-0.5">Te avisaremos cuando llegue algo nuevo.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-50 px-2 py-2">
+                      {latestNotifications.map((n) => (
+                        <NotificationItem
+                          key={n.id}
+                          notification={n}
+                          onClick={async () => {
+                            try {
+                              if (n.status === 'UNREAD') {
+                                try {
+                                  await markAsRead(n.id);
+                                } catch (e) {
+                                  // no bloquear navegación por error de backend
+                                }
                               }
-                            }
 
-                            const callId = n.payload?.callId;
-                            if (callId) {
-                              const query = new URLSearchParams();
-                              if (n.payload?.city) query.set('city', n.payload.city);
-                              if (n.payload?.date) query.set('date', n.payload.date);
-                              if (n.payload?.offeredMaxPrice) query.set('price', String(n.payload.offeredMaxPrice));
-                              if (n.payload?.venueName) query.set('venueName', n.payload.venueName);
-                              router.push(`/artists/calls/${callId}?${query.toString()}`);
-                              setShowDropdown(false);
-                              return;
-                            }
-
-                            if (n.type === 'REPRESENTATION_REQUEST_CREATED') {
-                              const repRequestId =
-                                n.payload?.requestId ||
-                                n.payload?.request_id ||
-                                n.payload?.id;
-
-                              const path = repRequestId
-                                ? `/artists/representation-requests/${repRequestId}`
-                                : '/artists/representation-requests';
-
-                              const qs = new URLSearchParams();
-                              const mgrName = n.payload?.managerName || n.payload?.manager_name;
-                              const commission = n.payload?.commissionPercentage || n.payload?.commission_percentage;
-                              if (mgrName) qs.set('managerName', mgrName);
-                              if (commission) qs.set('commission', String(commission));
-                              const suffix = qs.toString();
-
-                              router.push(`${path}${suffix ? `?${suffix}` : ''}`);
-                              setShowDropdown(false);
-                              return;
-                            }
-
-                            if (n.type === 'REPRESENTATION_REQUEST_RESOLVED') {
-                              const target = role === 'MANAGER' ? '/manager/artists' : '/artists/representation-requests';
-                              router.push(target);
-                              setShowDropdown(false);
-                              return;
-                            }
-
-                            const bookingTypes = new Set([
-                              'BOOKING_REQUEST',
-                              'NEGOTIATION_MESSAGE_SENT',
-                              'FINAL_OFFER_SENT',
-                              'BOOKING_ACCEPTED',
-                              'BOOKING_REJECTED',
-                              'BOOKING_CANCELLED',
-                              'CONTRACT_SIGNED',
-                              'PAYMENT_CONFIRMED',
-                            ]);
-
-                            if (bookingTypes.has(n.type)) {
-                              const bookingId = n.payload?.bookingId ?? n.payload?.booking_id;
-                              const target = getBookingTarget({ role, bookingId });
-                              router.push(target);
-                              setShowDropdown(false);
-                              return;
-                            }
-
-                            if (n.type === 'EVENT_INVITATION_CREATED') {
-                              const eventId = n.payload?.eventId || n.payload?.event_id;
-                              const invitationId = n.payload?.invitationId || n.payload?.invitation_id;
-                              const target = invitationId
-                                ? `/artists/bookings/invitations?invitationId=${invitationId}`
-                                : eventId
-                                  ? `/events/${eventId}#event-invitations`
-                                  : '/artists/bookings/invitations';
-                              router.push(target);
-                              setShowDropdown(false);
-                              return;
-                            }
-
-                            const invitationId = n.payload?.invitationId;
-                            const eventId = n.payload?.eventId;
-                            if (n.type === 'EVENT_INVITATION_ACCEPTED' || n.type === 'EVENT_INVITATION_DECLINED') {
-                              if (eventId) {
-                                router.push(`/events/${eventId}#event-invitations`);
+                              const callId = n.payload?.callId;
+                              if (callId) {
+                                const query = new URLSearchParams();
+                                if (n.payload?.city) query.set('city', n.payload.city);
+                                if (n.payload?.date) query.set('date', n.payload.date);
+                                if (n.payload?.offeredMaxPrice) query.set('price', String(n.payload.offeredMaxPrice));
+                                if (n.payload?.venueName) query.set('venueName', n.payload.venueName);
+                                router.push(`/artists/calls/${callId}?${query.toString()}`);
                                 setShowDropdown(false);
                                 return;
                               }
-                            }
 
-                            if (invitationId) {
-                              router.push(`/artists/bookings/invitations?invitationId=${invitationId}`);
+                              if (n.type === 'REPRESENTATION_REQUEST_CREATED') {
+                                const repRequestId =
+                                  n.payload?.requestId ||
+                                  n.payload?.request_id ||
+                                  n.payload?.id;
+
+                                const path = repRequestId
+                                  ? `/artists/representation-requests/${repRequestId}`
+                                  : '/artists/representation-requests';
+
+                                const qs = new URLSearchParams();
+                                const mgrName = n.payload?.managerName || n.payload?.manager_name;
+                                const commission = n.payload?.commissionPercentage || n.payload?.commission_percentage;
+                                if (mgrName) qs.set('managerName', mgrName);
+                                if (commission) qs.set('commission', String(commission));
+                                const suffix = qs.toString();
+
+                                router.push(`${path}${suffix ? `?${suffix}` : ''}`);
+                                setShowDropdown(false);
+                                return;
+                              }
+
+                              if (n.type === 'REPRESENTATION_REQUEST_RESOLVED') {
+                                const target = role === 'MANAGER' ? '/manager/artists' : '/artists/representation-requests';
+                                router.push(target);
+                                setShowDropdown(false);
+                                return;
+                              }
+
+                              const bookingTypes = new Set([
+                                'BOOKING_REQUEST',
+                                'NEGOTIATION_MESSAGE_SENT',
+                                'FINAL_OFFER_SENT',
+                                'BOOKING_ACCEPTED',
+                                'BOOKING_REJECTED',
+                                'BOOKING_CANCELLED',
+                                'CONTRACT_SIGNED',
+                                'PAYMENT_CONFIRMED',
+                              ]);
+
+                              if (bookingTypes.has(n.type)) {
+                                const bookingId = n.payload?.bookingId ?? n.payload?.booking_id;
+                                const target = getBookingTarget({ role, bookingId });
+                                router.push(target);
+                                setShowDropdown(false);
+                                return;
+                              }
+
+                              if (n.type === 'EVENT_INVITATION_CREATED') {
+                                const eventId = n.payload?.eventId || n.payload?.event_id;
+                                const invitationId = n.payload?.invitationId || n.payload?.invitation_id;
+                                const target = invitationId
+                                  ? `/artists/bookings/invitations?invitationId=${invitationId}`
+                                  : eventId
+                                    ? `/events/${eventId}#event-invitations`
+                                    : '/artists/bookings/invitations';
+                                router.push(target);
+                                setShowDropdown(false);
+                                return;
+                              }
+
+                              const invitationId = n.payload?.invitationId;
+                              const eventId = n.payload?.eventId;
+                              if (n.type === 'EVENT_INVITATION_ACCEPTED' || n.type === 'EVENT_INVITATION_DECLINED') {
+                                if (eventId) {
+                                  router.push(`/events/${eventId}#event-invitations`);
+                                  setShowDropdown(false);
+                                  return;
+                                }
+                              }
+
+                              if (invitationId) {
+                                router.push(`/artists/bookings/invitations?invitationId=${invitationId}`);
+                                setShowDropdown(false);
+                                return;
+                              }
+
                               setShowDropdown(false);
-                              return;
+                            } catch (e) {
+                              setShowDropdown(false);
                             }
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
 
-                            setShowDropdown(false);
-                          } catch (e) {
-                            setShowDropdown(false);
-                          }
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
+                {/* ─── Footer ─── */}
+                <div className="border-t border-slate-100 px-5 py-3">
+                  <Link
+                    href="/settings?tab=notifications"
+                    onClick={() => setShowDropdown(false)}
+                    className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-amber-600 transition-colors"
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                    Preferencias de notificación
+                  </Link>
+                </div>
               </div>
             )}
 
@@ -608,71 +667,113 @@ function getHeaderMeta(pathname: string, role?: string | null) {
   return { title: 'Panel', subtitle: '' };
 }
 
+// ─── Notification type config ────────────────────────────────────────────────
+const NOTIFICATION_CONFIG: Record<string, { icon: React.ReactNode; color: string; bg: string; label: string }> = {
+  BOOKING_REQUEST: { icon: <Ticket className="h-4 w-4" />, color: 'text-blue-600', bg: 'bg-blue-100', label: 'Solicitud de contratación' },
+  NEGOTIATION_MESSAGE_SENT: { icon: <MessageSquare className="h-4 w-4" />, color: 'text-violet-600', bg: 'bg-violet-100', label: 'Nueva contraoferta' },
+  FINAL_OFFER_SENT: { icon: <HandCoins className="h-4 w-4" />, color: 'text-amber-600', bg: 'bg-amber-100', label: 'Oferta final' },
+  BOOKING_ACCEPTED: { icon: <CheckCircle2 className="h-4 w-4" />, color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Contratación aceptada' },
+  BOOKING_REJECTED: { icon: <XCircle className="h-4 w-4" />, color: 'text-rose-600', bg: 'bg-rose-100', label: 'Contratación rechazada' },
+  BOOKING_CANCELLED: { icon: <XCircle className="h-4 w-4" />, color: 'text-rose-500', bg: 'bg-rose-100', label: 'Booking cancelado' },
+  CONTRACT_SIGNED: { icon: <FileSignature className="h-4 w-4" />, color: 'text-indigo-600', bg: 'bg-indigo-100', label: 'Contrato firmado' },
+  PAYMENT_CONFIRMED: { icon: <Banknote className="h-4 w-4" />, color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Pago confirmado' },
+  EVENT_INVITATION_CREATED: { icon: <PartyPopper className="h-4 w-4" />, color: 'text-pink-600', bg: 'bg-pink-100', label: 'Invitación a evento' },
+  EVENT_INVITATION_ACCEPTED: { icon: <BadgeCheck className="h-4 w-4" />, color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Invitación aceptada' },
+  EVENT_INVITATION_DECLINED: { icon: <AlertCircle className="h-4 w-4" />, color: 'text-amber-600', bg: 'bg-amber-100', label: 'Invitación rechazada' },
+  ARTIST_CALL_CREATED: { icon: <Sparkles className="h-4 w-4" />, color: 'text-amber-600', bg: 'bg-amber-100', label: 'Nueva convocatoria' },
+  REPRESENTATION_REQUEST_CREATED: { icon: <Users className="h-4 w-4" />, color: 'text-violet-600', bg: 'bg-violet-100', label: 'Solicitud de representación' },
+  REPRESENTATION_REQUEST_RESOLVED: { icon: <BadgeCheck className="h-4 w-4" />, color: 'text-slate-600', bg: 'bg-slate-100', label: 'Respuesta a solicitud' },
+};
+
+const DEFAULT_CONFIG = { icon: <Bell className="h-4 w-4" />, color: 'text-slate-500', bg: 'bg-slate-100', label: 'Notificación' };
+
+function formatRelativeTime(dateStr?: string): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const diff = Date.now() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'ahora mismo';
+  if (minutes < 60) return `hace ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `hace ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `hace ${days}d`;
+  return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+}
+
 function NotificationItem({ notification, onClick }: { notification: any; onClick: () => void }) {
   const isUnread = notification.status === 'UNREAD';
-  const requesterName = notification.payload?.eventName ?? notification.payload?.venueName;
-  const title =
-    notification.type === 'ARTIST_CALL_CREATED'
-      ? 'Nueva convocatoria'
-      : notification.type === 'EVENT_INVITATION_CREATED'
-        ? `${notification.payload?.eventName ?? notification.payload?.event?.name ?? 'Invitación a evento'}${notification.payload?.eventName || notification.payload?.event?.name ? ' te ha invitado a su evento' : ''}`
-        : notification.type === 'EVENT_INVITATION_ACCEPTED'
-          ? `${notification.payload?.artistName ?? 'Un artista'} ha aceptado la invitación`
-          : notification.type === 'EVENT_INVITATION_DECLINED'
-            ? `${notification.payload?.artistName ?? 'Un artista'} ha rechazado la invitación`
-            : notification.type === 'BOOKING_REQUEST'
-              ? `${requesterName ?? 'Un organizador'} te ha enviado una solicitud de contratación`
-              : notification.type === 'REPRESENTATION_REQUEST_CREATED'
-                ? 'Solicitud de representación'
-                : notification.type === 'REPRESENTATION_REQUEST_RESOLVED'
-                  ? `Respuesta a tu solicitud: ${notification.payload?.result ?? ''}`
-                  : notification.type;
+  const config = NOTIFICATION_CONFIG[notification.type] ?? DEFAULT_CONFIG;
 
-  const location =
-    notification.type === 'EVENT_INVITATION_ACCEPTED' || notification.type === 'EVENT_INVITATION_DECLINED'
-      ? notification.payload?.eventName ?? ''
-      : notification.type === 'BOOKING_REQUEST'
-        ? `${notification.payload?.eventName ?? notification.payload?.venueName ?? ''}`
-        : notification.type === 'REPRESENTATION_REQUEST_CREATED'
-          ? `${notification.payload?.managerName ?? 'Manager'} propone ${notification.payload?.commissionPercentage ?? '—'}%`
-          : `${notification.payload?.venueName ? `${notification.payload.venueName} · ` : ''}${notification.payload?.city ?? ''}`;
+  // ─── Title ────────────────────────────────────────────────────────────────
+  const title = (() => {
+    const p = notification.payload ?? {};
+    const actor = p.actorName ?? p.venueName ?? p.artistName ?? p.managerName ?? p.promoterName ?? p.eventName ?? 'Alguien';
+    switch (notification.type) {
+      case 'BOOKING_REQUEST': return `${p.venueName ?? p.eventName ?? actor} te ha enviado una solicitud`;
+      case 'NEGOTIATION_MESSAGE_SENT': return `${actor} ha enviado una nueva propuesta`;
+      case 'FINAL_OFFER_SENT': return `${actor} ha enviado una oferta final`;
+      case 'BOOKING_ACCEPTED': return `${actor} ha aceptado la contratación`;
+      case 'BOOKING_REJECTED': return `${actor} ha rechazado la contratación`;
+      case 'BOOKING_CANCELLED': return `${actor} ha cancelado el booking`;
+      case 'CONTRACT_SIGNED': return `${actor} ha firmado el contrato`;
+      case 'PAYMENT_CONFIRMED': return `Pago confirmado${p.eventName ? ` · ${p.eventName}` : ''}`;
+      case 'EVENT_INVITATION_CREATED': return `Invitación${p.eventName ? ` a ${p.eventName}` : ' a evento'}`;
+      case 'EVENT_INVITATION_ACCEPTED': return `${p.artistName ?? 'Un artista'} ha aceptado la invitación`;
+      case 'EVENT_INVITATION_DECLINED': return `${p.artistName ?? 'Un artista'} ha rechazado la invitación`;
+      case 'ARTIST_CALL_CREATED': return `Nueva convocatoria${p.venueName ? ` de ${p.venueName}` : ''}`;
+      case 'REPRESENTATION_REQUEST_CREATED': return `${p.managerName ?? 'Un manager'} quiere representarte`;
+      case 'REPRESENTATION_REQUEST_RESOLVED': return `Respuesta a tu solicitud: ${p.result ?? ''}`.trim();
+      default: return config.label;
+    }
+  })();
 
-  const budget = (() => {
-    const minP = notification.payload?.offeredMinPrice;
-    const maxP = notification.payload?.offeredMaxPrice;
-    if (minP && maxP) return `Presupuesto: ${formatCurrency(minP, 'EUR')} - ${formatCurrency(maxP, 'EUR')}`;
-    if (maxP) return `Presupuesto hasta ${formatCurrency(maxP, 'EUR')}`;
-    if (minP) return `Presupuesto desde ${formatCurrency(minP, 'EUR')}`;
-    return '';
+  // ─── Subtitle ─────────────────────────────────────────────────────────────
+  const subtitle = (() => {
+    const p = notification.payload ?? {};
+    const parts: string[] = [];
+    if (p.city) parts.push(p.city);
+    if (p.date) parts.push(p.date);
+    const minP = p.offeredMinPrice;
+    const maxP = p.offeredMaxPrice;
+    if (minP && maxP) parts.push(`${formatCurrency(minP, 'EUR')} – ${formatCurrency(maxP, 'EUR')}`);
+    else if (maxP) parts.push(`Hasta ${formatCurrency(maxP, 'EUR')}`);
+    if (p.commissionPercentage) parts.push(`Comisión: ${p.commissionPercentage}%`);
+    return parts.join(' · ');
   })();
 
   return (
     <button
-      className={`w-full rounded-lg border px-3 py-3 text-left transition ${isUnread
-        ? 'border-slate-300 bg-slate-50 hover:border-slate-400'
-        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
-        }`}
       onClick={onClick}
+      className={`group w-full rounded-2xl px-4 py-3.5 text-left transition-all ${isUnread
+          ? 'bg-amber-50/50 hover:bg-amber-50'
+          : 'bg-transparent hover:bg-slate-50'
+        }`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            {notification.type === 'EVENT_INVITATION_ACCEPTED' ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            ) : notification.type === 'EVENT_INVITATION_DECLINED' ? (
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-            ) : (
-              <Bell className="h-4 w-4 text-slate-500" />
-            )}
-            <span className="text-sm font-semibold text-slate-900">{title}</span>
-          </div>
-          <p className="text-xs text-slate-600">{location}</p>
-          <p className="text-xs text-slate-500">
-            {notification.payload?.date ?? ''}
-            {budget ? ` · ${budget}` : ''}
+      <div className="flex items-start gap-3">
+        {/* Icon */}
+        <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${config.bg} ${config.color}`}>
+          {config.icon}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0 space-y-0.5">
+          <p className={`text-sm font-bold leading-snug ${isUnread ? 'text-slate-900' : 'text-slate-700'}  truncate`}>
+            {title}
+          </p>
+          {subtitle && (
+            <p className="text-xs font-medium text-slate-500 truncate">{subtitle}</p>
+          )}
+          <p className="flex items-center gap-1 text-[11px] font-medium text-slate-400">
+            <Clock className="h-3 w-3" />
+            {formatRelativeTime(notification.created_at)}
           </p>
         </div>
-        {isUnread && <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-emerald-500" />}
+
+        {/* Unread dot */}
+        {isUnread && (
+          <span className="mt-2 inline-flex h-2 w-2 shrink-0 rounded-full bg-amber-500 ring-2 ring-amber-50" />
+        )}
       </div>
     </button>
   );
