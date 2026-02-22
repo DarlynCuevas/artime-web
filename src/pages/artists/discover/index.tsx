@@ -162,7 +162,7 @@ export default function ArtistDiscoverVenuesPage() {
                 </p>
 
                 <div style={{ marginTop: 12 }}>
-                  <Link href={`/venue/${venue.id}`}>
+                  <Link href={`/venues/profile/${venue.id}`}>
                     Consultar perfil de la sala
                   </Link>
                 </div>

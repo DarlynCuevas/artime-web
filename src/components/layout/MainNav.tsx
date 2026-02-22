@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AlertCircle, Bell, BellRing, CalendarDays, CheckCircle2, LayoutDashboard, Ticket, UserRound, Users } from 'lucide-react';
+import { AlertCircle, Bell, BellRing, CalendarDays, CheckCircle2, LayoutDashboard, Sparkles, Ticket, UserRound, Users } from 'lucide-react';
 
 import { BottomNav } from '@/components/layout/BottomNav';
 import { Button } from '@/components/ui/button';
@@ -67,6 +67,13 @@ const navByRole: Record<
     ],
     account: [{ label: 'Configuración', href: '/settings', icon: UserRound }],
   },
+  '': {
+    main: [
+      { label: 'Explorar Salas', href: '/venues/discover', icon: Users },
+      { label: 'Explorar Artistas', href: '/artists/discover', icon: Sparkles },
+    ],
+    account: [{ label: 'Iniciar Sesión', href: '/login', icon: UserRound }],
+  },
 };
 
 export function MainNav({ children }: { children: ReactNode }) {
@@ -86,20 +93,16 @@ export function MainNav({ children }: { children: ReactNode }) {
   const navSections = useMemo(() => navByRole[role ?? ''], [role]);
   const navSectionsWithProfile = useMemo(() => {
     if (!navSections) return null;
-    const venueProfileHref = profileId ? `/venues/profile/${profileId}` : '/venues/profile';
-    const main = navSections.main.map((item) =>
-      role === 'VENUE' && item.label === 'Perfil' ? { ...item, href: venueProfileHref } : item,
-    );
     return {
-      main,
+      main: navSections.main,
       account: navSections.account,
     };
-  }, [navSections, role, profileId]);
+  }, [navSections]);
 
   const { notifications: latestNotifications = [], unreadCount, markAsRead } = useArtistNotifications({
     userId: user?.id,
     token: user?.token,
-    role,
+    role: (role as any) || undefined,
     limit: 20,
   });
 

@@ -15,16 +15,16 @@ export async function discoverVenues(params?: {
   try {
     const { data } = await supabase.auth.getSession();
     token = data.session?.access_token ?? '';
-  } catch {}
+  } catch { }
 
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/venues-discover/venues?${qs.toString()}`,
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/venues/discover?${qs.toString()}`,
     token
       ? {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
       : undefined
   );
 

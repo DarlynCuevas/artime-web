@@ -33,11 +33,27 @@ export function ProfileHero({
 
                     <div className="lg:col-span-2 animate-slide-in flex items-end gap-6">
                         {/* Pro Avatar */}
-                        <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden border-4 border-slate-900 bg-slate-800 shadow-2xl shrink-0">
+                        <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden border-4 border-slate-900 bg-slate-800 shadow-2xl shrink-0 backdrop-blur-sm">
                             <img
                                 src={avatarUrl}
                                 alt={name}
                                 className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                        parent.style.background = 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)';
+                                        parent.innerHTML = `
+                                            <div class="flex items-center justify-center h-full w-full">
+                                                <span class="text-4xl md:text-5xl font-black text-white/20 select-none">
+                                                    ${name.charAt(0).toUpperCase()}
+                                                </span>
+                                            </div>
+                                            <div class="absolute inset-0 bg-gradient-to-tr from-brand-amber/10 to-transparent"></div>
+                                        `;
+                                    }
+                                }}
                             />
                             <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl" />
                         </div>

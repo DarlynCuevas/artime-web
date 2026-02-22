@@ -15,6 +15,7 @@ type VenueProfilePayload = {
 
 export async function getVenueById(
   venueId: string,
+  token?: string,
 ): Promise<{
   id: string;
   name: string;
@@ -27,6 +28,13 @@ export async function getVenueById(
 }> {
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_API_BASE_URL}/venues/${venueId}`,
+    token
+      ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+      : undefined,
   );
 
   if (!res.ok) {
