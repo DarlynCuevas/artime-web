@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AlertCircle, CheckCircle2, Link2, Loader2, MapPin, Music, ShieldCheck, Sparkles, Wallet, Calendar as CalendarIcon } from 'lucide-react';
+import { Camera, CheckCircle2, Link2, Loader2, MapPin, Music, ShieldCheck, Sparkles, Wallet, Calendar as CalendarIcon, Edit3, Image as ImageIcon, Video, FileText, Trash2, Globe, Clock, Plus } from 'lucide-react';
 
 import { withRole } from '@/components/auth/withRole';
 import { useMe } from '@/context/MeContext';
@@ -23,7 +23,6 @@ type EditableProfile = {
 	socialLink?: string;
 	techRider?: string;
 };
-
 
 function ArtistPrivateProfilePage() {
 	const { role, loading: meLoading, profileId } = useMe();
@@ -67,9 +66,7 @@ function ArtistPrivateProfilePage() {
 		setError(null);
 
 		fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/artists/me`, {
-			headers: {
-				Authorization: `Bearer ${user.token}`,
-			},
+			headers: { Authorization: `Bearer ${user.token}` },
 		})
 			.then((res) => {
 				if (!res.ok) throw new Error('No se pudo cargar el perfil');
@@ -96,39 +93,36 @@ function ArtistPrivateProfilePage() {
 
 	useEffect(() => {
 		if (!user?.token) return;
-		getProfileImage(user.token)
-			.then((result) => setProfileImageUrl(result.url))
-			.catch(() => setProfileImageUrl(null));
+		getProfileImage(user.token).then((result) => setProfileImageUrl(result.url)).catch(() => setProfileImageUrl(null));
 	}, [user?.token]);
 
 	useEffect(() => {
 		if (!profileId) return;
-		getArtistGallery(profileId)
-			.then((items) => setGallery(items ?? []))
-			.catch(() => setGallery([]));
+		getArtistGallery(profileId).then((items) => setGallery(items ?? [])).catch(() => setGallery([]));
 	}, [profileId]);
 
 	useEffect(() => {
 		if (!profileId) return;
-		getArtistVideos(profileId)
-			.then((items) => setVideos(items ?? []))
-			.catch(() => setVideos([]));
+		getArtistVideos(profileId).then((items) => setVideos(items ?? [])).catch(() => setVideos([]));
 	}, [profileId]);
 
 	if (meLoading || loadingProfile) {
-		return <div className="p-8 text-slate-700">Cargando perfil…</div>;
+		return (
+			<div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center pb-24">
+				<div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center animate-pulse mb-4">
+					<Sparkles className="w-6 h-6 text-amber-500" />
+				</div>
+				<p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando tu perfil…</p>
+			</div>
+		);
 	}
 
 	if (role !== 'ARTIST') {
-		return <div className="p-8 text-red-600">Acceso no autorizado</div>;
+		return <div className="p-8 text-red-600 font-bold">Acceso no autorizado</div>;
 	}
 
-	if (error) {
-		return <div className="p-8 text-red-600">{error}</div>;
-	}
-
-	if (!profile) {
-		return <div className="p-8 text-red-600">No se pudo cargar el perfil.</div>;
+	if (error || !profile) {
+		return <div className="p-8 text-red-600 font-bold">{error ?? 'No se pudo cargar'}</div>;
 	}
 
 	const handleChange = (field: keyof EditableProfile, value: string | number | boolean) => {
@@ -144,10 +138,7 @@ function ArtistPrivateProfilePage() {
 			const payload = {
 				name: profile.name,
 				city: profile.city,
-				genres: profile.genres
-					.split(',')
-					.map((g) => g.trim())
-					.filter(Boolean),
+				genres: profile.genres.split(',').map((g) => g.trim()).filter(Boolean),
 				bio: profile.bio,
 				format: profile.format,
 				basePrice: profile.basePrice,
@@ -158,22 +149,20 @@ function ArtistPrivateProfilePage() {
 			const updated = await updateMyArtistProfile(payload, user.token);
 
 			setProfile((prev) =>
-				prev
-					? {
-						...prev,
-						name: updated.name ?? prev.name,
-						city: updated.city ?? prev.city,
-						genres: Array.isArray(updated.genres) ? updated.genres.join(', ') : prev.genres,
-						bio: updated.bio ?? prev.bio,
-						format: updated.format ?? prev.format,
-						basePrice: updated.basePrice ?? prev.basePrice,
-						currency: updated.currency ?? prev.currency,
-						isNegotiable: updated.isNegotiable !== undefined ? updated.isNegotiable : prev.isNegotiable,
-					}
-					: prev,
+				prev ? {
+					...prev,
+					name: updated.name ?? prev.name,
+					city: updated.city ?? prev.city,
+					genres: Array.isArray(updated.genres) ? updated.genres.join(', ') : prev.genres,
+					bio: updated.bio ?? prev.bio,
+					format: updated.format ?? prev.format,
+					basePrice: updated.basePrice ?? prev.basePrice,
+					currency: updated.currency ?? prev.currency,
+					isNegotiable: updated.isNegotiable !== undefined ? updated.isNegotiable : prev.isNegotiable,
+				} : prev,
 			);
 			setSaved(true);
-			setTimeout(() => setSaved(false), 1600);
+			setTimeout(() => setSaved(false), 2000);
 		} catch (err: any) {
 			setError(err.message ?? 'Error al guardar');
 		} finally {
@@ -181,393 +170,463 @@ function ArtistPrivateProfilePage() {
 		}
 	};
 
-	const genresList = profile.genres
-		.split(',')
-		.map((g) => g.trim())
-		.filter(Boolean);
+	const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'AR')}&background=1e293b&color=fff&size=256`;
 
 	return (
-		<main className="p-6 md:p-8 max-w-5xl mx-auto space-y-8">
-			<header className="space-y-2">
-				<h1 className="text-3xl font-semibold text-slate-900">Perfil profesional</h1>
-				<p className="text-slate-600">Refleja lo que ven salas y promoters.</p>
-			</header>
+		<div className="min-h-screen bg-slate-50 pb-20 font-sans selection:bg-amber-100 selection:text-amber-900">
 
-			<section className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 space-y-4">
-				<div className="flex items-start gap-4">
-					<div className="h-16 w-16 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 text-lg font-semibold overflow-hidden">
-						{profileImageUrl ? (
-							<img
-								src={profileImageUrl}
-								alt="Foto de perfil"
-								className="h-full w-full object-cover"
-								onError={() => setProfileImageUrl(null)}
-							/>
-						) : (
-							(profile.name || 'AR').slice(0, 2).toUpperCase()
-						)}
+			{/* ── HERO EDITABLE (Glass-Fintech) ─────────────────────────────── */}
+			<div className="relative w-full overflow-hidden bg-fintech-dark pb-28">
+				<div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
+				<div className="absolute -top-32 -right-32 w-96 h-96 bg-brand-amber rounded-full mix-blend-multiply filter blur-[128px] opacity-15 animate-pulse" />
+				<div className="absolute -left-32 -bottom-32 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-10" />
+
+				<div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-12">
+
+					<div className="flex items-center gap-2 text-amber-400 mb-6">
+						<Edit3 className="w-4 h-4" />
+						<span className="text-[10px] font-black uppercase tracking-widest">Modo edición de perfil</span>
 					</div>
-					<div className="flex-1 min-w-0 space-y-2">
-						<div className="flex flex-wrap items-center gap-2">
-							<input
-								className="text-2xl font-semibold text-slate-900 tracking-tight bg-transparent border-b border-transparent focus:border-slate-300 outline-none"
-								value={profile.name}
-								onChange={(e) => handleChange('name', e.target.value)}
-								placeholder="Nombre artístico"
-							/>
-							<span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
-								<ShieldCheck className="h-3.5 w-3.5" /> Perfil verificado en ARTIME
-							</span>
-						</div>
-						<div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-							<span className="flex items-center gap-1.5">
-								<MapPin className="h-4 w-4" />
-								<input
-									className="bg-transparent border-b border-transparent focus:border-slate-300 outline-none text-sm"
-									value={profile.city}
-									onChange={(e) => handleChange('city', e.target.value)}
-									placeholder="Ciudad"
+
+					<div className="flex flex-col md:flex-row md:items-end gap-6 md:gap-8">
+						{/* AVATAR EDITABLE */}
+						<div className="relative group shrink-0">
+							<div className="relative h-28 w-28 md:h-36 md:w-36 rounded-full overflow-hidden border-4 border-slate-800 shadow-2xl bg-slate-800">
+								<img
+									src={profileImageUrl || fallbackAvatar}
+									alt={profile.name}
+									className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500"
 								/>
-							</span>
-							<span className="flex items-center gap-1.5">
-								<Wallet className="h-4 w-4" />
+
+								{/* Overlay Editable */}
+								<div
+									className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center cursor-pointer"
+									onClick={() => fileInputRef.current?.click()}
+								>
+									{uploadingImage ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-8 h-8 text-white mb-1" />}
+									<span className="text-[10px] font-bold text-white uppercase tracking-wider">{uploadingImage ? 'Subiendo' : 'Cambiar'}</span>
+								</div>
+							</div>
+							<input
+								ref={fileInputRef}
+								type="file"
+								accept="image/*"
+								className="hidden"
+								onChange={async (e) => {
+									const file = e.target.files?.[0];
+									if (!file || !user?.token) return;
+									setUploadingImage(true);
+									try {
+										await uploadProfileImage(file, user.token);
+										const refreshed = await getProfileImage(user.token);
+										setProfileImageUrl(refreshed.url);
+									} finally {
+										setUploadingImage(false);
+										if (fileInputRef.current) fileInputRef.current.value = '';
+									}
+								}}
+							/>
+						</div>
+
+						{/* INFO EDITABLE HERO */}
+						<div className="flex-1 space-y-3 pb-2 w-full">
+							<div className="flex items-center gap-2 mb-1">
+								<ShieldCheck className="h-4 w-4 text-emerald-400" />
+								<span className="text-xs font-medium text-emerald-400">Perfil verificado en ARTIME</span>
+							</div>
+
+							<div className="relative group">
+								<input
+									value={profile.name}
+									onChange={(e) => handleChange('name', e.target.value)}
+									placeholder="Tu nombre artístico"
+									className="w-full bg-transparent text-3xl md:text-5xl font-black text-white tracking-tight outline-none border-b-2 border-transparent focus:border-amber-400/50 transition-colors pb-1 placeholder:text-white/20"
+								/>
+								<Edit3 className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-white/0 group-hover:text-white/30 transition-colors pointer-events-none" />
+							</div>
+
+							<div className="flex flex-col sm:flex-row sm:items-center gap-4 text-sm font-medium text-slate-300">
+								<div className="flex items-center gap-2 relative group w-full sm:w-auto">
+									<MapPin className="h-4 w-4 text-slate-400 shrink-0" />
+									<input
+										value={profile.city}
+										onChange={(e) => handleChange('city', e.target.value)}
+										placeholder="Ciudad base"
+										className="w-full sm:w-auto max-w-[150px] bg-transparent outline-none border-b border-transparent focus:border-amber-400/50 transition-colors pb-0.5 placeholder:text-white/20"
+									/>
+								</div>
+
+								<span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-600" />
+
+								<div className="flex items-center gap-2 relative group w-full sm:w-auto">
+									<Music className="h-4 w-4 text-slate-400 shrink-0" />
+									<input
+										value={profile.genres}
+										onChange={(e) => handleChange('genres', e.target.value)}
+										placeholder="Géneros (separados por coma)"
+										className="w-full sm:w-auto min-w-[200px] bg-transparent outline-none border-b border-transparent focus:border-amber-400/50 transition-colors pb-0.5 placeholder:text-white/20"
+									/>
+								</div>
+
+								<span className="hidden sm:inline w-1 h-1 rounded-full bg-slate-600" />
+
+								<div className="flex items-center gap-2 relative group w-full sm:w-auto">
+									<span className="h-4 w-4 rounded-full border border-slate-400 shrink-0 flex items-center justify-center text-[8px]">F</span>
+									<input
+										value={profile.format}
+										onChange={(e) => handleChange('format', e.target.value)}
+										placeholder="Formato (ej. Banda, DJ)"
+										className="w-full sm:w-auto max-w-[140px] bg-transparent outline-none border-b border-transparent focus:border-amber-400/50 transition-colors pb-0.5 placeholder:text-white/20"
+									/>
+								</div>
+							</div>
+						</div>
+
+					</div>
+				</div>
+			</div>
+
+			{/* ── CUERPO (MAIN) ──────────────────────────────────────────────── */}
+			<main className="max-w-5xl mx-auto px-4 sm:px-6 -mt-10 relative z-10 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+
+				{/* COLUMNA IZQUIERDA (Contenido Principal) */}
+				<div className="w-full lg:flex-1 space-y-6">
+
+					{/* Biografía */}
+					<GlassCard className="p-6 md:p-8">
+						<h2 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+							<FileText className="w-4 h-4 text-slate-400" />
+							Acerca del artista
+						</h2>
+						<textarea
+							className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 leading-relaxed focus:bg-white focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 outline-none transition-all resize-y min-h-[160px]"
+							value={profile.bio}
+							onChange={(e) => handleChange('bio', e.target.value)}
+							placeholder="Presenta tu propuesta artística. Destaca años de experiencia, estilo propio y todo lo que pueda atraer al venue."
+							maxLength={1200}
+						/>
+					</GlassCard>
+
+					{/* Multimedia Tabs & Content */}
+					<GlassCard className="p-0 overflow-hidden">
+						{/* Header Tabs */}
+						<div className="flex border-b border-slate-100 bg-slate-50/50 p-2 overflow-x-auto custom-scrollbar">
+							<TabButton
+								active={mediaTab === 'gallery'}
+								onClick={() => setMediaTab('gallery')}
+								icon={<ImageIcon className="w-3.5 h-3.5" />}
+								label={`Galería (${gallery.length})`}
+							/>
+							<TabButton
+								active={mediaTab === 'videos'}
+								onClick={() => setMediaTab('videos')}
+								icon={<Video className="w-3.5 h-3.5" />}
+								label={`Videos (${videos.length})`}
+							/>
+							<TabButton
+								active={mediaTab === 'material'}
+								onClick={() => setMediaTab('material')}
+								icon={<Link2 className="w-3.5 h-3.5" />}
+								label="Material Operativo"
+							/>
+						</div>
+
+						{/* Tab Panes */}
+						<div className="p-6 md:p-8">
+							{mediaTab === 'gallery' && (
+								<div className="space-y-6">
+									<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+										<p className="text-sm text-slate-500">Sube hasta 6 imágenes en alta calidad (portafolio).</p>
+										<button
+											type="button"
+											disabled={uploadingGallery || gallery.length >= 6}
+											onClick={() => galleryInputRef.current?.click()}
+											className="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-600 hover:bg-slate-200 transition-colors disabled:opacity-50 shrink-0"
+										>
+											{uploadingGallery ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+											Añadir imagen
+										</button>
+										<input
+											ref={galleryInputRef}
+											type="file"
+											accept="image/*"
+											className="hidden"
+											onChange={async (e) => {
+												const file = e.target.files?.[0];
+												if (!file || !user?.token || !profileId) return;
+												setUploadingGallery(true);
+												try {
+													await uploadArtistGalleryImage(file, user.token);
+													const refreshed = await getArtistGallery(profileId);
+													setGallery(refreshed ?? []);
+												} finally {
+													setUploadingGallery(false);
+													if (galleryInputRef.current) galleryInputRef.current.value = '';
+												}
+											}}
+										/>
+									</div>
+
+									<div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+										{gallery.map((item) => (
+											<div key={item.id} className="relative group overflow-hidden rounded-2xl bg-slate-100 aspect-square">
+												<img src={item.url} alt="Galería" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+												<div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+													<button
+														type="button"
+														onClick={async () => {
+															if (!user?.token || !profileId) return;
+															await deleteArtistGalleryImage(item.id, user.token);
+															const refreshed = await getArtistGallery(profileId);
+															setGallery(refreshed ?? []);
+														}}
+														className="bg-red-500/90 text-white rounded-full p-2 hover:bg-red-600 transition-colors shadow-lg"
+														title="Eliminar imagen"
+													>
+														<Trash2 className="w-4 h-4" />
+													</button>
+												</div>
+											</div>
+										))}
+										{gallery.length === 0 && (
+											<div className="col-span-full py-8 text-center border-2 border-dashed border-slate-200 rounded-3xl">
+												<ImageIcon className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+												<p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Sin imágenes</p>
+											</div>
+										)}
+									</div>
+								</div>
+							)}
+
+							{mediaTab === 'videos' && (
+								<div className="space-y-6">
+									<div className="flex flex-col sm:flex-row gap-2">
+										<input
+											type="url"
+											value={videoUrl}
+											onChange={(e) => setVideoUrl(e.target.value)}
+											placeholder="Pega un enlace de YouTube completo (ej. https://youtube.com/watch?v=...)"
+											className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:bg-white focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 outline-none transition-all placeholder:text-slate-400"
+										/>
+										<button
+											type="button"
+											disabled={uploadingVideo || videos.length >= 4 || !videoUrl}
+											onClick={async () => {
+												if (!user?.token || !videoUrl || !profileId) return;
+												setUploadingVideo(true);
+												try {
+													await addArtistVideo(videoUrl, user.token);
+													setVideoUrl('');
+													const refreshed = await getArtistVideos(profileId);
+													setVideos(refreshed ?? []);
+												} finally {
+													setUploadingVideo(false);
+												}
+											}}
+											className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-slate-800 transition-colors disabled:opacity-50 shrink-0"
+										>
+											{uploadingVideo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+											Añadir Video
+										</button>
+									</div>
+
+									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+										{videos.map((item) => (
+											<div key={item.id} className="relative group overflow-hidden rounded-2xl bg-black aspect-video border border-slate-200">
+												<img src={`https://img.youtube.com/vi/${item.youtubeId}/hqdefault.jpg`} alt="Video" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-50 transition-opacity" />
+												<div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+													<div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
+														<Sparkles className="w-5 h-5 text-white" />
+													</div>
+												</div>
+												<div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+													<button
+														type="button"
+														onClick={async () => {
+															if (!user?.token || !profileId) return;
+															await deleteArtistVideo(item.id, user.token);
+															const refreshed = await getArtistVideos(profileId);
+															setVideos(refreshed ?? []);
+														}}
+														className="bg-red-500/90 text-white rounded-full p-3 hover:bg-red-600 transition-colors shadow-lg pointer-events-auto scale-0 group-hover:scale-100 duration-300"
+														title="Eliminar video"
+													>
+														<Trash2 className="w-5 h-5" />
+													</button>
+												</div>
+											</div>
+										))}
+										{videos.length === 0 && (
+											<div className="col-span-full py-10 text-center border-2 border-dashed border-slate-200 rounded-3xl">
+												<Video className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+												<p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Sin videos vinculados</p>
+											</div>
+										)}
+									</div>
+								</div>
+							)}
+
+							{mediaTab === 'material' && (
+								<div className="space-y-6">
+									<div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 space-y-4">
+										<div>
+											<label className="flex items-center gap-2 mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+												<Globe className="w-3.5 h-3.5" /> Enlace Social / EPK Principal
+											</label>
+											<input
+												type="url"
+												className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 outline-none transition-all"
+												value={profile.socialLink ?? ''}
+												onChange={(e) => handleChange('socialLink', e.target.value)}
+												placeholder="https://instagram.com/tu_perfil"
+											/>
+										</div>
+										<div>
+											<label className="flex items-center gap-2 mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+												<FileText className="w-3.5 h-3.5" /> Enlace al Rider Técnico (PDF)
+											</label>
+											<input
+												type="url"
+												className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 outline-none transition-all"
+												value={profile.techRider ?? ''}
+												onChange={(e) => handleChange('techRider', e.target.value)}
+												placeholder="Enlace público de Drive, Dropbox, etc."
+											/>
+										</div>
+									</div>
+									<p className="text-xs text-slate-500 text-center">
+										Esta información será enviada automáticamente a los venues cuando inicies una negociación.
+									</p>
+								</div>
+							)}
+						</div>
+					</GlassCard>
+				</div>
+
+				{/* COLUMNA DERECHA (Tarjetas Fijas) */}
+				<div className="w-full lg:w-[320px] shrink-0 space-y-6">
+
+					{/* Tarjeta de Guardar Cambios (equivalente a PricingCard) */}
+					<div className="bg-white rounded-3xl p-6 sm:p-8 border border-amber-200 shadow-[0_20px_50px_rgba(251,191,36,0.15)] space-y-6 lg:sticky lg:top-8 z-10">
+						<div>
+							<p className="text-[10px] font-black tracking-widest uppercase text-amber-600 mb-1">Caché Base</p>
+							<div className="flex items-end gap-3 mb-3">
 								<input
 									type="number"
-									className="w-24 bg-transparent border-b border-transparent focus:border-slate-300 outline-none text-sm"
 									value={profile.basePrice}
 									onChange={(e) => handleChange('basePrice', Number(e.target.value))}
+									className="w-40 bg-transparent text-4xl font-black text-slate-900 border-b-2 border-slate-200 focus:border-amber-400 outline-none p-0 tracking-tighter transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
 								/>
-								<input
-									className="w-16 bg-transparent border-b border-transparent focus:border-slate-300 outline-none text-sm"
+								<select
 									value={profile.currency}
 									onChange={(e) => handleChange('currency', e.target.value)}
-								/>
-							</span>
-							<label className="inline-flex items-center gap-2 text-sm text-slate-600">
+									className="bg-transparent text-lg font-bold text-slate-500 border-none outline-none appearance-none cursor-pointer hover:text-slate-800 pb-1 shrink-0"
+								>
+									<option value="EUR">EUR</option>
+									<option value="USD">USD</option>
+								</select>
+							</div>
+
+							<label className="flex items-center gap-2 mt-4 cursor-pointer group">
+								<div className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${profile.isNegotiable ? 'bg-amber-500' : 'bg-slate-200 border border-slate-300'}`}>
+									{profile.isNegotiable && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+								</div>
 								<input
 									type="checkbox"
 									checked={profile.isNegotiable}
 									onChange={(e) => handleChange('isNegotiable', e.target.checked)}
-									className="h-4 w-4"
+									className="hidden"
 								/>
-								<span>{profile.isNegotiable ? 'Negociable' : 'No negociable'}</span>
+								<span className="text-sm font-semibold text-slate-600 group-hover:text-slate-900 transition-colors">Precio Negociable</span>
 							</label>
 						</div>
-						<div className="flex flex-wrap gap-2">
-							<input
-								className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs text-slate-700 focus:border-slate-400 focus:outline-none"
-								value={profile.genres}
-								onChange={(e) => handleChange('genres', e.target.value)}
-								placeholder="Géneros (coma)"
-							/>
-						</div>
-					</div>
-				</div>
 
-				<div className="grid grid-cols-1 gap-4">
-					<div>
-						<label className="text-xs font-medium text-slate-500">Biografía</label>
-						<textarea
-							className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none min-h-[120px]"
-							value={profile.bio}
-							onChange={(e) => handleChange('bio', e.target.value)}
-							maxLength={1000}
-							placeholder="Describe tu propuesta en 3-5 frases claras."
-						/>
-					</div>
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<div>
-							<label className="text-xs font-medium text-slate-500">Formato / setup</label>
-							<input
-								className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
-								value={profile.format}
-								onChange={(e) => handleChange('format', e.target.value)}
-								placeholder="Solo, banda completa, DJ set"
-							/>
-						</div>
-					</div>
-				</div>
+						{error && <p className="text-xs text-red-600 font-bold bg-red-50 p-2 rounded-lg">{error}</p>}
+						{saved && (
+							<div className="animate-in fade-in slide-in-from-bottom-2 bg-emerald-50 text-emerald-800 text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-xl text-center flex items-center justify-center gap-1">
+								<CheckCircle2 className="w-3.5 h-3.5" /> Cambios Públicos
+							</div>
+						)}
 
-				<div className="border-t border-slate-100 pt-3 space-y-2">
-					<p className="text-xs text-slate-500">Imagen de perfil</p>
-					<div className="flex items-center gap-2">
-						<input
-							ref={fileInputRef}
-							type="file"
-							accept="image/*"
-							className="hidden"
-							onChange={async (e) => {
-								const file = e.target.files?.[0];
-								if (!file || !user?.token) return;
-								setUploadingImage(true);
-								try {
-									await uploadProfileImage(file, user.token);
-									const refreshed = await getProfileImage(user.token);
-									setProfileImageUrl(refreshed.url);
-								} finally {
-									setUploadingImage(false);
-									if (fileInputRef.current) fileInputRef.current.value = '';
-								}
-							}}
-						/>
 						<button
-							type="button"
-							disabled={uploadingImage}
-							onClick={() => fileInputRef.current?.click()}
-							className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+							onClick={handleSave}
+							disabled={saving}
+							className="w-full relative overflow-hidden group rounded-2xl bg-slate-900 px-6 py-4 transition-all hover:bg-slate-800 shadow-[0_0_0_1px_theme(colors.slate.900)] mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
 						>
-							{uploadingImage ? 'Subiendo…' : 'Subir imagen'}
+							<div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+							<div className="relative flex items-center justify-center gap-2">
+								{saving ? (
+									<Loader2 className="h-4 w-4 text-amber-400 animate-spin" />
+								) : (
+									<Sparkles className="h-4 w-4 text-amber-400" />
+								)}
+								<span className="text-sm font-black uppercase tracking-widest text-white">
+									{saving ? 'Guardando…' : 'Guardar Cambios'}
+								</span>
+							</div>
 						</button>
-						{profileImageUrl && (
-							<span className="text-xs text-slate-500">Actualizada</span>
-						)}
 					</div>
-				</div>
 
-				<div className="border-t border-slate-100 pt-4 space-y-3">
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-2 text-xs">
-							<button
-								type="button"
-								onClick={() => setMediaTab('gallery')}
-								className={`rounded-full px-3 py-1 border ${mediaTab === 'gallery' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600'}`}
-							>
-								Galería
-							</button>
-							<button
-								type="button"
-								onClick={() => setMediaTab('videos')}
-								className={`rounded-full px-3 py-1 border ${mediaTab === 'videos' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600'}`}
-							>
-								Videos
-							</button>
-							<button
-								type="button"
-								onClick={() => setMediaTab('material')}
-								className={`rounded-full px-3 py-1 border ${mediaTab === 'material' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-600'}`}
-							>
-								Material
-							</button>
-						</div>
-						{mediaTab === 'gallery' ? (
-							<div className="flex items-center gap-2">
-								<input
-									ref={galleryInputRef}
-									type="file"
-									accept="image/*"
-									className="hidden"
-									onChange={async (e) => {
-										const file = e.target.files?.[0];
-										if (!file || !user?.token || !profileId) return;
-										setUploadingGallery(true);
-										try {
-											await uploadArtistGalleryImage(file, user.token);
-											const refreshed = await getArtistGallery(profileId);
-											setGallery(refreshed ?? []);
-										} finally {
-											setUploadingGallery(false);
-											if (galleryInputRef.current) galleryInputRef.current.value = '';
-										}
-									}}
-								/>
-								<button
-									type="button"
-									disabled={uploadingGallery || gallery.length >= 6}
-									onClick={() => galleryInputRef.current?.click()}
-									className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-								>
-									{uploadingGallery ? 'Subiendo…' : 'Subir'}
-								</button>
-							</div>
-						) : mediaTab === 'videos' ? (
-							<div className="flex items-center gap-2">
-								<input
-									type="url"
-									value={videoUrl ?? ''}
-									onChange={(e) => setVideoUrl(e.target.value)}
-									placeholder="Enlace de YouTube"
-									className="w-full rounded-md border border-slate-200 px-3 py-2 text-xs"
-								/>
-								<button
-									type="button"
-									disabled={uploadingVideo || videos.length >= 4 || !videoUrl}
-									onClick={async () => {
-										if (!user?.token || !videoUrl || !profileId) return;
-										setUploadingVideo(true);
-										try {
-											await addArtistVideo(videoUrl, user.token);
-											setVideoUrl('');
-											const refreshed = await getArtistVideos(profileId);
-											setVideos(refreshed ?? []);
-										} finally {
-											setUploadingVideo(false);
-										}
-									}}
-									className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-								>
-									{uploadingVideo ? 'Añadiendo…' : 'Añadir'}
-								</button>
-							</div>
-						) : (
-							<div className="text-xs text-slate-500">Completa tus enlaces operativos.</div>
-						)}
-					</div>
-					{mediaTab === 'gallery' ? (
-						gallery.length === 0 ? (
-							<p className="text-xs text-slate-500">Aún no has subido imágenes.</p>
-						) : (
-							<div className="grid grid-cols-2 gap-2">
-								{gallery.map((item) => (
-									<div key={item.id} className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-										<img src={item.url} alt="Imagen de galería" className="h-24 w-full object-cover" />
-										<button
-											type="button"
-											onClick={async () => {
-												if (!user?.token || !profileId) return;
-												await deleteArtistGalleryImage(item.id, user.token);
-												const refreshed = await getArtistGallery(profileId);
-												setGallery(refreshed ?? []);
-											}}
-											className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-700 shadow-sm"
-										>
-											Eliminar
-										</button>
-									</div>
-								))}
-							</div>
-						)
-					) : mediaTab === 'videos' ? (
-						videos.length === 0 ? (
-							<p className="text-xs text-slate-500">Aún no has añadido videos.</p>
-						) : (
-							<div className="grid grid-cols-2 gap-2">
-								{videos.map((item) => (
-									<div key={item.id} className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-										<img src={`https://img.youtube.com/vi/${item.youtubeId}/hqdefault.jpg`} alt="Video" className="h-24 w-full object-cover" />
-										<button
-											type="button"
-											onClick={async () => {
-												if (!user?.token || !profileId) return;
-												await deleteArtistVideo(item.id, user.token);
-												const refreshed = await getArtistVideos(profileId);
-												setVideos(refreshed ?? []);
-											}}
-											className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-700 shadow-sm"
-										>
-											Eliminar
-										</button>
-									</div>
-								))}
-							</div>
-						)
-					) : (
-						<div className="rounded-xl border border-slate-200 bg-white p-3">
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-								<Field label="EPK / Social">
-									<input
-										className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
-										value={profile.socialLink ?? ''}
-										onChange={(e) => handleChange('socialLink', e.target.value)}
-										placeholder="https://"
-									/>
-								</Field>
-								<Field label="Rider técnico (PDF o link)">
-									<input
-										className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none"
-										value={profile.techRider ?? ''}
-										onChange={(e) => handleChange('techRider', e.target.value)}
-										placeholder="https://"
-									/>
-								</Field>
-							</div>
-							<p className="mt-2 text-xs text-slate-500">Se comparten como enlaces directos al iniciar una propuesta.</p>
-						</div>
-					)}
-				</div>
-			</section>
+					{/* Fechas Confirmadas (Equivalente al Booking Section del público) */}
+					<GlassCard className="p-6 border-slate-200 shadow-sm">
+						<h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+							<CalendarIcon className="w-4 h-4 text-emerald-600" />
+							Upcoming Confirmado
+						</h3>
 
-			<section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-				<div className="lg:col-span-2 space-y-6">
-					<Card title="Próximas fechas confirmadas" icon={<CalendarIcon />}> 
-						<div className="space-y-3 text-sm text-slate-700">
-							{confirmedDates.length === 0 && <p className="text-slate-500 text-xs">Sin fechas próximas por ahora.</p>}
-							{confirmedDates.map((item) => (
-								<div key={`${item.bookingId}-${item.startDate}`} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
-									<div className="flex items-center justify-between text-xs text-slate-500">
-										<span>{formatShortDate(item.startDate)}</span>
-										<StatusPill status="ACTIVE" />
-									</div>
-									<p className="text-sm font-medium text-slate-900">{item.venueName}</p>
-									<p className="text-xs text-slate-500">Estado: {item.status}</p>
-								</div>
-							))}
-						</div>
-					</Card>
-
-					<Card title="Acción" icon={<ShieldCheck className="h-4 w-4 text-slate-600" />}>
 						<div className="space-y-3">
-							<button
-								onClick={handleSave}
-								disabled={saving}
-								className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-70"
-							>
-								{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-								{saving ? 'Guardando…' : 'Guardar cambios'}
-							</button>
-							{saved && <p className="text-xs text-emerald-700 text-center">Cambios guardados.</p>}
+							{confirmedDates.length === 0 ? (
+								<div className="text-center py-6 border border-dashed border-slate-200 rounded-2xl">
+									<Clock className="w-5 h-5 text-slate-300 mx-auto mb-2" />
+									<p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Agenda Libre</p>
+								</div>
+							) : (
+								confirmedDates.map((item) => (
+									<div key={`${item.bookingId}-${item.startDate}`} className="group flex items-center gap-3 p-3 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+										<div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex flex-col items-center justify-center shrink-0 border border-emerald-100/50">
+											<span className="text-[10px] font-bold uppercase tracking-wider leading-none">{new Date(item.startDate).toLocaleDateString('es-ES', { month: 'short' })}</span>
+											<span className="text-sm font-black leading-none mt-0.5">{new Date(item.startDate).getDate()}</span>
+										</div>
+										<div className="flex-1 min-w-0">
+											<p className="text-sm font-bold text-slate-900 truncate">{item.venueName}</p>
+											<span className="inline-flex items-center px-1.5 pt-[1px] rounded flex items-center justify-center bg-emerald-100 text-emerald-800 text-[8px] font-black uppercase tracking-widest mt-1">
+												Confirmado
+											</span>
+										</div>
+									</div>
+								))
+							)}
 						</div>
-					</Card>
+					</GlassCard>
+
 				</div>
-			</section>
-		</main>
+			</main>
+		</div>
 	);
 }
 export default withRole(ArtistPrivateProfilePage, ['ARTIST']);
 
-function Card({ title, icon, children }: { title: string; icon?: ReactNode; children: ReactNode }) {
+// ── Components ──────────────────────────────────────────────────
+
+function GlassCard({ className, children }: { className?: string; children: ReactNode }) {
 	return (
-		<section className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-4">
-			<header className="flex items-center gap-2 text-slate-900 font-semibold">
-				{icon}
-				<h2>{title}</h2>
-			</header>
+		<div className={`bg-white rounded-3xl border border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.04)] ${className ?? ''}`}>
 			{children}
-		</section>
-	);
-}
-
-function Field({ label, helper, children }: { label: string; helper?: string; children: ReactNode }) {
-	return (
-		<label className="space-y-1 text-sm text-slate-700 block">
-			<span className="font-medium text-slate-800">{label}</span>
-			{children}
-			{helper && <span className="text-xs text-slate-500">{helper}</span>}
-		</label>
-	);
-}
-
-
-function StatusPill({ status }: { status: 'ACTIVE' | 'PAUSED' }) {
-	const palette = status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200';
-	const label = status === 'ACTIVE' ? 'Activa' : 'Pausada';
-
-	return <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${palette}`}>{label}</span>;
-}
-
-
-function StatusLine({ label, value }: { label: string; value: string | number }) {
-	return (
-		<div className="flex items-center justify-between text-sm text-slate-700">
-			<span className="text-slate-500">{label}</span>
-			<span className="font-medium text-slate-900">{value}</span>
 		</div>
 	);
 }
 
-function formatCurrency(amount: number, currency: string) {
-	return new Intl.NumberFormat('es-ES', { style: 'currency', currency }).format(amount);
-}
-
-function formatShortDate(value: string) {
-	return new Date(value).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+function TabButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: ReactNode; label: string }) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className={`flex items-center gap-2 m-1 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap ${active
+				? 'bg-slate-900 text-white shadow-md'
+				: 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+				}`}
+		>
+			{icon} {label}
+		</button>
+	);
 }
