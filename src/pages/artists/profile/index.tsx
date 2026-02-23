@@ -107,6 +107,13 @@ function ArtistPrivateProfilePage() {
 		getArtistVideos(profileId).then((items) => setVideos(items ?? [])).catch(() => setVideos([]));
 	}, [profileId]);
 
+	useEffect(() => {
+		if (!user?.token) return;
+		getProfileImage(user.token)
+			.then((result) => setProfileImageUrl(result.url))
+			.catch(() => setProfileImageUrl(null));
+	}, [user?.token]);
+
 	if (meLoading || loadingProfile) {
 		return (
 			<div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center pb-24">
