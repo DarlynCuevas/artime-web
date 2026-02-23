@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Building2, ChevronRight, Euro, Globe, Loader2, Save } from 'lucide-react';
 import type { UserRole } from '@/types/user-role';
-import { updateFiscalData } from '@/services/settings/settings.service';
+import { getFiscalData, updateFiscalData } from '@/services/settings/settings.service';
 
 interface Props {
     token: string;
@@ -24,10 +24,36 @@ export function FiscalSection({ token, role, initialData = {} }: Props) {
     const [fiscalCountry, setFiscalCountry] = useState(initialData.fiscalCountry ?? 'España');
     const [iban, setIban] = useState(initialData.iban ?? '');
     const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const showBankFields = role === 'ARTIST' || role === 'VENUE';
+
+    useEffect(() => {
+        setLoading(true);
+        setError(null);
+        getFiscalData(token)
+            .then((data) => {
+                setFiscalName(data.fiscalName ?? '');
+                setTaxId(data.taxId ?? '');
+                setFiscalAddress(data.fiscalAddress ?? '');
+                setFiscalCountry(data.fiscalCountry ?? 'España');
+                setIban(data.iban ?? '');
+            })
+            .catch(() => {
+                // keep default/initial values
+            })
+            .finally(() => setLoading(false));
+    }, [token]);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-16">
+                <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+            </div>
+        );
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
