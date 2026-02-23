@@ -173,6 +173,12 @@ function VenueProfilePage() {
 			<div className="relative bg-slate-900 border-b border-white/10 shadow-2xl overflow-hidden pt-8 sm:pt-16 pb-[120px] transition-all duration-300 rounded-3xl">
 				<div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800" />
 				<div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
+				{profile.isVerified ? (
+					<VerificationBanner
+						variant="badge"
+						className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6"
+					/>
+				) : null}
 
 				<div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex flex-col md:flex-row items-center md:items-start gap-8">
@@ -253,12 +259,6 @@ function VenueProfilePage() {
 					</div>
 				</div>
 			</div>
-
-			{profile.isVerified ? (
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-20">
-					<VerificationBanner />
-				</div>
-			) : null}
 
 			{/* ── CUERPO (MAIN) ──────────────────────────────────────────────── */}
 			<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 -mt-[80px]">

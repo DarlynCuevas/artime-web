@@ -240,6 +240,12 @@ function PromoterPrivateProfilePage() {
         <div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-brand-amber rounded-full mix-blend-multiply filter blur-[128px] opacity-15 animate-pulse" />
         <div className="absolute -left-32 -bottom-32 w-96 h-96 bg-emerald-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-10" />
+        {profile.isVerified ? (
+          <VerificationBanner
+            variant="badge"
+            className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6"
+          />
+        ) : null}
 
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-12">
 
@@ -342,12 +348,6 @@ function PromoterPrivateProfilePage() {
           </div>
         </div>
       </div>
-
-      {profile.isVerified ? (
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-16 relative z-20">
-          <VerificationBanner />
-        </div>
-      ) : null}
 
       {/* ── CUERPO (MAIN) ──────────────────────────────────────────────── */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 -mt-10 relative z-10 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">

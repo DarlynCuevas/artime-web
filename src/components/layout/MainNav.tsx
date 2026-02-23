@@ -101,8 +101,6 @@ const navByRole: Record<
   },
   '': {
     main: [
-      { label: 'Explorar Salas', href: '/venues/discover', icon: Users },
-      { label: 'Explorar Artistas', href: '/artists/discover', icon: Sparkles },
     ],
     account: [{ label: 'Iniciar Sesión', href: '/login', icon: UserRound }],
   },

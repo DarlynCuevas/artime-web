@@ -68,6 +68,12 @@ export default function ManagerPublicProfilePage() {
         <div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-brand-amber rounded-full mix-blend-multiply filter blur-[128px] opacity-15 animate-pulse" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-10" />
+        {profile.isVerified ? (
+          <VerificationBanner
+            variant="badge"
+            className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6"
+          />
+        ) : null}
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-10 pb-10 space-y-6">
           <Link href="/" className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-white/70 hover:text-white">
             <ArrowLeft className="h-4 w-4" />
@@ -92,12 +98,6 @@ export default function ManagerPublicProfilePage() {
               Este manager representa artistas dentro del ecosistema ARTIME.
             </div>
           </section>
-
-          {profile.isVerified ? (
-            <div className="max-w-4xl">
-              <VerificationBanner />
-            </div>
-          ) : null}
         </div>
       </div>
     </div>

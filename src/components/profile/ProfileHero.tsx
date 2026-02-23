@@ -1,5 +1,6 @@
 import React, { ReactNode, useState } from 'react';
 import { MapPin, Music2, CheckCircle2 } from 'lucide-react';
+import { VerificationBanner } from '@/components/profile/VerificationBanner';
 
 interface ProfileHeroProps {
     name: string;
@@ -8,6 +9,7 @@ interface ProfileHeroProps {
     genres: string[];
     managerName?: string;
     avatarUrl: string;
+    isVerified?: boolean;
     actionElement?: ReactNode; // Espacio para el PricingCard o menú de acción
 }
 
@@ -18,6 +20,7 @@ export function ProfileHero({
     genres,
     managerName,
     avatarUrl,
+    isVerified = false,
     actionElement,
 }: ProfileHeroProps) {
     const [avatarFailed, setAvatarFailed] = useState(false);
@@ -28,6 +31,13 @@ export function ProfileHero({
             <div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
             <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand-amber rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse" />
             <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20" />
+
+            {isVerified ? (
+                <VerificationBanner
+                    variant="badge"
+                    className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6"
+                />
+            ) : null}
 
             {/* Contenido Hero */}
             <div className="relative h-full max-w-5xl mx-auto px-6 flex flex-col justify-center py-8">

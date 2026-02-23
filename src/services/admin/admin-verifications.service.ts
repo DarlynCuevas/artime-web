@@ -9,6 +9,10 @@ export type AdminVerificationItem = {
   reviewedAt?: string | null;
   rejectionReason?: string | null;
   documentPaths?: string[];
+  documents?: Array<{
+    path: string;
+    url: string | null;
+  }>;
   user?: {
     email?: string | null;
     displayName?: string | null;
@@ -45,4 +49,3 @@ export async function reviewAdminVerification(
     throw new Error('No se pudo actualizar la verificacion');
   }
 }
-

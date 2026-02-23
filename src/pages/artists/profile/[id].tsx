@@ -21,7 +21,6 @@ import { PricingCard } from '@/components/profile/PricingCard';
 import { GlassCard } from '@/components/profile/GlassCard';
 import { ManagerSidebarCard } from '@/components/profile/ManagerSidebarCard';
 import { AvailabilityCalendar } from '@/components/profile/AvailabilityCalendar';
-import { VerificationBanner } from '@/components/profile/VerificationBanner';
 
 type ArtistProfile = {
   id: string;
@@ -214,14 +213,9 @@ export default function ArtistProfilePage() {
           genres={artist.genres ?? []}
           managerName={artist.managerName ?? undefined}
           avatarUrl={profileImageUrl ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(artist.name)}&background=1e293b&color=fff&size=256`}
+          isVerified={Boolean(artist.isVerified)}
           actionElement={pricingCard}
         />
-
-        {artist.isVerified ? (
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 mt-4">
-            <VerificationBanner />
-          </div>
-        ) : null}
 
         {/* PricingCard móvil */}
         <div className="block lg:hidden max-w-5xl mx-auto px-4 pt-4">

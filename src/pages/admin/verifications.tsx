@@ -85,6 +85,10 @@ export default function AdminVerificationsPage() {
   }, [user?.token, authLoading, meLoading, effectiveIsAdmin, status, load, router, authWaitExpired]);
 
   const empty = useMemo(() => !loading && !error && items.length === 0, [loading, error, items.length]);
+  const selectedDocuments = useMemo(
+    () => (selected?.documents?.length ? selected.documents : (selected?.documentPaths ?? []).map((path) => ({ path, url: null }))),
+    [selected],
+  );
 
   const review = async (nextStatus: 'VERIFIED' | 'REJECTED') => {
     if (!user?.token || !selected) return;
@@ -187,10 +191,23 @@ export default function AdminVerificationsPage() {
 
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                   <p className="text-xs font-black uppercase tracking-widest text-slate-500">Documentos</p>
-                  {(selected.documentPaths ?? []).length ? (
+                  {selectedDocuments.length ? (
                     <ul className="mt-2 space-y-1">
-                      {(selected.documentPaths ?? []).map((path) => (
-                        <li key={path} className="text-xs text-slate-700 break-all">{path}</li>
+                      {selectedDocuments.map((doc) => (
+                        <li key={doc.path} className="text-xs text-slate-700 break-all">
+                          {doc.url ? (
+                            <a
+                              href={doc.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-slate-900 underline decoration-slate-300 underline-offset-2 hover:text-amber-700"
+                            >
+                              {doc.path}
+                            </a>
+                          ) : (
+                            doc.path
+                          )}
+                        </li>
                       ))}
                     </ul>
                   ) : (
