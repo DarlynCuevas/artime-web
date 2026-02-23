@@ -234,17 +234,34 @@ function ArtistBookingsPage() {
   }, [bookings]);
 
   const filteredBookings = useMemo(() => {
+    const rawQuery = query.trim();
+    // Si hay búsqueda activa, se busca globalmente en todos los bookings (independiente de la pestaña).
+    if (rawQuery) {
+      const q = normalizeSearchValue(rawQuery);
+      return bookings.filter((b) => {
+        const searchable = [
+          b.eventName,
+          b.venueName,
+          b.venueId,
+          b.city,
+          b.status,
+          b.id,
+          b.start_date ? new Date(b.start_date).toLocaleDateString('es-ES') : '',
+        ]
+          .filter(Boolean)
+          .map((value) => normalizeSearchValue(String(value)))
+          .join(' ');
+
+        return searchable.includes(q);
+      });
+    }
+
     const tab = TABS.find((t) => t.key === activeTab);
     const byTab = (!tab || tab.statuses.length === 0)
       ? bookings
       : bookings.filter((b) => (tab.statuses as readonly string[]).includes(b.status));
 
-    if (!query.trim()) return byTab;
-    const q = query.toLowerCase();
-    return byTab.filter((b) => {
-      const name = b.eventName || b.venueName || b.venueId || '';
-      return name.toLowerCase().includes(q) || (b.city ?? '').toLowerCase().includes(q);
-    });
+    return byTab;
   }, [activeTab, bookings, query]);
 
   // ── Loading / Error ────────────────────────────────────────────────────────
@@ -287,7 +304,7 @@ function ArtistBookingsPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 w-full md:w-auto md:min-w-[360px]">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full md:w-auto md:min-w-[360px]">
               <KpiPill label="Total" value={stats.total} icon={TrendingUp} colorClass="text-blue-400" />
               <KpiPill label="Negociando" value={stats.negotiating} icon={Clock} colorClass="text-amber-400" />
               <KpiPill label="Confirmados" value={stats.confirmed} icon={CheckCircle} colorClass="text-emerald-400" />
@@ -349,3 +366,10 @@ function ArtistBookingsPage() {
 }
 
 export default withRole(ArtistBookingsPage, ['ARTIST']);
+
+function normalizeSearchValue(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '');
+}

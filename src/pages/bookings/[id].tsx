@@ -386,7 +386,7 @@ function BookingDetailPage() {
           </div>
 
           {/* KPI Pills — 3 métricas sin redundar el status */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 min-[460px]:grid-cols-3 gap-3">
           <KpiPill
             label="Importe"
             value={formatCurrency(agreedAmount, bookingCurrency)}
@@ -410,7 +410,7 @@ function BookingDetailPage() {
 
             {/* Panel Acciones */}
             <div className="bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.04)] overflow-hidden">
-              <div className="px-6 py-5 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
+              <div className="px-4 sm:px-6 py-5 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
                     <AlertTriangle className="w-4 h-4 text-amber-600" />
@@ -418,7 +418,7 @@ function BookingDetailPage() {
                   <h2 className="font-black text-slate-900 text-xs uppercase tracking-widest">Acción requerida</h2>
                 </div>
               </div>
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 <div className="bg-amber-50/50 border border-amber-100/50 rounded-2xl p-4">
                   <p className="text-sm text-slate-700 leading-relaxed font-medium">{actionTurnMessage}</p>
                 </div>
@@ -737,10 +737,10 @@ function NegotiationHistory({
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="px-4 sm:px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
           <MessageSquare className="w-4 h-4 text-slate-500" />
-          <h2 className="font-bold text-slate-900 text-sm">Historial de negociación</h2>
+          <h2 className="font-bold text-slate-900 text-sm truncate">Historial de negociación</h2>
           {timelineEvents.length > 0 && (
             <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md uppercase tracking-wider">{timelineEvents.length} mensaje{timelineEvents.length !== 1 ? 's' : ''}</span>
           )}
@@ -764,7 +764,7 @@ function NegotiationHistory({
           </button>
         )}
       </div>
-      <div className="p-5">
+      <div className="p-4 sm:p-5">
         {negotiationLoading ? (
           <p className="text-sm text-slate-500">Cargando historial…</p>
         ) : timelineEvents.length === 0 ? (
@@ -813,7 +813,7 @@ function NegotiationHistory({
                         </div>
                       )}
                       {event.note && (
-                        <p className="text-sm leading-relaxed text-slate-600 italic">
+                        <p className="text-sm leading-relaxed text-slate-600 italic break-words whitespace-pre-wrap">
                           "{event.note}"
                         </p>
                       )}

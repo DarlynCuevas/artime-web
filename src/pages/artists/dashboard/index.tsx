@@ -40,7 +40,13 @@ function ArtistDashboardPage() {
   const kpis = [
     { label: 'Bookings activos', value: metrics.activeBookingsCount, icon: <Ticket className="w-4 h-4" />, accent: false },
     { label: 'Próximos shows', value: metrics.upcomingBookingsCount, icon: <Calendar className="w-4 h-4" />, accent: false },
-    { label: 'Ingresos confirmados', value: formatCurrencySafe(metrics.confirmedIncome), icon: <Coins className="w-4 h-4" />, accent: true },
+    {
+      label: 'Ingresos confirmados',
+      value: formatCurrencySafe(metrics.confirmedIncome),
+      icon: <Coins className="w-4 h-4" />,
+      accent: true,
+      trend: formatIncomeTrend(metrics.confirmedIncomeMoMPercent),
+    },
   ];
 
   return (
@@ -75,7 +81,7 @@ function ArtistDashboardPage() {
           </div>
 
           {/* KPI Pills */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 min-[460px]:grid-cols-2 sm:grid-cols-3 gap-3">
             {kpis.map((kpi) => (
               <div key={kpi.label} className={`rounded-2xl px-4 py-3 border ${kpi.accent
                 ? 'bg-amber-500/20 border-amber-400/30'
@@ -88,6 +94,11 @@ function ArtistDashboardPage() {
                 <p className={`text-xl font-black tabular-nums ${kpi.accent ? 'text-amber-300' : 'text-white'}`}>
                   {kpi.value}
                 </p>
+                {'trend' in kpi && kpi.trend ? (
+                  <p className={`mt-1 text-[11px] font-bold ${kpi.trend.positive ? 'text-emerald-200' : 'text-rose-200'}`}>
+                    {kpi.trend.label} vs mes anterior
+                  </p>
+                ) : null}
               </div>
             ))}
           </div>
@@ -274,4 +285,14 @@ function formatDate(value: string) {
 function formatCurrencySafe(amount?: number | null, currency: string = 'EUR') {
   if (amount === null || amount === undefined) return '—';
   return formatCurrency(amount, currency);
+}
+
+function formatIncomeTrend(percent: number | null) {
+  if (percent === null || Number.isNaN(percent)) return null;
+  const rounded = Math.round(percent);
+  const sign = rounded > 0 ? '+' : '';
+  return {
+    label: `${sign}${rounded}%`,
+    positive: rounded >= 0,
+  };
 }

@@ -7,6 +7,7 @@ type ArtistDashboard = {
     upcomingBookingsCount: number;
     expectedIncome: number;
     confirmedIncome: number;
+    confirmedIncomeMoMPercent: number | null;
     pendingActionsCount: number;
     forecastIncome: number;
     occupancyRate: number;

@@ -117,7 +117,7 @@ export function NegotiationPanel({
   return (
     <section className="mt-6 space-y-5">
       {(canWrite || canAcceptOrReject) && (
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-6 bg-amber-500 rounded-full" />
             <h2 className="text-base font-black text-slate-900 uppercase tracking-widest italic">Negociación</h2>
@@ -136,7 +136,7 @@ export function NegotiationPanel({
       </section>
 
       {canWrite && (
-        <section className="space-y-5 bg-slate-50/50 border border-slate-100 rounded-2xl p-5 backdrop-blur-sm">
+        <section className="space-y-5 bg-slate-50/50 border border-slate-100 rounded-2xl p-4 sm:p-5 backdrop-blur-sm">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Tu mensaje</label>
             <textarea
@@ -265,7 +265,7 @@ export function NegotiationPanel({
                 onBookingUpdated();
                 refreshContract();
               }}
-              className="h-10 px-6 inline-flex items-center justify-center rounded-xl bg-emerald-600 text-[11px] font-black text-white uppercase tracking-widest shadow-lg shadow-emerald-600/10 hover:bg-emerald-700 hover:shadow-xl transition-all duration-300"
+              className="h-10 w-full sm:w-auto px-6 inline-flex items-center justify-center rounded-xl bg-emerald-600 text-[11px] font-black text-white uppercase tracking-widest shadow-lg shadow-emerald-600/10 hover:bg-emerald-700 hover:shadow-xl transition-all duration-300"
             >
               Aceptar
               </button>
@@ -277,7 +277,7 @@ export function NegotiationPanel({
                 await reject(bookingStatus);
                 onBookingUpdated();
               }}
-              className="h-10 px-6 inline-flex items-center justify-center rounded-xl bg-white border border-slate-200 text-[11px] font-black text-slate-700 uppercase tracking-widest hover:bg-slate-50 transition-all duration-300"
+              className="h-10 w-full sm:w-auto px-6 inline-flex items-center justify-center rounded-xl bg-white border border-slate-200 text-[11px] font-black text-slate-700 uppercase tracking-widest hover:bg-slate-50 transition-all duration-300"
             >
               Rechazar
               </button>
