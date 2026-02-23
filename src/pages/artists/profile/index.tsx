@@ -92,6 +92,7 @@ function ArtistPrivateProfilePage() {
 					isVerified: Boolean(data.isVerified),
 					bookingConditions: normalizeArtistBookingConditions(data.bookingConditions ?? null),
 				});
+				setProfileImageUrl(data.profileImageUrl ?? null);
 			})
 			.catch((err) => setError(err.message))
 			.finally(() => setLoadingProfile(false));

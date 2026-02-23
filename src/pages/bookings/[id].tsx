@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Calendar, MapPin, Clock, CreditCard, FileText, AlertTriangle, MessageSquare, HandCoins, CheckCircle2, XCircle, Music2, Flag, Ban, Download, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Calendar, MapPin, Clock, CreditCard, FileText, AlertTriangle, MessageSquare, HandCoins, CheckCircle2, XCircle, Music2, Flag, Ban, Download, ChevronRight, ChevronDown, ChevronUp, FileSignature } from 'lucide-react';
 
 import { CancelBookingModal } from '@/components/bookings/CancelBookingModal';
 import { NegotiationPanel } from '@/components/bookings/NegotiationPanel';

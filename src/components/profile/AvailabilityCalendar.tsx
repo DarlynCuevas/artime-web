@@ -133,7 +133,13 @@ export function AvailabilityCalendar({
                     <div className="grid grid-cols-7 gap-2">
                         {availability.map((day) => {
                             const isBlocked = blockedDates.has(day.date);
-                            const status = isBlocked ? 'UNAVAILABLE' : day.status;
+                            const status = isBlocked
+                                ? 'BLOCKED'
+                                : day.status === 'BOOKED'
+                                    ? 'BOOKED'
+                                    : day.status === 'UNAVAILABLE'
+                                        ? 'UNAVAILABLE'
+                                        : 'AVAILABLE';
                             const isSelected = selectedDate === day.date;
 
                             // Determinar si el día puede ser interactuado
@@ -141,28 +147,36 @@ export function AvailabilityCalendar({
                             const isClickable = interactiveMode ? true : isAvailableClickable;
 
                             let cellClass =
-                                'aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all duration-200 ';
+                                'relative aspect-square rounded-xl border text-sm font-semibold transition-all duration-200 ';
 
-                            if (status === 'UNAVAILABLE') {
-                                // Día no disponible — transparente, sin fondo
-                                cellClass += 'text-slate-300 bg-transparent ';
-                                cellClass += isClickable ? 'hover:bg-slate-100 border border-transparent hover:border-slate-200 cursor-pointer ' : 'cursor-not-allowed ';
-                            } else if (status === 'BOOKED') {
-                                // Ocupado — tachado, fondo punteado
-                                cellClass += 'bg-slate-100/50 text-slate-400 line-through border border-dashed border-slate-200 ';
-                                cellClass += isClickable ? 'hover:bg-slate-200 cursor-pointer ' : 'cursor-not-allowed ';
-                            } else if (isAvailableClickable || interactiveMode) {
-                                // Disponible + clicable
-                                cellClass += 'text-slate-700 bg-slate-50 hover:bg-amber-50 hover:text-amber-700 hover:shadow-sm hover:scale-105 border border-slate-100 hover:border-amber-200 cursor-pointer ';
+                            if (status === 'BOOKED') {
+                                cellClass += 'bg-white border-slate-300 text-slate-900 ';
+                            } else if (status === 'BLOCKED') {
+                                cellClass += 'bg-slate-100/70 border-slate-300 text-slate-700 ';
+                            } else if (status === 'UNAVAILABLE') {
+                                cellClass += 'bg-slate-50 border-slate-200 text-slate-400 ';
                             } else {
-                                // Disponible pero readOnly y NO interactivo
-                                cellClass += 'text-slate-700 bg-slate-50 border border-slate-100 cursor-default ';
+                                cellClass += 'bg-white border-slate-200 text-slate-800 ';
                             }
 
-                            // Si está seleccionado, sobreescribir estilos para destacarlo (siempre que no esté ocupado/bloqueado en modo NO interactivo)
-                            if (isSelected) {
-                                cellClass = 'aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all duration-200 bg-amber-500 text-amber-950 shadow-md scale-105 border border-amber-400 cursor-pointer';
+                            if (isClickable) {
+                                cellClass += 'cursor-pointer hover:border-slate-400 ';
+                            } else {
+                                cellClass += 'cursor-not-allowed ';
                             }
+
+                            if (isSelected) {
+                                cellClass += ' ring-2 ring-slate-900/20';
+                            }
+
+                            const tooltipText =
+                                status === 'BLOCKED'
+                                    ? 'Bloqueado por el artista'
+                                    : status === 'BOOKED'
+                                        ? 'Booking confirmado'
+                                        : status === 'UNAVAILABLE'
+                                            ? 'No disponible'
+                                            : 'Disponible';
 
                             return (
                                 <button
@@ -170,9 +184,20 @@ export function AvailabilityCalendar({
                                     disabled={!isClickable}
                                     className={cellClass}
                                     onClick={() => { if (isClickable) handleDayClick(day.date); }}
-                                    aria-label={`${day.date}: ${status}`}
+                                    aria-label={`${day.date}: ${tooltipText}`}
+                                    title={tooltipText}
                                 >
-                                    {day.date.slice(8, 10)}
+                                    {status === 'BLOCKED' && (
+                                        <span className="absolute left-1.5 top-2 bottom-2 w-0.5 rounded-full bg-slate-500/80" aria-hidden="true" />
+                                    )}
+
+                                    <span className="absolute inset-0 flex items-center justify-center">
+                                        {day.date.slice(8, 10)}
+                                    </span>
+
+                                    {status === 'BOOKED' && (
+                                        <span className="absolute bottom-2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-slate-900" aria-hidden="true" />
+                                    )}
                                 </button>
                             );
                         })}
@@ -181,16 +206,20 @@ export function AvailabilityCalendar({
                     {/* Leyenda */}
                     <div className="mt-6 flex items-center gap-4 text-xs font-medium text-slate-500 border-t border-slate-100 pt-4">
                         <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded bg-slate-50 border border-slate-100" />
-                            Libre
+                            <div className="w-3 h-3 rounded bg-white border border-slate-200" />
+                            Disponible
                         </div>
                         <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded bg-slate-100 border border-dashed border-slate-200" />
-                            Ocupado
+                            <div className="w-3 h-3 rounded bg-white border border-slate-300 relative">
+                                <span className="absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-slate-800" />
+                            </div>
+                            Booking
                         </div>
                         <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 rounded bg-amber-500" />
-                            Seleccionado
+                            <div className="relative w-3 h-3 rounded bg-slate-100 border border-slate-300">
+                                <span className="absolute left-0 top-0 h-full w-0.5 rounded-full bg-slate-600" />
+                            </div>
+                            Bloqueado
                         </div>
                     </div>
                 </>
