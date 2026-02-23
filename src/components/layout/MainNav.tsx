@@ -281,6 +281,28 @@ export function MainNav({ children }: { children: ReactNode }) {
       });
     }
 
+    if (latest.type === 'ARTIST_CALL_CREATED') {
+      const callId = latest.payload?.callId;
+      const query = new URLSearchParams();
+      if (latest.payload?.city) query.set('city', latest.payload.city);
+      if (latest.payload?.date) query.set('date', latest.payload.date);
+      if (latest.payload?.venueName) query.set('venueName', latest.payload.venueName);
+      const callHref = callId ? `/artists/calls/${callId}${query.toString() ? `?${query.toString()}` : ''}` : '/artists/calls';
+      toast({
+        title: 'Nueva convocatoria',
+        description: `La sala ${latest.payload?.venueName ?? 'te ha enviado'} una convocatoria${latest.payload?.date ? ` para el ${latest.payload.date}` : ''}.`,
+        href: callHref,
+      });
+    }
+
+    if (latest.type === 'ARTIST_CALL_ACCEPTED') {
+      toast({
+        title: 'Convocatoria aceptada',
+        description: `${latest.payload?.artistName ?? 'Un artista'} ha aceptado tu convocatoria${latest.payload?.date ? ` para el ${latest.payload.date}` : ''}.`,
+        href: '/venues/bookings',
+      });
+    }
+
     if (latest.type === 'VENUE_ARTIST_SUGGESTION_CREATED') {
       toast({
         title: 'Nueva sugerencia recibida',
@@ -628,7 +650,6 @@ export function MainNav({ children }: { children: ReactNode }) {
                                     const query = new URLSearchParams();
                                     if (n.payload?.city) query.set('city', n.payload.city);
                                     if (n.payload?.date) query.set('date', n.payload.date);
-                                    if (n.payload?.offeredMaxPrice) query.set('price', String(n.payload.offeredMaxPrice));
                                     if (n.payload?.venueName) query.set('venueName', n.payload.venueName);
                                     router.push(`/artists/calls/${callId}?${query.toString()}`);
                                     setShowDropdown(false);
@@ -679,6 +700,12 @@ export function MainNav({ children }: { children: ReactNode }) {
                                     const bookingId = n.payload?.bookingId ?? n.payload?.booking_id;
                                     const target = getBookingTarget({ role, bookingId });
                                     router.push(target);
+                                    setShowDropdown(false);
+                                    return;
+                                  }
+
+                                  if (n.type === 'ARTIST_CALL_ACCEPTED') {
+                                    router.push('/venues/bookings');
                                     setShowDropdown(false);
                                     return;
                                   }
@@ -805,6 +832,7 @@ const NOTIFICATION_CONFIG: Record<string, { icon: React.ReactNode; color: string
   EVENT_INVITATION_ACCEPTED: { icon: <BadgeCheck className="h-4 w-4" />, color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Invitación aceptada' },
   EVENT_INVITATION_DECLINED: { icon: <AlertCircle className="h-4 w-4" />, color: 'text-amber-600', bg: 'bg-amber-100', label: 'Invitación rechazada' },
   ARTIST_CALL_CREATED: { icon: <Sparkles className="h-4 w-4" />, color: 'text-amber-600', bg: 'bg-amber-100', label: 'Nueva convocatoria' },
+  ARTIST_CALL_ACCEPTED: { icon: <BadgeCheck className="h-4 w-4" />, color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Convocatoria aceptada' },
   REPRESENTATION_REQUEST_CREATED: { icon: <Users className="h-4 w-4" />, color: 'text-violet-600', bg: 'bg-violet-100', label: 'Solicitud de representación' },
   REPRESENTATION_REQUEST_RESOLVED: { icon: <BadgeCheck className="h-4 w-4" />, color: 'text-slate-600', bg: 'bg-slate-100', label: 'Respuesta a solicitud' },
   VENUE_ARTIST_SUGGESTION_CREATED: { icon: <Inbox className="h-4 w-4" />, color: 'text-amber-700', bg: 'bg-amber-100', label: 'Nueva sugerencia' },
@@ -848,6 +876,7 @@ function NotificationItem({ notification, onClick }: { notification: ArtistNotif
       case 'EVENT_INVITATION_ACCEPTED': return `${p.artistName ?? 'Un artista'} ha aceptado la invitación`;
       case 'EVENT_INVITATION_DECLINED': return `${p.artistName ?? 'Un artista'} ha rechazado la invitación`;
       case 'ARTIST_CALL_CREATED': return `Nueva convocatoria${p.venueName ? ` de ${p.venueName}` : ''}`;
+      case 'ARTIST_CALL_ACCEPTED': return `${p.artistName ?? 'Un artista'} aceptó tu convocatoria`;
       case 'REPRESENTATION_REQUEST_CREATED': return `${p.managerName ?? 'Un manager'} quiere representarte`;
       case 'REPRESENTATION_REQUEST_RESOLVED': return `Respuesta a tu solicitud: ${p.result ?? ''}`.trim();
       case 'VENUE_ARTIST_SUGGESTION_CREATED': return `${p.managerName ?? 'Un manager'} sugiere a ${p.artistName ?? 'un artista'}`;
@@ -864,8 +893,10 @@ function NotificationItem({ notification, onClick }: { notification: ArtistNotif
     if (p.date) parts.push(p.date);
     const minP = p.offeredMinPrice;
     const maxP = p.offeredMaxPrice;
-    if (minP && maxP) parts.push(`${formatCurrency(minP, 'EUR')} – ${formatCurrency(maxP, 'EUR')}`);
-    else if (maxP) parts.push(`Hasta ${formatCurrency(maxP, 'EUR')}`);
+    if (notification.type !== 'ARTIST_CALL_CREATED') {
+      if (minP && maxP) parts.push(`${formatCurrency(minP, 'EUR')} – ${formatCurrency(maxP, 'EUR')}`);
+      else if (maxP) parts.push(`Hasta ${formatCurrency(maxP, 'EUR')}`);
+    }
     if (p.commissionPercentage) parts.push(`Comisión: ${p.commissionPercentage}%`);
     return parts.join(' · ');
   })();

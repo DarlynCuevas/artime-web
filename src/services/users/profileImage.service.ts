@@ -1,4 +1,5 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+type UserRole = 'ARTIST' | 'VENUE' | 'PROMOTER' | 'MANAGER' | 'ADMIN';
 
 export async function getProfileImage(token: string): Promise<{ url: string | null }> {
   const res = await fetch(`${API_BASE_URL}/users/profile-image`, {
@@ -15,9 +16,16 @@ export async function getProfileImage(token: string): Promise<{ url: string | nu
   return res.json();
 }
 
-export async function uploadProfileImage(file: File, token: string): Promise<{ ok: boolean; path?: string }> {
+export async function uploadProfileImage(
+  file: File,
+  token: string,
+  role?: UserRole,
+): Promise<{ ok: boolean; path?: string }> {
   const formData = new FormData();
   formData.append('file', file);
+  if (role) {
+    formData.append('role', role);
+  }
 
   const res = await fetch(`${API_BASE_URL}/users/profile-image`, {
     method: 'POST',
@@ -28,7 +36,8 @@ export async function uploadProfileImage(file: File, token: string): Promise<{ o
   });
 
   if (!res.ok) {
-    throw new Error('No se pudo subir la imagen');
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data?.message || 'No se pudo subir la imagen');
   }
 
   return res.json();

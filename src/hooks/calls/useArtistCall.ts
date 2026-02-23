@@ -107,10 +107,7 @@ export function useArtistCall({ callId, artistId, token, initialCall }: Params) 
 					.single();
 
 				if (cancelled) return;
-				if (supaError && supaError.code !== 'PGRST116') {
-					// ignore not found; code PGRST116 is single() no rows
-					setError('No se pudo cargar tu respuesta');
-				}
+				// Si no existe respuesta aún o no es accesible por RLS, la tratamos como no respondida.
 				if (data?.response === 'INTERESTED') {
 					setResponseStatus('INTERESTED');
 				} else if (data?.response === 'NOT_INTERESTED') {

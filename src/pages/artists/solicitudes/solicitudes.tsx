@@ -3,7 +3,6 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/hooks/auth/useMe';
 import { useArtistNotifications } from '@/hooks/artists/useArtistNotifications';
 import type { ArtistNotification } from '@/services/notifications/artist-notifications.service';
-import { formatCurrency } from '@/lib/utils';
 import { resolveRepresentationRequest } from '@/services/representations/representations.service';
 import { ConfirmActionModal } from '@/components/representations/ConfirmActionModal';
 
@@ -78,14 +77,6 @@ export default function ArtistSolicitudesPage() {
             </div>
             <div style={{ fontSize: 13, color: '#333' }}>
               {n.payload?.date ?? ''}
-              {(() => {
-                const minP = n.payload?.offeredMinPrice;
-                const maxP = n.payload?.offeredMaxPrice;
-                if (minP && maxP) return ` · Presupuesto: ${formatCurrency(minP, 'EUR')} - ${formatCurrency(maxP, 'EUR')}`;
-                if (maxP) return ` · Presupuesto hasta ${formatCurrency(maxP, 'EUR')}`;
-                if (minP) return ` · Presupuesto desde ${formatCurrency(minP, 'EUR')}`;
-                return '';
-              })()}
             </div>
             {n.type === 'REPRESENTATION_REQUEST_CREATED' && (
               <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>

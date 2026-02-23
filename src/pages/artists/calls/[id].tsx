@@ -20,7 +20,6 @@ export default function ArtistCallDetailPage() {
 			venueName: router.query.venueName as string | undefined,
 			city: router.query.city as string | undefined,
 			date: router.query.date as string | undefined,
-			offeredMaxPrice: router.query.price ? Number(router.query.price) : undefined,
 		}),
 		[router.query],
 	);

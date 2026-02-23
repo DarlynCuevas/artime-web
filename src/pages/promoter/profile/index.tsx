@@ -162,7 +162,7 @@ function PromoterPrivateProfilePage() {
     setUploadingImage(true);
     setError(null);
     try {
-      await uploadProfileImage(file, user.token);
+      await uploadProfileImage(file, user.token, 'PROMOTER');
       const refreshed = await getProfileImage(user.token);
       setProfileImageUrl(refreshed.url);
     } catch (err: any) {

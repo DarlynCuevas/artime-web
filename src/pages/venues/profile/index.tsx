@@ -1,10 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Camera, MapPin, Building2, Save, Info, Users, Contact, Globe2, Loader2, Link2, Mail, Phone, Library, Headphones } from 'lucide-react';
 
 import { withRole } from '@/components/auth/withRole';
 import { useMe } from '@/hooks/auth/useMe';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { getMyVenueProfile, updateMyVenueProfile } from '@/services/venues/venues.service';
+import { getProfileImage, uploadProfileImage } from '@/services/users/profileImage.service';
 import { VerificationBanner } from '@/components/profile/VerificationBanner';
 
 type EditableVenueProfile = {
@@ -35,6 +36,8 @@ function VenueProfilePage() {
 	const [loadingProfile, setLoadingProfile] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [successMsg, setSuccessMsg] = useState<string | null>(null);
+	const [uploadingImage, setUploadingImage] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
 	// --- CARGA DE DATOS ---
 	useEffect(() => {
@@ -66,6 +69,17 @@ function VenueProfilePage() {
 			})
 			.catch((err) => setError(err.message))
 			.finally(() => setLoadingProfile(false));
+	}, [user?.token]);
+
+	useEffect(() => {
+		if (!user?.token) return;
+		getProfileImage(user.token)
+			.then((result) => {
+				setProfile((prev) => (prev ? { ...prev, profileImageUrl: result.url } : prev));
+			})
+			.catch(() => {
+				// no-op: si falla, mantenemos fallback visual.
+			});
 	}, [user?.token]);
 
 	// --- HANDLERS ---
@@ -202,12 +216,32 @@ function VenueProfilePage() {
 								{/* Overlay Hover para Editar Avatar */}
 								<div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-2 backdrop-blur-sm">
 									<div className="h-10 w-10 bg-white/10 rounded-full flex items-center justify-center">
-										<Camera className="w-5 h-5 text-white" />
+										{uploadingImage ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Camera className="w-5 h-5 text-white" />}
 									</div>
-									<span className="text-xs font-semibold text-white tracking-wide">Cambiar Foto</span>
+									<span className="text-xs font-semibold text-white tracking-wide">{uploadingImage ? 'Subiendo...' : 'Cambiar Foto'}</span>
 								</div>
-								{/* Input oculto real (TODO: Integración futura) */}
-								<input type="file" className="hidden" accept="image/*" />
+								<input
+									ref={fileInputRef}
+									type="file"
+									className="hidden"
+									accept="image/*"
+									onChange={async (e) => {
+										const file = e.target.files?.[0];
+										if (!file || !user?.token) return;
+										setUploadingImage(true);
+										setError(null);
+										try {
+											await uploadProfileImage(file, user.token, 'VENUE');
+											const refreshed = await getProfileImage(user.token);
+											setProfile((prev) => (prev ? { ...prev, profileImageUrl: refreshed.url } : prev));
+										} catch (err) {
+											setError(err instanceof Error ? err.message : 'No se pudo subir la imagen');
+										} finally {
+											setUploadingImage(false);
+											if (fileInputRef.current) fileInputRef.current.value = '';
+										}
+									}}
+								/>
 							</label>
 							<div className="absolute -inset-1 bg-amber-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 						</div>

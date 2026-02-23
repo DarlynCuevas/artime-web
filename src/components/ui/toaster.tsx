@@ -7,7 +7,7 @@ export function Toaster() {
   const router = useRouter();
 
   return (
-    <div className="fixed left-0 right-0 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-[100] flex w-full flex-col gap-2 px-4 sm:left-auto sm:right-4 sm:top-4 sm:bottom-auto sm:max-w-[380px] sm:px-0">
+    <div className="fixed left-0 right-0 bottom-[calc(env(safe-area-inset-bottom)+5rem)] z-[100] flex w-full flex-col gap-2 px-4 sm:left-auto sm:right-4 sm:top-4 sm:bottom-auto sm:max-w-[400px] sm:px-0">
       {toasts.map(({ id, title, description, variant, href }) => (
         <div
           key={id}
@@ -27,12 +27,15 @@ export function Toaster() {
           }}
           role="button"
           tabIndex={0}
-          className={`group relative w-full cursor-pointer select-none rounded-2xl border px-4 py-3 text-left shadow-[0_20px_50px_rgba(15,23,42,0.10)] backdrop-blur-xl ring-1 ring-slate-900/5 transition-all animate-fade-in ${
+          className={`group relative w-full cursor-pointer select-none overflow-hidden rounded-2xl border px-4 py-3 text-left shadow-[0_20px_50px_rgba(15,23,42,0.12)] backdrop-blur-xl ring-1 ring-slate-900/5 transition-all animate-fade-in ${
             variant === 'destructive'
               ? 'border-rose-200/70 bg-rose-50/90 text-rose-950'
-              : 'border-slate-200/70 bg-white/90 text-slate-900'
+              : 'border-slate-200/70 bg-white/95 text-slate-900'
           }`}
         >
+          <div className={`pointer-events-none absolute inset-x-0 top-0 h-[2px] ${
+            variant === 'destructive' ? 'bg-rose-400/80' : 'bg-gradient-to-r from-amber-300 via-amber-400 to-amber-300'
+          }`} />
           <div className="flex items-start gap-3 pr-9">
             <div
               className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${

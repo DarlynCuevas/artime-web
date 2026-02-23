@@ -4,6 +4,25 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes contract-sign-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.0), inset 0 0 0 0 rgba(245, 158, 11, 0.0);
+    border-color: rgba(251, 191, 36, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.16), 0 0 18px rgba(245, 158, 11, 0.16), inset 0 0 0 1px rgba(245, 158, 11, 0.14);
+    border-color: rgba(245, 158, 11, 0.85);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.0), inset 0 0 0 0 rgba(245, 158, 11, 0.0);
+    border-color: rgba(251, 191, 36, 0.6);
+  }
+}
+
+.contract-sign-cta {
+  animation: contract-sign-glow 4.2s ease-in-out infinite;
+}
+
 /* ARTIME Design System - Professional B2B Artistic Hiring Platform
   Visual tone: Quiet authority - the system leads, but doesn't intimidate
   All colors in HSL format */

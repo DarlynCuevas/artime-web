@@ -239,7 +239,7 @@ function ArtistPrivateProfilePage() {
 									if (!file || !user?.token) return;
 									setUploadingImage(true);
 									try {
-										await uploadProfileImage(file, user.token);
+										await uploadProfileImage(file, user.token, 'ARTIST');
 										const refreshed = await getProfileImage(user.token);
 										setProfileImageUrl(refreshed.url);
 									} finally {

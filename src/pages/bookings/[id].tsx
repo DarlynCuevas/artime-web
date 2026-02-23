@@ -244,6 +244,8 @@ function BookingDetailPage() {
     Boolean(contract) &&
     contract?.status === 'DRAFT' &&
     (role === 'ARTIST' || role === 'MANAGER');
+  const canShowSignActionInRequiredPanel =
+    booking.status === 'ACCEPTED' && canSignContract;
 
   const canCancelBooking =
     booking.status !== 'CANCELLED' && booking.status !== 'CANCELLED_PENDING_REVIEW';
@@ -420,6 +422,15 @@ function BookingDetailPage() {
                 <div className="bg-amber-50/50 border border-amber-100/50 rounded-2xl p-4">
                   <p className="text-sm text-slate-700 leading-relaxed font-medium">{actionTurnMessage}</p>
                 </div>
+                {canShowSignActionInRequiredPanel && (
+                  <button
+                    type="button"
+                    onClick={() => setShowSignContractModal(true)}
+                    className="contract-sign-cta h-11 w-full sm:w-auto px-6 rounded-xl border border-amber-400 text-amber-700 hover:bg-amber-50 font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 text-center"
+                  >
+                    <FileSignature className="w-4 h-4" /> Firmar contrato
+                  </button>
+                )}
                 {booking.status === 'ACCEPTED' && canCancelBooking && (
                   <button
                     type="button"
@@ -577,7 +588,6 @@ function BookingDetailPage() {
                 booking={booking}
                 contract={contract}
                 hasContract={hasContract}
-                canSignContract={canSignContract}
                 canDownloadContract={canDownloadContract}
                 paymentSummary={paymentSummary}
                 bookingCurrency={bookingCurrency}
@@ -588,7 +598,6 @@ function BookingDetailPage() {
                 counterpartyLabel={counterpartyLabel}
                 promoterId={promoterId}
                 role={role as string}
-                setShowSignContractModal={setShowSignContractModal}
                 user={user}
               />
             </div>
@@ -600,7 +609,6 @@ function BookingDetailPage() {
               booking={booking}
               contract={contract}
               hasContract={hasContract}
-              canSignContract={canSignContract}
               canDownloadContract={canDownloadContract}
               paymentSummary={paymentSummary}
               bookingCurrency={bookingCurrency}
@@ -611,7 +619,6 @@ function BookingDetailPage() {
               counterpartyLabel={counterpartyLabel}
               promoterId={promoterId}
               role={role as string}
-              setShowSignContractModal={setShowSignContractModal}
               user={user}
             />
           </aside>
@@ -826,19 +833,18 @@ function NegotiationHistory({
 }
 
 function BookingSidebar({
-  booking, contract, hasContract, canSignContract, canDownloadContract,
+  booking, contract, hasContract, canDownloadContract,
   paymentSummary, bookingCurrency, eventDate, venueName, venueCity,
   counterpartyHref, counterpartyLabel, promoterId, role,
-  setShowSignContractModal, user,
+  user,
 }: {
   booking: any; contract: any; hasContract: boolean;
-  canSignContract: boolean; canDownloadContract: boolean;
+  canDownloadContract: boolean;
   paymentSummary: { paidAmount: number; totalAmount: number; percent: number } | null;
   bookingCurrency: string; eventDate: string | null | undefined;
   venueName: string; venueCity: string | null;
   counterpartyHref: string | null; counterpartyLabel: string;
   promoterId: string | null; role: string;
-  setShowSignContractModal: (v: boolean) => void;
   user: any;
 }) {
   const [isEventOpen, setIsEventOpen] = useState(false);
@@ -858,14 +864,6 @@ function BookingSidebar({
             <span className={`w-2 h-2 rounded-full ${contract?.status === 'SIGNED' ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
             <p className="text-sm text-slate-600">{hasContract ? contractStatusLabel : 'Aún no generado'}</p>
           </div>
-          {canSignContract && (
-            <button
-              onClick={() => setShowSignContractModal(true)}
-              className="w-full h-10 rounded-xl border border-amber-400 text-amber-700 hover:bg-amber-50 font-bold text-sm transition-all duration-200"
-            >
-              Firmar contrato
-            </button>
-          )}
           {canDownloadContract && (
             <button
               type="button"
