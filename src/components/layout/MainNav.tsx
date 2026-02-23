@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import {
   AlertCircle,
+  Shield,
   BadgeCheck,
   Building2,
   Bell,
@@ -109,7 +110,7 @@ const navByRole: Record<
 
 export function MainNav({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const { role, loading, profileName } = useMe();
+  const { role, loading, profileName, isAdmin } = useMe();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
@@ -128,11 +129,14 @@ export function MainNav({ children }: { children: ReactNode }) {
   const navSections = useMemo(() => navByRole[role ?? ''], [role]);
   const navSectionsWithProfile = useMemo(() => {
     if (!navSections) return null;
+    const account = isAdmin
+      ? [...navSections.account, { label: 'Admin', href: '/admin/verifications', icon: Shield }]
+      : navSections.account;
     return {
       main: navSections.main,
-      account: navSections.account,
+      account,
     };
-  }, [navSections]);
+  }, [navSections, isAdmin]);
 
   const { notifications: latestNotifications = [], unreadCount, markAsRead } = useArtistNotifications({
     userId: user?.id,

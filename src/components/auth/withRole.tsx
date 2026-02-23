@@ -12,10 +12,12 @@ export function withRole<P extends object>(
   const RoleGuard: ComponentType<P> = (props: P) => {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
-    const { role, loading } = useMe();
+    const { role, isAdmin, loading } = useMe();
 
     const isLoading = authLoading || loading;
-    const isAuthorized = Boolean(user?.token && role && allowedRoles.includes(role));
+    const hasAllowedRole = Boolean(user?.token && role && allowedRoles.includes(role));
+    // Admin solo debe operar en rutas admin, no en rutas de rol.
+    const isAuthorized = hasAllowedRole;
 
     useEffect(() => {
       if (isLoading || isAuthorized) return;
@@ -24,8 +26,13 @@ export function withRole<P extends object>(
         router.replace(`/?next=${next}`);
         return;
       }
-      router.replace(`/login?next=${next}`);
-    }, [isLoading, isAuthorized, router, user?.token]);
+      if (isAdmin && !hasAllowedRole) {
+        router.replace('/admin/verifications');
+        return;
+      }
+      // Evita bucles login<->ruta protegida cuando hay sesión pero /me no resuelve rol válido.
+      router.replace(`/?next=${next}`);
+    }, [hasAllowedRole, isLoading, isAuthorized, isAdmin, router, user?.token]);
 
     if (isLoading) {
       return <div style={{ padding: 24 }}>Cargando…</div>;

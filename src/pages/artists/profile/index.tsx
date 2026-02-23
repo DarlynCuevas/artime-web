@@ -10,6 +10,7 @@ import { getProfileImage, uploadProfileImage } from '@/services/users/profileIma
 import { addArtistVideo, deleteArtistVideo, getArtistVideos } from '@/services/artists/videos.service';
 import { useArtistDashboard } from '@/hooks/artists/useArtistDashboard';
 import { VerificationBanner } from '@/components/profile/VerificationBanner';
+import { normalizeArtistBookingConditions, type ArtistBookingConditions } from '@/types/artists/booking-conditions';
 
 type EditableProfile = {
 	id?: string;
@@ -24,6 +25,7 @@ type EditableProfile = {
 	socialLink?: string;
 	techRider?: string;
 	isVerified?: boolean;
+	bookingConditions: ArtistBookingConditions;
 };
 
 function ArtistPrivateProfilePage() {
@@ -88,6 +90,7 @@ function ArtistPrivateProfilePage() {
 					socialLink: data.socialLink ?? '',
 					techRider: data.techRider ?? '',
 					isVerified: Boolean(data.isVerified),
+					bookingConditions: normalizeArtistBookingConditions(data.bookingConditions ?? null),
 				});
 			})
 			.catch((err) => setError(err.message))
@@ -127,6 +130,19 @@ function ArtistPrivateProfilePage() {
 		setProfile((prev) => (prev ? { ...prev, [field]: value } : prev));
 	};
 
+	const handleConditionChange = (field: keyof ArtistBookingConditions, value: string | number | boolean | null) => {
+		setProfile((prev) => {
+			if (!prev) return prev;
+			return {
+				...prev,
+				bookingConditions: {
+					...prev.bookingConditions,
+					[field]: value as ArtistBookingConditions[typeof field],
+				},
+			};
+		});
+	};
+
 	const handleSave = async () => {
 		if (!user?.token || !profile) return;
 		setSaving(true);
@@ -142,6 +158,7 @@ function ArtistPrivateProfilePage() {
 				basePrice: profile.basePrice,
 				currency: profile.currency,
 				isNegotiable: profile.isNegotiable,
+				bookingConditions: normalizeArtistBookingConditions(profile.bookingConditions),
 			};
 
 			const updated = await updateMyArtistProfile(payload, user.token);
@@ -157,12 +174,13 @@ function ArtistPrivateProfilePage() {
 					basePrice: updated.basePrice ?? prev.basePrice,
 					currency: updated.currency ?? prev.currency,
 					isNegotiable: updated.isNegotiable !== undefined ? updated.isNegotiable : prev.isNegotiable,
+					bookingConditions: normalizeArtistBookingConditions(updated.bookingConditions ?? prev.bookingConditions),
 				} : prev,
 			);
 			setSaved(true);
 			setTimeout(() => setSaved(false), 2000);
-		} catch (err: any) {
-			setError(err.message ?? 'Error al guardar');
+		} catch (err: unknown) {
+			setError(err instanceof Error ? err.message : 'Error al guardar');
 		} finally {
 			setSaving(false);
 		}
@@ -564,6 +582,72 @@ function ArtistPrivateProfilePage() {
 								</span>
 							</div>
 						</button>
+					</div>
+
+					<div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.04)] space-y-4">
+						<div>
+							<p className="text-[10px] font-black tracking-widest uppercase text-slate-500 mb-1">Condiciones de contratación</p>
+							<p className="text-xs text-slate-500">No negociables para quien inicia booking.</p>
+						</div>
+						<div className="grid grid-cols-3 gap-2">
+							<input
+								type="number"
+								value={profile.bookingConditions.crewSize ?? ''}
+								onChange={(e) => handleConditionChange('crewSize', e.target.value ? Number(e.target.value) : null)}
+								placeholder="Crew"
+								className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 outline-none"
+							/>
+							<input
+								type="number"
+								value={profile.bookingConditions.hotelRooms ?? ''}
+								onChange={(e) => handleConditionChange('hotelRooms', e.target.value ? Number(e.target.value) : null)}
+								placeholder="Habitaciones"
+								className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 outline-none"
+							/>
+							<input
+								type="number"
+								value={profile.bookingConditions.hotelNights ?? ''}
+								onChange={(e) => handleConditionChange('hotelNights', e.target.value ? Number(e.target.value) : null)}
+								placeholder="Noches"
+								className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 outline-none"
+							/>
+						</div>
+						<div className="grid grid-cols-2 gap-2">
+							<label className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 cursor-pointer">
+								<input
+									type="checkbox"
+									checked={profile.bookingConditions.requiresFlights}
+									onChange={(e) => handleConditionChange('requiresFlights', e.target.checked)}
+								/>
+								Requiere vuelos
+							</label>
+							<label className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 cursor-pointer">
+								<input
+									type="checkbox"
+									checked={profile.bookingConditions.requiresGroundTransport}
+									onChange={(e) => handleConditionChange('requiresGroundTransport', e.target.checked)}
+								/>
+								Transporte local
+							</label>
+						</div>
+						<textarea
+							value={profile.bookingConditions.hospitalityNotes}
+							onChange={(e) => handleConditionChange('hospitalityNotes', e.target.value)}
+							placeholder="Hospitality (catering, camerino, etc.)"
+							className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 outline-none min-h-[72px]"
+						/>
+						<textarea
+							value={profile.bookingConditions.technicalNotes}
+							onChange={(e) => handleConditionChange('technicalNotes', e.target.value)}
+							placeholder="Notas técnicas"
+							className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 outline-none min-h-[72px]"
+						/>
+						<textarea
+							value={profile.bookingConditions.additionalNotes}
+							onChange={(e) => handleConditionChange('additionalNotes', e.target.value)}
+							placeholder="Notas adicionales"
+							className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 outline-none min-h-[72px]"
+						/>
 					</div>
 
 					{/* Fechas Confirmadas (Equivalente al Booking Section del público) */}

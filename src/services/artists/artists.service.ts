@@ -1,4 +1,5 @@
 // web/src/services/artists/artists.service.ts
+import type { ArtistBookingConditions } from '@/types/artists/booking-conditions';
 
 export async function getArtists(token: string) {
   const res = await fetch(
@@ -70,6 +71,7 @@ export type UpdateArtistPayload = {
   isNegotiable?: boolean;
   managerId?: string | null;
   rating?: number;
+  bookingConditions?: ArtistBookingConditions;
 };
 
 export async function updateMyArtistProfile(
@@ -130,6 +132,49 @@ export async function getArtistProfileById(
 
   if (!res.ok) {
     throw new Error('Failed to fetch artist profile');
+  }
+
+  return res.json();
+}
+
+export async function getArtistBookingConditions(
+  artistId: string,
+  token: string,
+): Promise<{ artistId: string; bookingConditions: ArtistBookingConditions; editableBy: 'ARTIST' | 'MANAGER' | null }> {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/artists/${artistId}/booking-conditions`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'No se pudieron cargar las condiciones');
+  }
+
+  return res.json();
+}
+
+export async function updateArtistBookingConditions(
+  artistId: string,
+  bookingConditions: ArtistBookingConditions,
+  token: string,
+) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/artists/${artistId}/booking-conditions`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ bookingConditions }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || 'No se pudieron actualizar las condiciones');
   }
 
   return res.json();

@@ -18,7 +18,7 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -29,7 +29,56 @@ export default function LoginPage() {
       return;
     }
 
-    router.push('/');
+    const token = data.session?.access_token;
+    const nextQuery = typeof router.query.next === 'string' ? router.query.next : undefined;
+    const safeNext = nextQuery && nextQuery.startsWith('/') ? nextQuery : undefined;
+
+    if (!token) {
+      router.push('/');
+      return;
+    }
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+      if (!baseUrl) throw new Error('API base url no definida');
+      const meRes = await fetch(`${baseUrl}/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!meRes.ok) throw new Error('No se pudo resolver /me');
+      const me = await meRes.json();
+
+      if (me?.isAdmin) {
+        router.push('/admin/verifications');
+        return;
+      }
+
+      const profiles = me?.profiles ?? {};
+      if (profiles.manager?.id) {
+        router.push('/manager/dashboard');
+        return;
+      }
+      if (profiles.venue?.id) {
+        router.push('/venues');
+        return;
+      }
+      if (profiles.artist?.id) {
+        router.push('/artists/dashboard');
+        return;
+      }
+      if (profiles.promoter?.id) {
+        router.push('/promoter/dashboard');
+        return;
+      }
+
+      if (safeNext && safeNext !== '/login') {
+        router.push(safeNext);
+        return;
+      }
+      router.push('/');
+    } catch {
+      // Fallback defensivo si /me falla: evitamos redirigir a rutas protegidas para no crear bucles.
+      router.push('/');
+    }
   };
 
   return (

@@ -8,7 +8,7 @@ import { supabase } from '@/services/supabase/supabaseClient';
 
 export default function IndexPage() {
   const { user, loading: authLoading } = useAuth();
-  const { role, loading: meLoading } = useMe();
+  const { role, isAdmin, loading: meLoading } = useMe();
   const router = useRouter();
 
 
@@ -17,26 +17,32 @@ export default function IndexPage() {
       return;
     }
 
+    // Admin sin rol operativo debe entrar al panel admin
+    if (user && isAdmin) {
+      router.replace('/admin/verifications');
+      return;
+    }
+
     // Si hay usuario y role definido
-    if (role === 'VENUE') {
+    if (user && role === 'VENUE') {
       router.replace('/venues');
       return;
     }
-    if (role === 'ARTIST') {
+    if (user && role === 'ARTIST') {
       router.replace('/artists/dashboard');
       return;
     }
-    if (role === 'PROMOTER') {
+    if (user && role === 'PROMOTER') {
       router.replace('/promoter/dashboard');
       return;
     }
-    if (role === 'MANAGER') {
+    if (user && role === 'MANAGER') {
       router.replace('/manager/dashboard');
       return;
     }
 
     // Si user existe pero role es null, mostramos landing (no redirigimos)
-  }, [user, role, authLoading, meLoading, router]);
+  }, [user, role, isAdmin, authLoading, meLoading, router]);
 
   if (authLoading || meLoading) {
     return (

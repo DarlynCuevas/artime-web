@@ -8,6 +8,8 @@ import { getArtistProfileById, getArtists } from '@/services/artists/artists.ser
 import { useMe } from '@/hooks/auth/useMe';
 import { withRole } from '@/components/auth/withRole';
 import { formatCurrency } from '@/lib/utils';
+import { normalizeArtistBookingConditions } from '@/types/artists/booking-conditions';
+import type { ArtistBookingConditions } from '@/types/artists/booking-conditions';
 
 type ArtistListItem = {
   id: string;
@@ -20,6 +22,7 @@ type ArtistProfileLite = {
   currency?: string | null;
   isNegotiable?: boolean | null;
   is_negotiable?: boolean | null;
+  bookingConditions?: Partial<ArtistBookingConditions> | null;
 };
 
 function NewBookingPage() {
@@ -128,6 +131,7 @@ function NewBookingPage() {
       const isNonNegotiable = isNegotiable === false;
       const basePrice = Number(selectedArtistProfile?.basePrice ?? selectedArtistProfile?.base_price);
       const resolvedAmount = isNonNegotiable && Number.isFinite(basePrice) ? basePrice : Number(amount);
+      const artistConditionsSnapshot = normalizeArtistBookingConditions(selectedArtistProfile?.bookingConditions ?? null);
 
       const booking = await createBooking(
         {
@@ -135,6 +139,7 @@ function NewBookingPage() {
           start_date: startDate,
           totalAmount: resolvedAmount,
           allIn,
+          artistConditionsSnapshot,
           currency: 'EUR',
           message,
           eventId: eventIdFromQuery,
@@ -180,6 +185,7 @@ function NewBookingPage() {
   const selectedArtistCurrency = String(selectedArtistProfile?.currency ?? 'EUR');
   const selectedArtistBasePriceLabel =
     Number.isFinite(selectedArtistBasePrice) ? formatCurrency(selectedArtistBasePrice, selectedArtistCurrency) : null;
+  const selectedArtistConditions = normalizeArtistBookingConditions(selectedArtistProfile?.bookingConditions ?? null);
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
@@ -330,6 +336,41 @@ function NewBookingPage() {
                       </div>
                     ) : null}
                   </Field>
+
+                  <Field label="Condiciones del artista" helper="No negociables">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 space-y-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                        El contratante acepta estas condiciones si continúa
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <ConditionPill label="Crew" value={selectedArtistConditions.crewSize ? `${selectedArtistConditions.crewSize} pax` : 'No definido'} />
+                        <ConditionPill label="Habitaciones" value={selectedArtistConditions.hotelRooms ? `${selectedArtistConditions.hotelRooms}` : 'No definido'} />
+                        <ConditionPill label="Noches" value={selectedArtistConditions.hotelNights ? `${selectedArtistConditions.hotelNights}` : 'No definido'} />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <ConditionPill label="Vuelos" value={selectedArtistConditions.requiresFlights ? 'Requerido' : 'No requerido'} />
+                        <ConditionPill label="Transporte local" value={selectedArtistConditions.requiresGroundTransport ? 'Requerido' : 'No requerido'} />
+                      </div>
+                      {selectedArtistConditions.hospitalityNotes ? (
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Hospitality</p>
+                          <p className="mt-1 text-xs text-slate-700 leading-relaxed">{selectedArtistConditions.hospitalityNotes}</p>
+                        </div>
+                      ) : null}
+                      {selectedArtistConditions.technicalNotes ? (
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Técnico</p>
+                          <p className="mt-1 text-xs text-slate-700 leading-relaxed">{selectedArtistConditions.technicalNotes}</p>
+                        </div>
+                      ) : null}
+                      {selectedArtistConditions.additionalNotes ? (
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Adicional</p>
+                          <p className="mt-1 text-xs text-slate-700 leading-relaxed">{selectedArtistConditions.additionalNotes}</p>
+                        </div>
+                      ) : null}
+                    </div>
+                  </Field>
                 </div>
               </Card>
 
@@ -466,6 +507,15 @@ function Field({ label, helper, children }: { label: string; helper?: string; ch
         {helper && <span className="text-[9px] font-bold uppercase tracking-wider text-slate-300 text-right">{helper}</span>}
       </div>
       {children}
+    </div>
+  );
+}
+
+function ConditionPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+      <p className="mt-1 text-xs font-semibold text-slate-700">{value}</p>
     </div>
   );
 }

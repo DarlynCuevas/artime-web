@@ -57,7 +57,7 @@ function VenueSuggestionsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
-      <div className="relative w-full overflow-hidden bg-fintech-dark">
+      <div className="relative w-full overflow-hidden bg-fintech-dark rounded-3xl">
         <div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
         <div className="relative mx-auto max-w-6xl px-4 pt-14 pb-10 sm:px-6">
           <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.3em] text-white/40">Inbox</p>

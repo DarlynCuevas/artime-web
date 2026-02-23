@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 type Role = 'VENUE' | 'ARTIST' | 'MANAGER' | 'PROMOTER' | null;
 
 type MeResponse = {
+  isAdmin?: boolean;
   profiles: {
     artist: { id: string; name: string } | null;
     venue: { id: string; name: string } | null;
@@ -18,6 +19,7 @@ export function useMe(opts?: { enabled?: boolean }) {
   const [role, setRole] = useState<Role>(null);
   const [profileId, setProfileId] = useState<string | undefined>(undefined);
   const [profileName, setProfileName] = useState<string | undefined>(undefined);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [refreshIndex, setRefreshIndex] = useState(0);
   const enabled = opts?.enabled ?? true;
 
@@ -26,6 +28,7 @@ export function useMe(opts?: { enabled?: boolean }) {
       setRole(null);
       setProfileId(undefined);
       setProfileName(undefined);
+      setIsAdmin(false);
       setLoading(false);
       return;
     }
@@ -34,6 +37,7 @@ export function useMe(opts?: { enabled?: boolean }) {
       setRole(null);
       setProfileId(undefined);
       setProfileName(undefined);
+      setIsAdmin(false);
       setLoading(false);
       return;
     }
@@ -44,11 +48,32 @@ export function useMe(opts?: { enabled?: boolean }) {
       setRole(null);
       setProfileId(undefined);
       setProfileName(undefined);
+      setIsAdmin(false);
       setLoading(false);
       return;
     }
 
     setLoading(true);
+
+    const inferIsAdminFromToken = (token: string): boolean => {
+      try {
+        const payloadPart = token.split('.')[1];
+        if (!payloadPart) return false;
+        const base64 = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+        const decoded = JSON.parse(atob(padded));
+        const roles = Array.isArray(decoded?.app_metadata?.roles) ? decoded.app_metadata.roles : [];
+        return roles.includes('ADMIN');
+      } catch {
+        return false;
+      }
+    };
+
+    // Fallback local: evita flapping de isAdmin si /me falla de forma transitoria.
+    const inferredAdmin = inferIsAdminFromToken(user.token);
+    if (inferredAdmin) {
+      setIsAdmin(true);
+    }
 
     (async () => {
       try {
@@ -64,6 +89,7 @@ export function useMe(opts?: { enabled?: boolean }) {
 
         const data: MeResponse = await res.json();
         const profiles = data?.profiles;
+        setIsAdmin(Boolean(data?.isAdmin));
 
         // Prioritize manager to avoid "acceso no autorizado" when the user also has other profiles.
         if (profiles?.manager) {
@@ -87,12 +113,16 @@ export function useMe(opts?: { enabled?: boolean }) {
           setProfileId(undefined);
           setProfileName(undefined);
         }
-      } catch (err) {
+      } catch {
         // Network errors (backend down / CORS / wrong baseUrl) should not crash the app.
         console.warn('[useMe] no se pudo resolver /me');
         setRole(null);
         setProfileId(undefined);
         setProfileName(undefined);
+        // No degradar isAdmin aquí: si viene en JWT, mantenemos el estado para evitar bucles de redirección.
+        if (!inferredAdmin) {
+          setIsAdmin(false);
+        }
       } finally {
         setLoading(false);
       }
@@ -107,6 +137,7 @@ export function useMe(opts?: { enabled?: boolean }) {
     role,
     profileId,
     profileName,
+    isAdmin,
     refresh: () => setRefreshIndex((i) => i + 1),
   };
 }
