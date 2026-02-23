@@ -73,11 +73,11 @@ const ManagerDiscoverArtistsPage: NextPage = () => {
         maxPrice,
         search: searchTerm || undefined,
       });
-      const normalized: DiscoverArtist[] = ((data ?? []) as RawDiscoverArtist[])
-        .map((a) => {
-          const id = a.id || a.artistId || a.artist_id;
-          if (!id || !a.name) return null;
-          return {
+      const normalized: DiscoverArtist[] = ((data ?? []) as RawDiscoverArtist[]).flatMap((a) => {
+        const id = a.id || a.artistId || a.artist_id;
+        if (!id || !a.name) return [];
+        return [
+          {
             id,
             name: a.name,
             city: a.city ?? '',
@@ -85,9 +85,9 @@ const ManagerDiscoverArtistsPage: NextPage = () => {
             basePrice: typeof a.basePrice === 'number' ? a.basePrice : 0,
             currency: a.currency ?? 'EUR',
             isNegotiable: Boolean(a.isNegotiable),
-          };
-        })
-        .filter((a): a is DiscoverArtist => a !== null);
+          },
+        ];
+      });
       setArtists(normalized);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se pudieron cargar los artistas');
