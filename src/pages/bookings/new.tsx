@@ -4,9 +4,23 @@ import { AlertTriangle, Calendar, CheckCircle2, Euro, Loader2, MessageSquare, Sp
 
 import { useAuth } from '@/hooks/auth/useAuth';
 import { createBooking } from '@/services/bookings/bookings.service';
-import { getArtists } from '@/services/artists/artists.service';
+import { getArtistProfileById, getArtists } from '@/services/artists/artists.service';
 import { useMe } from '@/hooks/auth/useMe';
 import { withRole } from '@/components/auth/withRole';
+import { formatCurrency } from '@/lib/utils';
+
+type ArtistListItem = {
+  id: string;
+  name: string;
+};
+
+type ArtistProfileLite = {
+  basePrice?: number | null;
+  base_price?: number | null;
+  currency?: string | null;
+  isNegotiable?: boolean | null;
+  is_negotiable?: boolean | null;
+};
 
 function NewBookingPage() {
   const { user } = useAuth();
@@ -17,10 +31,13 @@ function NewBookingPage() {
     eventId?: string;
   };
 
-  const [artists, setArtists] = useState<any[]>([]);
+  const [artists, setArtists] = useState<ArtistListItem[]>([]);
   const [artistId, setArtistId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [amount, setAmount] = useState('');
+  const [selectedArtistProfile, setSelectedArtistProfile] = useState<ArtistProfileLite | null>(null);
+  const [loadingArtistProfile, setLoadingArtistProfile] = useState(false);
+  const [allIn, setAllIn] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [message, setMessage] = useState(
     `Esta propuesta define las condiciones iniciales de la contratación.\n\nEl contenido y el importe quedarán registrados en ARTIME como base de la negociación.`
@@ -56,6 +73,47 @@ function NewBookingPage() {
     }
   }, [artistIdFromQuery, dateFromQuery]);
 
+  useEffect(() => {
+    if (!user?.token) return;
+    if (!artistId) {
+      setSelectedArtistProfile(null);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingArtistProfile(true);
+    getArtistProfileById(artistId, user.token)
+      .then((profile) => {
+        if (cancelled) return;
+        setSelectedArtistProfile(profile);
+
+        const basePrice = Number(profile?.basePrice ?? profile?.base_price);
+        const isNegotiable = profile?.isNegotiable ?? profile?.is_negotiable;
+        const isNonNegotiable = isNegotiable === false;
+
+        if (Number.isFinite(basePrice) && basePrice >= 0) {
+          // Always force base price when the artist is non-negotiable.
+          // For negotiable artists, only prefill if the user hasn't typed anything yet.
+          if (isNonNegotiable || !amount) {
+            setAmount(String(basePrice));
+          }
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSelectedArtistProfile(null);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoadingArtistProfile(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // amount is intentionally omitted: we only want to prefill on artist changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [artistId, user?.token]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,11 +124,17 @@ function NewBookingPage() {
       setError(null);
       setSuggestions([]);
 
+      const isNegotiable = selectedArtistProfile?.isNegotiable ?? selectedArtistProfile?.is_negotiable;
+      const isNonNegotiable = isNegotiable === false;
+      const basePrice = Number(selectedArtistProfile?.basePrice ?? selectedArtistProfile?.base_price);
+      const resolvedAmount = isNonNegotiable && Number.isFinite(basePrice) ? basePrice : Number(amount);
+
       const booking = await createBooking(
         {
           artistId,
           start_date: startDate,
-          totalAmount: Number(amount),
+          totalAmount: resolvedAmount,
+          allIn,
           currency: 'EUR',
           message,
           eventId: eventIdFromQuery,
@@ -79,9 +143,9 @@ function NewBookingPage() {
       );
 
       router.push(`/bookings/${booking.id}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       try {
-        const parsed = JSON.parse(err?.message ?? '{}');
+        const parsed = JSON.parse(err instanceof Error ? err.message : '{}');
         if (parsed?.message === 'DATE_NOT_AVAILABLE') {
           setError(parsed.reason === 'BOOKING_CONFLICT'
             ? 'La fecha ya tiene una contratación confirmada.'
@@ -89,7 +153,7 @@ function NewBookingPage() {
           setSuggestions(parsed.suggestions ?? []);
           return;
         }
-      } catch (parseErr) {
+      } catch {
         // ignore JSON parse errors
       }
       setError('No se pudo crear la propuesta. Revisa los datos e inténtalo de nuevo.');
@@ -110,6 +174,12 @@ function NewBookingPage() {
   }
 
   const selectedArtistName = artistId ? artists.find(a => a.id === artistId)?.name || 'Artista' : null;
+  const selectedArtistIsNegotiable = selectedArtistProfile?.isNegotiable ?? selectedArtistProfile?.is_negotiable;
+  const selectedArtistIsNonNegotiable = selectedArtistIsNegotiable === false;
+  const selectedArtistBasePrice = Number(selectedArtistProfile?.basePrice ?? selectedArtistProfile?.base_price);
+  const selectedArtistCurrency = String(selectedArtistProfile?.currency ?? 'EUR');
+  const selectedArtistBasePriceLabel =
+    Number.isFinite(selectedArtistBasePrice) ? formatCurrency(selectedArtistBasePrice, selectedArtistCurrency) : null;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
@@ -201,12 +271,64 @@ function NewBookingPage() {
                         onChange={(e) => setAmount(e.target.value)}
                         required
                         placeholder="Ej. 1500"
-                        className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-900 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 transition-all placeholder:text-slate-300"
+                        disabled={selectedArtistIsNonNegotiable || loadingArtistProfile}
+                        className="w-full pl-10 pr-12 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-900 focus:border-amber-400 focus:ring-4 focus:ring-amber-400/10 transition-all placeholder:text-slate-300 disabled:opacity-70 disabled:bg-slate-50"
                       />
                       <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">EUR</span>
                       </div>
                     </div>
+
+                    {selectedArtistIsNonNegotiable ? (
+                      <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                            <Info className="h-4 w-4 text-amber-700" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-amber-900">Caché no negociable</p>
+                            <p className="mt-1 text-xs text-amber-900/90 leading-relaxed">
+                              Este artista trabaja con caché fijo{selectedArtistBasePriceLabel ? ` (${selectedArtistBasePriceLabel})` : ''}. El importe no se puede modificar al iniciar el booking.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                  </Field>
+
+                  <Field label="Modalidad de contratación">
+                    <label className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 cursor-pointer">
+                      <div className="min-w-0">
+                        <p className="text-sm font-black text-slate-900">All-in</p>
+                        <p className="text-xs text-slate-500">Importe total cerrado (caché + gastos)</p>
+                      </div>
+                      <div className="relative shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={allIn}
+                          onChange={(e) => setAllIn(e.target.checked)}
+                          className="peer sr-only"
+                        />
+                        <div className="w-11 h-6 bg-slate-200 rounded-full peer-checked:bg-amber-500 transition-colors duration-300" />
+                        <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-5 transition-transform duration-300" />
+                      </div>
+                    </label>
+
+                    {allIn ? (
+                      <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="h-4 w-4 text-amber-700" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-amber-900">All-in activado</p>
+                            <p className="mt-1 text-xs text-amber-900/90 leading-relaxed">
+                              El artista asume la gestión de gastos. El importe se negocia como total cerrado.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
                   </Field>
                 </div>
               </Card>

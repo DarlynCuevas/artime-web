@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/auth/useAuth';
 
 import {
@@ -18,7 +18,7 @@ export function useNegotiation(bookingId?: string) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     if (!bookingId || !user?.token) return;
 
     setLoading(true);
@@ -36,11 +36,11 @@ export function useNegotiation(bookingId?: string) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [bookingId, user?.token]);
 
   useEffect(() => {
     loadMessages();
-  }, [bookingId, user?.token]);
+  }, [loadMessages]);
 
   const lastOffer = useMemo(() => {
     return [...messages]
@@ -54,6 +54,7 @@ export function useNegotiation(bookingId?: string) {
   const sendMessage = async (payload: {
     message?: string;
     proposedFee?: number;
+    allIn?: boolean;
   }) => {
     if (!bookingId || !user?.token) return;
 
@@ -64,6 +65,7 @@ export function useNegotiation(bookingId?: string) {
       await sendNegotiationMessage(bookingId, user.token, {
         message: payload.message ?? '',
         proposedFee: payload.proposedFee,
+        allIn: payload.allIn,
       });
       await loadMessages();
     } catch {
@@ -77,6 +79,7 @@ export function useNegotiation(bookingId?: string) {
   const sendOfferFinal = async (payload: {
     proposedFee: number;
     message?: string;
+    allIn?: boolean;
   }) => {
     if (!bookingId || !user?.token) return;
 
@@ -87,6 +90,7 @@ export function useNegotiation(bookingId?: string) {
       await sendFinalOffer(bookingId, user.token, {
         proposedFee: payload.proposedFee,
         message: payload.message ?? '',
+        allIn: payload.allIn,
       });
       await loadMessages();
     } catch {

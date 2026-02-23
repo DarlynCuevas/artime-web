@@ -3,12 +3,13 @@ import { Booking, BookingStatus, Role } from "@/types/booking";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL!;
 
 export type BookingDto = {
-  eventId: any;
+  eventId?: string | null;
   start_date: string;
   id: string;
   status: BookingStatus;
   currency: string;
   totalAmount: number;
+  allIn?: boolean;
   handledByRole: Role;
   handledByUserId: string | null;
   handledAt: string | null;
@@ -35,6 +36,7 @@ export interface CreateBookingPayload {
   artistId: string;
   currency?: string;
   totalAmount?: number;
+  allIn?: boolean;
   eventId?: string;
   start_date?: string;
   message?: string;

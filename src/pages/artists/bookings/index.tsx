@@ -31,12 +31,12 @@ type BookingDto = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const TABS = [
-  { key: 'ALL', label: 'Todos', statuses: [] as string[] },
   { key: 'PENDING', label: 'Pendientes', statuses: ['PENDING'] },
   { key: 'NEGOTIATING', label: 'En negociación', statuses: ['NEGOTIATING', 'FINAL_OFFER_SENT'] },
   { key: 'CONFIRMED', label: 'Confirmadas', statuses: ['ACCEPTED', 'CONTRACT_SIGNED'] },
   { key: 'PAID', label: 'Pagadas', statuses: ['PAID_PARTIAL', 'PAID_FULL', 'PAID', 'PAID_50', 'PAID_75', 'PAID_100', 'PAID_BALANCE'] },
   { key: 'HISTORIC', label: 'Canceladas', statuses: ['COMPLETED', 'REJECTED', 'CANCELLED', 'CANCELLED_PENDING_REVIEW'] },
+  { key: 'ALL', label: 'Todos', statuses: [] as string[] }
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
@@ -268,7 +268,7 @@ function ArtistBookingsPage() {
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       {/* ── Hero ── */}
-      <div className="relative w-full overflow-hidden bg-slate-900 pt-14 pb-24 px-4 sm:px-6">
+      <div className="relative w-full overflow-hidden bg-slate-900 pt-14 pb-24 px-4 sm:px-6 rounded-3xl">
         <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-[-10%] left-[-5%] w-64 h-64 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none" />
 

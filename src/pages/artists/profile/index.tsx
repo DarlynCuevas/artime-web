@@ -176,7 +176,7 @@ function ArtistPrivateProfilePage() {
 		<div className="min-h-screen bg-slate-50 pb-20 font-sans selection:bg-amber-100 selection:text-amber-900">
 
 			{/* ── HERO EDITABLE (Glass-Fintech) ─────────────────────────────── */}
-			<div className="relative w-full overflow-hidden bg-fintech-dark pb-28">
+			<div className="relative w-full overflow-hidden bg-fintech-dark pb-28 rounded-3xl">
 				<div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
 				<div className="absolute -top-32 -right-32 w-96 h-96 bg-brand-amber rounded-full mix-blend-multiply filter blur-[128px] opacity-15 animate-pulse" />
 				<div className="absolute -left-32 -bottom-32 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-10" />

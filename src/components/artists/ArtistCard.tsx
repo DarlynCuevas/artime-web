@@ -14,14 +14,14 @@ export function ArtistCard({
   onViewProfile,
 }: ArtistCardProps) {
   return (
-    <section
-      style={{
-        border: '1px solid #ddd',
-        padding: 16,
-        marginBottom: 12,
-        borderRadius: 6,
-      }}
-    >
+      <section
+        style={{
+          border: '1px solid #ddd',
+          padding: 16,
+          marginBottom: 12,
+          borderRadius: 9999,
+        }}
+      >
       <p>
         <strong>{artist.name}</strong>
       </p>

@@ -47,7 +47,7 @@ function VenueDashboardPage() {
     <div className="min-h-screen bg-slate-50 pb-24">
 
       {/* ── HERO ─────────────────────────────────────────────── */}
-      <div className="relative w-full overflow-hidden bg-fintech-dark">
+      <div className="relative w-full overflow-hidden bg-fintech-dark rounded-3xl">
         <div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-brand-amber rounded-full mix-blend-multiply filter blur-[128px] opacity-15 animate-pulse" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-10" />

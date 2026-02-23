@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { createBooking } from '@/services/bookings/bookings.service';
-import { getArtists } from '@/services/artists/artists.service';
 import { useMe } from '@/hooks/auth/useMe';
 import { withRole } from '@/components/auth/withRole';
 
@@ -15,10 +14,10 @@ function NewBookingPage() {
     amount?: string;
   };
 
-  const [artists, setArtists] = useState<any[]>([]);
   const [artistId, setArtistId] = useState('');
   const [startDate, setStartDate] = useState('');
   const [amount, setAmount] = useState('');
+  const [allIn, setAllIn] = useState(false);
   const [message, setMessage] = useState(
     `Esta propuesta define las condiciones iniciales de la contratación.
 
@@ -37,18 +36,7 @@ El contenido y el importe quedarán registrados en ARTIME como base de la negoci
     if (!canCreateBooking) {
       router.replace('/');
     }
-  }, [user, meLoading, canCreateBooking, router]);
-
-  // Carga de artistas
-  useEffect(() => {
-    if (!user?.token) return;
-
-    getArtists(user.token)
-      .then(setArtists)
-      .catch(() => {
-        setError('No se pudieron cargar los artistas');
-      });
-  }, [user?.token]);
+  }, [user, meLoading, canCreateBooking, router, role]);
 
   useEffect(() => {
     if (artistIdFromQuery && typeof artistIdFromQuery === 'string') {
@@ -79,6 +67,7 @@ El contenido y el importe quedarán registrados en ARTIME como base de la negoci
           artistId,
           start_date: startDate,
           totalAmount: Number(amount),
+          allIn,
           currency: 'EUR',
           message,
         },
@@ -159,6 +148,16 @@ El contenido y el importe quedarán registrados en ARTIME como base de la negoci
               required
               style={{ width: '100%', marginTop: 4 }}
             />
+          </label>
+
+          <label style={{ display: 'block', marginTop: 12 }}>
+            <input
+              type="checkbox"
+              checked={allIn}
+              onChange={(e) => setAllIn(e.target.checked)}
+              style={{ marginRight: 8 }}
+            />
+            All-in (el artista gestiona gastos)
           </label>
         </section>
 

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNegotiation } from '@/hooks/bookings/useNegotiation';
 import type { UserRole } from '@/types/user-role';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { acceptFinalOffer } from '@/services/bookings/negotiations.service';
 import { acceptBooking } from '@/services/bookings/bookings.service';
+import { Info } from 'lucide-react';
 import {
   isArtistSideRole,
   isVenueSideRole,
@@ -41,9 +42,6 @@ export function NegotiationPanel({
     'CANCELLED_PENDING_REVIEW',
     'REJECTED',
   ].includes(bookingStatus);
-  if (isClosed) {
-    return null;
-  }
 
   const {
     messages,
@@ -60,9 +58,17 @@ export function NegotiationPanel({
   const [text, setText] = useState('');
   const [fee, setFee] = useState<number | ''>('');
   const [isFinalOffer, setIsFinalOffer] = useState(false);
+  const [allIn, setAllIn] = useState(false);
 
   const lastMessage =
     messages.length > 0 ? messages[messages.length - 1] : null;
+  const lastAllIn = messages.length > 0 ? (messages[messages.length - 1]?.allIn ?? false) : false;
+
+  useEffect(() => {
+    // Default the toggle to the latest offer context when messages load/change.
+    setAllIn(lastAllIn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length]);
 
   const isArtistSide = isArtistSideRole(userRole);
   const isVenueSide = isVenueSideRole(userRole);
@@ -103,6 +109,10 @@ export function NegotiationPanel({
     ['PENDING', 'NEGOTIATING', 'FINAL_OFFER_SENT'].includes(bookingStatus) &&
     isMyTurn &&
     !(bookingStatus === 'PENDING' && isVenueSide);
+
+  if (isClosed) {
+    return null;
+  }
 
   return (
     <section className="mt-6 space-y-5">
@@ -161,6 +171,28 @@ export function NegotiationPanel({
             </div>
 
             <div className="flex flex-col gap-3">
+              <label className="flex items-center justify-between gap-3 px-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                    All-in
+                  </span>
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400">
+                    <Info className="h-3 w-3" />
+                    El artista gestiona gastos
+                  </span>
+                </div>
+                <div className="relative shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={allIn}
+                    onChange={(e) => setAllIn(e.target.checked)}
+                    className="peer sr-only"
+                  />
+                  <div className="w-10 h-5 bg-slate-200 rounded-full peer-checked:bg-amber-500 transition-colors duration-300" />
+                  <div className="absolute left-1 top-1 w-3 h-3 bg-white rounded-full peer-checked:translate-x-5 transition-transform duration-300" />
+                </div>
+              </label>
+
               {canMarkAsFinalOffer && (
                 <label className="flex items-center gap-2.5 cursor-pointer group px-1">
                   <div className="relative">
@@ -187,11 +219,13 @@ export function NegotiationPanel({
                     await sendOfferFinal({
                       proposedFee: parsedFee,
                       message: text || '',
+                      allIn,
                     });
                   } else {
                     await sendMessage({
                       message: text || '',
                       proposedFee: parsedFee,
+                      allIn,
                     });
                   }
 

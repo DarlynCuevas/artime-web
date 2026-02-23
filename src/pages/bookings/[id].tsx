@@ -82,8 +82,12 @@ function BookingDetailPage() {
 
     eventsService
       .getEvent(booking.eventId, user.token)
-      .then((event) => setEventName(event.name ?? null))
-      .catch(() => setEventName(null));
+      .then((event) => {
+        setEventName(event.name ?? null);
+      })
+      .catch(() => {
+        setEventName(null);
+      });
   }, [booking?.eventId, user?.token]);
 
   useEffect(() => {
@@ -276,6 +280,7 @@ function BookingDetailPage() {
       createdAt: m.createdAt,
       role: m.senderRole,
       amount: m.proposedFee,
+      allIn: m.allIn ?? false,
       isFinal: m.isFinalOffer,
       note: m.message,
     }))
@@ -291,6 +296,12 @@ function BookingDetailPage() {
     typeof lastNumericOffer?.proposedFee === 'number'
       ? lastNumericOffer.proposedFee
       : bookingAmount;
+  const agreedAllIn =
+    typeof lastNumericOffer?.allIn === 'boolean'
+      ? lastNumericOffer.allIn
+      : booking.allIn;
+  const amountSubLabel = agreedAllIn ? 'Importe + gastos' : 'Importe base';
+
   const bookingData = {
     conditions: {
       originalPrice: firstVenueOffer?.amount ?? null,
@@ -328,7 +339,7 @@ function BookingDetailPage() {
       </div>
 
       {/* ── BOOKING HERO ────────────────────────────────────────── */}
-      <div className="relative w-full overflow-hidden bg-fintech-dark">
+      <div className="relative w-full overflow-hidden bg-fintech-dark rounded-3xl">
         <div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-brand-amber rounded-full mix-blend-multiply filter blur-[128px] opacity-15 animate-pulse" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-15" />
@@ -374,7 +385,11 @@ function BookingDetailPage() {
 
           {/* KPI Pills — 3 métricas sin redundar el status */}
           <div className="grid grid-cols-3 gap-3">
-            <KpiPill label="Importe" value={formatCurrency(agreedAmount, bookingCurrency)} />
+          <KpiPill
+            label="Importe"
+            value={formatCurrency(agreedAmount, bookingCurrency)}
+            subLabel={amountSubLabel}
+          />
             <KpiPill
               label="Pago"
               value={paymentSummary ? (paymentSummary.percent >= 100 ? '100%' : `${paymentSummary.percent}%`) : '—'}
@@ -662,7 +677,7 @@ function Card({ title, subtitle, icon, children, tone = 'slate' }: { title: stri
   );
 }
 
-function KpiPill({ label, value, accent = false }: { label: string; value: string | number; accent?: boolean }) {
+function KpiPill({ label, value, subLabel, accent = false }: { label: string; value: string | number; subLabel?: string; accent?: boolean }) {
   return (
     <div className={`rounded-xl px-4 py-3 border ${accent
       ? 'bg-amber-500/20 border-amber-400/30 text-amber-300'
@@ -670,6 +685,9 @@ function KpiPill({ label, value, accent = false }: { label: string; value: strin
       }`}>
       <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5">{label}</p>
       <p className={`text-base font-black tabular-nums ${accent ? 'text-amber-300' : 'text-white'}`}>{value}</p>
+      {subLabel ? (
+        <p className="text-[10px] font-semibold uppercase tracking-[0.3em] mt-1 text-white/70">{subLabel}</p>
+      ) : null}
     </div>
   );
 }
@@ -700,7 +718,7 @@ function HeroStatusBadge({ status }: { status: string }) {
 function NegotiationHistory({
   timelineEvents, role, bookingCurrency, negotiationLoading,
 }: {
-  timelineEvents: { id: string; role: string; amount?: number; isFinal: boolean; note?: string; createdAt: string }[];
+  timelineEvents: { id: string; role: string; amount?: number; allIn: boolean; isFinal: boolean; note?: string; createdAt: string }[];
   role: string; bookingCurrency: string; negotiationLoading: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
@@ -780,6 +798,11 @@ function NegotiationHistory({
                           <p className={`text-3xl font-black tabular-nums tracking-tighter ${isOwn ? 'text-amber-600' : 'text-slate-900'}`}>
                             {formatCurrency(event.amount, bookingCurrency)}
                           </p>
+                          <div className={`mt-1 inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${isOwn ? 'text-amber-700' : 'text-slate-600'}`}>
+                            <span className={`px-2 py-0.5 rounded-lg border ${event.allIn ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
+                              {event.allIn ? 'All-in' : '+ gastos'}
+                            </span>
+                          </div>
                         </div>
                       )}
                       {event.note && (

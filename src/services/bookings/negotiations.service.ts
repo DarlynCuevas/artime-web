@@ -7,6 +7,7 @@ export type NegotiationMessageDto = {
   senderUserId: string;
   message?: string;
   proposedFee?: number;
+  allIn?: boolean;
   isFinalOffer: boolean;
   createdAt: string;
 };
@@ -43,6 +44,7 @@ export async function sendNegotiationMessage(
   payload: {
     message: string;
     proposedFee?: number;
+    allIn?: boolean;
   }
 ): Promise<void> {
   const res = await fetch(
@@ -71,6 +73,7 @@ export async function sendFinalOffer(
   payload: {
     message: string;
     proposedFee: number;
+    allIn?: boolean;
   }
 ): Promise<void> {
   const res = await fetch(

@@ -21,7 +21,7 @@ export function ProfileHero({
     actionElement,
 }: ProfileHeroProps) {
     return (
-        <div className="relative w-full h-[340px] md:h-[400px] overflow-hidden bg-fintech-dark font-sans">
+        <div className="relative w-full h-[340px] md:h-[400px] overflow-hidden bg-fintech-dark font-sans rounded-3xl">
             {/* Abstract background gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
             <div className="absolute -top-40 -right-40 w-96 h-96 bg-brand-amber rounded-full mix-blend-multiply filter blur-[128px] opacity-20 animate-pulse" />

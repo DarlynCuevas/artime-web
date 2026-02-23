@@ -167,7 +167,7 @@ function VenueProfilePage() {
 		<div className="min-h-screen bg-slate-50 pb-20 font-sans selection:bg-amber-100 selection:text-amber-900 overflow-x-hidden">
 
 			{/* ── HERO EDITABLE (DARK MODE) ──────────────────────────────────────────────── */}
-			<div className="relative bg-slate-900 border-b border-white/10 shadow-2xl overflow-hidden pt-8 sm:pt-16 pb-[120px] transition-all duration-300">
+			<div className="relative bg-slate-900 border-b border-white/10 shadow-2xl overflow-hidden pt-8 sm:pt-16 pb-[120px] transition-all duration-300 rounded-3xl">
 				<div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800" />
 				<div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay pointer-events-none" />
 
