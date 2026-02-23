@@ -133,6 +133,18 @@ export function VerificationSection({ token }: Props) {
                 )}
             </div>
 
+            {status === 'VERIFIED' && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600">
+                        <BadgeCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold text-emerald-800">Badge activo en tu perfil</p>
+                        <p className="text-xs text-emerald-700/80">Ya aparece en tus perfiles público y privado.</p>
+                    </div>
+                </div>
+            )}
+
             {/* Formulario de subida (solo cuando aplica) */}
             {canSubmit && (
                 <div className="space-y-6">

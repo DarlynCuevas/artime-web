@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/hooks/auth/useMe';
 import { ArrowRight, BadgeCheck, Banknote, FileSignature, ShieldCheck, Sparkles, Waypoints } from 'lucide-react';
+import { supabase } from '@/services/supabase/supabaseClient';
 
 export default function IndexPage() {
   const { user, loading: authLoading } = useAuth();
@@ -34,18 +35,10 @@ export default function IndexPage() {
       return;
     }
 
-    // Si user existe pero role es null, NO redirigir (esperar a que role se actualice)
+    // Si user existe pero role es null, mostramos landing (no redirigimos)
   }, [user, role, authLoading, meLoading, router]);
 
   if (authLoading || meLoading) {
-    return (
-      <main className="min-h-[100svh] bg-slate-50 flex items-center justify-center">
-        <p className="text-xs font-black uppercase tracking-[0.35em] text-slate-400">Cargando…</p>
-      </main>
-    );
-  }
-
-  if (user) {
     return (
       <main className="min-h-[100svh] bg-slate-50 flex items-center justify-center">
         <p className="text-xs font-black uppercase tracking-[0.35em] text-slate-400">Cargando…</p>
@@ -67,23 +60,79 @@ export default function IndexPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link
-              href="/login"
-              className="hidden sm:inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Iniciar sesión
-            </Link>
-            <Link
-              href="/register"
-              className="inline-flex items-center justify-center rounded-xl bg-brand-amber px-4 py-2 text-xs font-black uppercase tracking-widest text-amber-950 shadow-[0_10px_30px_rgba(245,158,11,0.18)] hover:bg-amber-400 transition-colors"
-            >
-              Crear cuenta
-            </Link>
+            {!user ? (
+              <>
+                <Link
+                  href="/login"
+                  className="hidden sm:inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Iniciar sesión
+                </Link>
+                <Link
+                  href="/register"
+                  className="inline-flex items-center justify-center rounded-xl bg-brand-amber px-4 py-2 text-xs font-black uppercase tracking-widest text-amber-950 shadow-[0_10px_30px_rgba(245,158,11,0.18)] hover:bg-amber-400 transition-colors"
+                >
+                  Crear cuenta
+                </Link>
+              </>
+            ) : (
+              <>
+                <a
+                  href="#elige-rol"
+                  className="hidden sm:inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Continuar
+                </a>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    // Nos quedamos en landing para permitir login/registro.
+                  }}
+                  className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-slate-800 transition-colors"
+                >
+                  Cerrar sesión
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
 
       <main>
+        {user && !role && (
+          <section className="mx-auto w-full max-w-6xl px-4 sm:px-6 pt-6">
+            <div className="rounded-[28px] border border-amber-200/60 bg-amber-50/70 backdrop-blur-xl p-5 shadow-[0_18px_55px_rgba(15,23,42,0.06)]">
+              <p className="text-[10px] font-black uppercase tracking-[0.35em] text-amber-800/70">
+                Cuenta sin rol
+              </p>
+              <p className="mt-2 text-sm sm:text-base font-semibold text-slate-900">
+                Estás autenticado, pero tu perfil operativo no está configurado (o se han borrado tus datos).
+              </p>
+              <p className="mt-1 text-sm text-slate-600">
+                Elige un rol para continuar. Si prefieres entrar con otra cuenta, cierra sesión.
+              </p>
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
+                <a
+                  href="#elige-rol"
+                  className="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-5 py-3 text-xs font-black uppercase tracking-widest text-white hover:bg-slate-800 transition-colors"
+                >
+                  Elegir rol
+                </a>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                  }}
+                  className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Hero */}
         <section className="relative overflow-hidden">
           <div className="absolute -top-40 -right-40 h-[420px] w-[420px] rounded-full bg-brand-amber blur-[140px] opacity-15" />
@@ -106,10 +155,10 @@ export default function IndexPage() {
 
                 <div className="mt-6 flex flex-col sm:flex-row gap-3">
                   <Link
-                    href="/register"
+                    href={user ? '#elige-rol' : '/register'}
                     className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-6 py-4 text-xs font-black uppercase tracking-widest text-white hover:bg-slate-800 hover:-translate-y-0.5 hover:shadow-lg transition-all"
                   >
-                    Empezar <ArrowRight className="h-4 w-4" />
+                    {user ? 'Continuar' : 'Empezar'} <ArrowRight className="h-4 w-4" />
                   </Link>
                   <Link
                     href="/login"
@@ -165,6 +214,40 @@ export default function IndexPage() {
                 <div className="absolute -z-10 -bottom-10 -right-10 h-40 w-40 rounded-full bg-brand-amber blur-[80px] opacity-20" />
               </div>
             </div>
+          </div>
+        </section>
+
+        <section id="elige-rol" className="mx-auto w-full max-w-6xl px-4 sm:px-6 pb-12">
+          <div className="rounded-[32px] border border-slate-200/60 bg-white/70 backdrop-blur-xl shadow-[0_20px_60px_rgba(15,23,42,0.06)] overflow-hidden">
+            <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/60">
+              <p className="text-[10px] font-black uppercase tracking-[0.35em] text-slate-500">Acceso</p>
+              <h2 className="mt-2 text-xl sm:text-2xl font-black tracking-tight">Elige tu rol para empezar a operar</h2>
+              <p className="mt-2 text-sm text-slate-600 max-w-2xl">
+                Si todavía no has creado tu perfil, completa el onboarding del rol correspondiente. Si ya lo tienes, inicia sesión y accederás directo a tu panel.
+              </p>
+            </div>
+            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <RoleActionCard title="Artista" desc="Perfil, caché, calendario y bookings." href="/onboarding/artist" />
+              <RoleActionCard title="Sala" desc="Convocatorias, bookings y sugerencias." href="/onboarding/venue" />
+              <RoleActionCard title="Manager" desc="Representa artistas y negocia." href="/onboarding/manager" />
+              <RoleActionCard title="Promotor" desc="Eventos, line-up y propuestas." href="/onboarding/promoter" />
+            </div>
+            {!user && (
+              <div className="px-6 pb-6 flex flex-col sm:flex-row gap-2">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Iniciar sesión
+                </Link>
+                <Link
+                  href="/register"
+                  className="inline-flex items-center justify-center rounded-2xl bg-brand-amber px-5 py-3 text-xs font-black uppercase tracking-widest text-amber-950 shadow-[0_10px_30px_rgba(245,158,11,0.18)] hover:bg-amber-400 transition-colors"
+                >
+                  Crear cuenta
+                </Link>
+              </div>
+            )}
           </div>
         </section>
 
@@ -295,6 +378,21 @@ function RoleCard({ title, desc, items }: { title: string; desc: string; items: 
         ))}
       </ul>
     </div>
+  );
+}
+
+function RoleActionCard({ title, desc, href }: { title: string; desc: string; href: string }) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all"
+    >
+      <p className="text-xs font-black uppercase tracking-widest text-slate-900">{title}</p>
+      <p className="text-xs text-slate-500 mt-1">{desc}</p>
+      <div className="mt-4 inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-700 group-hover:text-amber-800 transition-colors">
+        Continuar <ArrowRight className="h-4 w-4" />
+      </div>
+    </Link>
   );
 }
 

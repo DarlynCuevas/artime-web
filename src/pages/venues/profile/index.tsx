@@ -5,6 +5,7 @@ import { withRole } from '@/components/auth/withRole';
 import { useMe } from '@/hooks/auth/useMe';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { getMyVenueProfile, updateMyVenueProfile } from '@/services/venues/venues.service';
+import { VerificationBanner } from '@/components/profile/VerificationBanner';
 
 type EditableVenueProfile = {
 	name: string;
@@ -18,6 +19,7 @@ type EditableVenueProfile = {
 	contactEmail: string;
 	contactPhone: string;
 	profileImageUrl?: string | null;
+	isVerified?: boolean;
 };
 
 // ==========================================
@@ -59,6 +61,7 @@ function VenueProfilePage() {
 					contactEmail: initial.contactEmail ?? '',
 					contactPhone: initial.contactPhone ?? '',
 					profileImageUrl: initial.profileImageUrl ?? null,
+					isVerified: Boolean(initial.isVerified),
 				});
 			})
 			.catch((err) => setError(err.message))
@@ -250,6 +253,12 @@ function VenueProfilePage() {
 					</div>
 				</div>
 			</div>
+
+			{profile.isVerified ? (
+				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-20">
+					<VerificationBanner />
+				</div>
+			) : null}
 
 			{/* ── CUERPO (MAIN) ──────────────────────────────────────────────── */}
 			<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 -mt-[80px]">

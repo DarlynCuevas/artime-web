@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, ShieldCheck, Users } from 'lucide-react';
+import { Calendar as CalendarIcon, ExternalLink, Lock, MapPin, Unlock, Users } from 'lucide-react';
 
 import { withRole } from '@/components/auth/withRole';
-import { StatusBadge } from '@/components/ui/StatusBadge';
+import { AvailabilityCalendar } from '@/components/profile/AvailabilityCalendar';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { getPublicArtistCalendarBlocks } from '@/services/artists/calendar.service';
 import { getMyRepresentedArtists } from '@/services/managers/managers.service';
 
 type RepresentedArtist = {
@@ -17,13 +18,11 @@ type BookingRow = {
   artistName: string;
   venueName?: string | null;
   eventName?: string | null;
+  city?: string | null;
   startDate: string;
   status: string;
-};
-
-type RawRepresentedArtist = {
-  id?: string;
-  name?: string | null;
+  totalAmount?: number | null;
+  currency?: string | null;
 };
 
 type RawBooking = {
@@ -32,22 +31,37 @@ type RawBooking = {
   artistName?: string | null;
   venueName?: string | null;
   eventName?: string | null;
+  city?: string | null;
   start_date?: string;
   status?: string;
+  totalAmount?: number | null;
+  currency?: string | null;
+};
+
+type RepresentedArtistApi = {
+  id: string;
+  name?: string | null;
+};
+
+type CalendarBlock = {
+  date: string;
 };
 
 function ManagerCalendarPage() {
   const { user } = useAuth();
-  const [monthDate, setMonthDate] = useState(() => startOfMonth(new Date()));
-  const [artistFilter, setArtistFilter] = useState('ALL');
+
   const [artists, setArtists] = useState<RepresentedArtist[]>([]);
+  const [selectedArtistId, setSelectedArtistId] = useState<string>('');
   const [bookings, setBookings] = useState<BookingRow[]>([]);
+
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [loadingBlocks, setLoadingBlocks] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.token) {
-      setLoading(false);
       return;
     }
 
@@ -62,18 +76,16 @@ function ManagerCalendarPage() {
           }),
         ]);
 
-        if (!bookingsRes.ok) {
-          throw new Error('No se pudo cargar el calendario de bookings');
-        }
-
+        if (!bookingsRes.ok) throw new Error('No se pudo cargar el calendario');
         const bookingsData = (await bookingsRes.json()) as RawBooking[];
+
         const represented = (Array.isArray(representedData) ? representedData : [])
-          .filter((item: RawRepresentedArtist) => item?.id)
-          .map((item: RawRepresentedArtist) => ({
-            id: item.id as string,
-            name: item.name ?? 'Artista',
-          }));
-        const representedIds = new Set(represented.map((a) => a.id));
+          .filter((item: unknown): item is RepresentedArtistApi => {
+            return Boolean(item && typeof item === 'object' && 'id' in item);
+          })
+          .map((item) => ({ id: item.id, name: item.name ?? 'Artista' }));
+
+        const representedIds = new Set(represented.map((artist) => artist.id));
         const normalizedBookings = (Array.isArray(bookingsData) ? bookingsData : [])
           .filter((item) => item?.id && item?.start_date && item?.status)
           .map((item) => ({
@@ -82,15 +94,19 @@ function ManagerCalendarPage() {
             artistName: item.artistName ?? 'Artista',
             venueName: item.venueName ?? null,
             eventName: item.eventName ?? null,
+            city: item.city ?? null,
             startDate: item.start_date as string,
             status: item.status as string,
+            totalAmount: item.totalAmount ?? null,
+            currency: item.currency ?? 'EUR',
           }))
-          .filter((item: BookingRow) => !item.artistId || representedIds.has(item.artistId));
+          .filter((item) => !item.artistId || representedIds.has(item.artistId));
 
         setArtists(represented);
+        setSelectedArtistId((current) => current || represented[0]?.id || '');
         setBookings(normalizedBookings);
       } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Error al cargar calendario');
+        setError(err instanceof Error ? err.message : 'No se pudo cargar el calendario');
       } finally {
         setLoading(false);
       }
@@ -99,33 +115,46 @@ function ManagerCalendarPage() {
     load();
   }, [user?.token]);
 
-  const monthDays = useMemo(() => getMonthDays(monthDate), [monthDate]);
-  const monthKey = `${monthDate.getFullYear()}-${monthDate.getMonth() + 1}`;
+  useEffect(() => {
+    if (!selectedArtistId || !user?.token) {
+      setBlockedDates(new Set());
+      return;
+    }
 
-  const bookingsByDate = useMemo(() => {
-    const map = new Map<string, BookingRow[]>();
-    bookings.forEach((row) => {
-      const parsed = new Date(row.startDate);
-      if (Number.isNaN(parsed.getTime())) return;
-      const sameMonth = `${parsed.getFullYear()}-${parsed.getMonth() + 1}` === monthKey;
-      if (!sameMonth) return;
-      if (artistFilter !== 'ALL' && row.artistName !== artistFilter) return;
-      const key = formatIsoDay(parsed);
-      const current = map.get(key) ?? [];
-      current.push(row);
-      map.set(key, current);
-    });
-    return map;
-  }, [bookings, monthKey, artistFilter]);
+    setLoadingBlocks(true);
+    const from = new Date().toISOString().slice(0, 10);
+    const to = new Date(new Date().setFullYear(new Date().getFullYear() + 2)).toISOString().slice(0, 10);
+    getPublicArtistCalendarBlocks(selectedArtistId, from, to, user.token)
+      .then((data: CalendarBlock[]) => setBlockedDates(new Set((data ?? []).map((entry) => entry.date))))
+      .catch(() => setBlockedDates(new Set()))
+      .finally(() => setLoadingBlocks(false));
+  }, [selectedArtistId, user?.token]);
 
-  const totalMonthBookings = Array.from(bookingsByDate.values()).reduce((acc, rows) => acc + rows.length, 0);
+  const selectedArtist = useMemo(
+    () => artists.find((artist) => artist.id === selectedArtistId) ?? null,
+    [artists, selectedArtistId],
+  );
+
+  const selectedBooking = useMemo(() => {
+    if (!selectedDate || !selectedArtistId) return null;
+    return (
+      bookings.find((booking) => {
+        if (!booking.artistId || booking.artistId !== selectedArtistId) return false;
+        return booking.startDate.slice(0, 10) === selectedDate;
+      }) ?? null
+    );
+  }, [bookings, selectedArtistId, selectedDate]);
+
+  const isSelectedBlocked = selectedDate ? blockedDates.has(selectedDate) : false;
+  const isSelectedBooked = Boolean(selectedBooking);
+  const isSelectedFree = selectedDate && !isSelectedBlocked && !isSelectedBooked;
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center space-y-3">
           <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto animate-pulse">
-            <ShieldCheck className="w-6 h-6 text-amber-500" />
+            <CalendarIcon className="w-6 h-6 text-amber-500" />
           </div>
           <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Cargando calendario...</p>
         </div>
@@ -134,112 +163,180 @@ function ManagerCalendarPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
-      <div className="relative w-full overflow-hidden bg-fintech-dark">
-        <div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-brand-amber rounded-full mix-blend-multiply filter blur-[128px] opacity-15 animate-pulse" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-10" />
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-14 pb-12">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center shrink-0">
-              <CalendarDays className="w-6 h-6 text-amber-400" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-0.5">Calendario</p>
-              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Agenda de representados</h1>
-            </div>
-          </div>
-
-          <section className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur p-4 sm:p-5 space-y-4">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white">
-                <CalendarDays className="h-4 w-4 text-white/70" />
-                {new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(monthDate)}
-              </div>
-              <div className="inline-flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setMonthDate((prev) => addMonths(prev, -1))}
-                  className="rounded-xl border border-white/15 bg-white/5 p-2 text-white hover:bg-white/10"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMonthDate(startOfMonth(new Date()))}
-                  className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10"
-                >
-                  Hoy
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMonthDate((prev) => addMonths(prev, 1))}
-                  className="rounded-xl border border-white/15 bg-white/5 p-2 text-white hover:bg-white/10"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 flex-wrap">
-              <label className="text-xs font-black uppercase tracking-widest text-white/60 inline-flex items-center gap-2">
-                <Users className="h-4 w-4 text-white/70" />
-                Artista
-              </label>
-              <select
-                value={artistFilter}
-                onChange={(e) => setArtistFilter(e.target.value)}
-                className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white focus:border-amber-400/50 focus:outline-none"
-              >
-                <option value="ALL" className="text-slate-900">Todos</option>
-                {artists.map((artist) => (
-                  <option key={artist.id} value={artist.name} className="text-slate-900">
-                    {artist.name}
-                  </option>
-                ))}
-              </select>
-              <span className="text-xs font-bold uppercase tracking-widest text-white/70">{totalMonthBookings} bookings este mes</span>
-            </div>
-          </section>
-        </div>
+    <div className="min-h-screen bg-slate-50 relative pb-20 selection:bg-amber-500/30 selection:text-amber-900">
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-slate-200/20 rounded-full blur-3xl opacity-50 mix-blend-multiply" />
       </div>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 mt-6 space-y-6">
-        {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}
+      <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+        <header className="space-y-4">
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">Gestión de Calendario</h1>
+          <p className="text-slate-600 font-medium text-sm sm:text-base max-w-2xl leading-relaxed">
+            Consulta la disponibilidad de tus artistas representados y revisa en detalle cada fecha.
+          </p>
+        </header>
 
-        {!error && (
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {monthDays.map((date) => {
-              const key = formatIsoDay(date);
-              const dayBookings = bookingsByDate.get(key) ?? [];
-              return (
-                <article key={key} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_20px_50px_rgba(0,0,0,0.04)] min-h-[170px]">
-                  <header className="flex items-center justify-between mb-3">
-                    <p className="text-sm font-black text-slate-900 uppercase tracking-wide">{formatDayLabel(date)}</p>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{dayBookings.length} reservas</span>
-                  </header>
+        <section className="bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-4 sm:p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-500 inline-flex items-center gap-2">
+              <Users className="w-4 h-4 text-slate-400" />
+              Artista representado
+            </label>
+            <select
+              value={selectedArtistId}
+              onChange={(event) => {
+                setSelectedArtistId(event.target.value);
+                setSelectedDate(null);
+              }}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-amber-400 focus:outline-none"
+            >
+              {artists.length === 0 && <option value="">Sin artistas</option>}
+              {artists.map((artist) => (
+                <option key={artist.id} value={artist.id}>
+                  {artist.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
 
-                  {dayBookings.length === 0 ? (
-                    <p className="text-xs text-slate-400">Sin reservas.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {dayBookings.map((booking) => (
-                        <div key={booking.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                          <p className="text-xs font-black uppercase tracking-wide text-slate-900">{booking.artistName}</p>
-                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                            {booking.eventName || booking.venueName || 'Booking'}
-                          </p>
-                          <div className="mt-2">
-                            <StatusBadge status={booking.status} />
-                          </div>
-                        </div>
-                      ))}
+        {error && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-sm font-medium text-rose-700">
+            {error}
+          </div>
+        )}
+
+        {selectedArtistId ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-8 bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 sm:p-8">
+              <AvailabilityCalendar
+                artistId={selectedArtistId}
+                token={user?.token}
+                interactiveMode={true}
+                onDayClick={setSelectedDate}
+              />
+            </div>
+
+            <div className="lg:col-span-4 space-y-6">
+              <h2 className="text-xs font-black uppercase tracking-[0.15em] text-slate-500 ml-1">Operaciones de Fecha</h2>
+
+              {!selectedDate && (
+                <div className="bg-slate-100/50 border border-slate-200/50 rounded-3xl p-8 text-center flex flex-col items-center justify-center min-h-[300px]">
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-slate-300 shadow-sm mb-4">
+                    <CalendarIcon className="w-8 h-8" />
+                  </div>
+                  <h3 className="font-bold text-slate-900 mb-2">Ningún día seleccionado</h3>
+                  <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                    Selecciona un día para ver si está libre, bloqueado o reservado para {selectedArtist?.name ?? 'el artista'}.
+                  </p>
+                </div>
+              )}
+
+              {selectedDate && (
+                <div className="bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col">
+                  <div className="p-6 border-b border-slate-100/80 bg-slate-50/50 flex flex-col justify-center items-center text-center space-y-1">
+                    <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Fecha Seleccionada</span>
+                    <h3 className="text-2xl font-black text-slate-900">
+                      {new Date(selectedDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </h3>
+                  </div>
+
+                  {isSelectedBlocked && (
+                    <div className="p-6 sm:p-8 flex flex-col items-center text-center">
+                      <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-4">
+                        <Lock className="w-8 h-8" />
+                      </div>
+                      <h4 className="font-bold text-slate-900 mb-2">Día Bloqueado</h4>
+                      <p className="text-sm text-slate-500 mb-8 font-medium">
+                        {selectedArtist?.name ?? 'El artista'} marcó esta fecha como no disponible.
+                      </p>
+                      <button
+                        type="button"
+                        disabled={true}
+                        className="w-full flex items-center justify-center gap-2 h-12 bg-white border-2 border-slate-200 text-slate-700 font-bold text-sm rounded-xl opacity-70 cursor-not-allowed"
+                      >
+                        <Unlock className="w-4 h-4" />
+                        Desbloquear Disponibilidad
+                      </button>
+                      <p className="text-[10px] text-slate-400 mt-2">Solo el artista puede cambiar este estado desde su calendario.</p>
                     </div>
                   )}
-                </article>
-              );
-            })}
-          </section>
+
+                  {isSelectedFree && !loadingBlocks && (
+                    <div className="p-6 sm:p-8 flex flex-col items-center text-center">
+                      <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-4 border border-amber-100">
+                        <Unlock className="w-8 h-8" />
+                      </div>
+                      <h4 className="font-bold text-slate-900 mb-2">Día Libre</h4>
+                      <p className="text-sm text-slate-500 mb-8 font-medium">
+                        Fecha disponible para nuevas propuestas.
+                      </p>
+                      <button
+                        type="button"
+                        disabled={true}
+                        className="w-full flex items-center justify-center gap-2 h-12 bg-slate-900 text-white font-bold text-sm rounded-xl opacity-70 cursor-not-allowed"
+                      >
+                        <Lock className="w-4 h-4 opacity-80" />
+                        Bloquear Disponibilidad
+                      </button>
+                      <p className="text-[10px] text-slate-400 mt-2">Solo el artista puede bloquear o desbloquear fechas.</p>
+                    </div>
+                  )}
+
+                  {isSelectedBooked && selectedBooking && (
+                    <div className="p-0">
+                      <div className="p-6 bg-slate-900 text-white flex flex-col items-center text-center relative overflow-hidden">
+                        <div className="relative z-10 w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-4 backdrop-blur-sm border border-white/10">
+                          <CalendarIcon className="w-8 h-8 text-amber-400" />
+                        </div>
+                        <h4 className="font-bold text-xl relative z-10 mb-1">Día Ocupado</h4>
+                        <p className="text-sm text-slate-300 font-medium relative z-10">
+                          Existe una actuación confirmada
+                        </p>
+                      </div>
+
+                      <div className="p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</span>
+                          <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-full bg-emerald-100 text-emerald-700">
+                            {selectedBooking.status}
+                          </span>
+                        </div>
+
+                        <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                          <div className="p-2 bg-white rounded-lg shadow-sm">
+                            <MapPin className="w-4 h-4 text-slate-400" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 text-sm">
+                              {selectedBooking.eventName || selectedBooking.venueName || 'Booking'}
+                            </p>
+                            {selectedBooking.city && (
+                              <p className="text-xs font-medium text-slate-500 mt-0.5">{selectedBooking.city}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="pt-4 mt-2 border-t border-slate-100">
+                          <button
+                            onClick={() => (window.location.href = '/manager/bookings')}
+                            className="w-full h-10 flex items-center justify-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors"
+                          >
+                            Ver en bookings del manager
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500">
+            No tienes artistas representados para visualizar su calendario.
+          </div>
         )}
       </main>
     </div>
@@ -247,33 +344,3 @@ function ManagerCalendarPage() {
 }
 
 export default withRole(ManagerCalendarPage, ['MANAGER']);
-
-function startOfMonth(input: Date) {
-  return new Date(input.getFullYear(), input.getMonth(), 1);
-}
-
-function addMonths(input: Date, diff: number) {
-  return new Date(input.getFullYear(), input.getMonth() + diff, 1);
-}
-
-function getMonthDays(input: Date) {
-  const year = input.getFullYear();
-  const month = input.getMonth();
-  const lastDay = new Date(year, month + 1, 0).getDate();
-  return Array.from({ length: lastDay }, (_, index) => new Date(year, month, index + 1));
-}
-
-function formatIsoDay(date: Date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function formatDayLabel(date: Date) {
-  return new Intl.DateTimeFormat('es-ES', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short',
-  }).format(date);
-}

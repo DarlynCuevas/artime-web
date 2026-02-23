@@ -9,6 +9,7 @@ import { ProfileHero } from '@/components/profile/ProfileHero';
 import { CapacityCard } from '@/components/profile/CapacityCard';
 import { AvailabilityCalendar } from '@/components/profile/AvailabilityCalendar';
 import { GlassCard } from '@/components/profile/GlassCard';
+import { VerificationBanner } from '@/components/profile/VerificationBanner';
 
 type VenueProfile = {
   id: string;
@@ -24,6 +25,7 @@ type VenueProfile = {
   contactEmail?: string;
   contactPhone?: string;
   profileImageUrl?: string;
+  isVerified?: boolean;
 };
 
 export default function VenuePublicProfilePage() {
@@ -111,6 +113,12 @@ export default function VenuePublicProfilePage() {
           avatarUrl={venue.profileImageUrl || fallbackAvatar}
           actionElement={capacityCard}
         />
+
+        {venue.isVerified ? (
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 mt-4">
+            <VerificationBanner />
+          </div>
+        ) : null}
 
         {/* CapacityCard móvil */}
         <div className="block lg:hidden max-w-5xl mx-auto px-4 pt-4 relative z-20">
@@ -309,5 +317,4 @@ export default function VenuePublicProfilePage() {
 }
 
 // ── Components Compartidos ──────────────────────────────────────────
-
 

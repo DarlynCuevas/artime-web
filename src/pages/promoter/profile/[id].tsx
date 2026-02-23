@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { getPromoterGallery } from '@/services/promoters/gallery.service';
 import { getPromoterVideos } from '@/services/promoters/videos.service';
 import { ProfileHero } from '@/components/profile/ProfileHero';
+import { VerificationBanner } from '@/components/profile/VerificationBanner';
 
 type PromoterProfile = {
   id: string;
@@ -16,6 +17,7 @@ type PromoterProfile = {
   eventTypes?: string[];
   isPublic?: boolean | null;
   profileImageUrl?: string | null;
+  isVerified?: boolean;
 };
 
 export default function PromoterPublicProfilePage() {
@@ -57,6 +59,7 @@ export default function PromoterPublicProfilePage() {
           eventTypes: profileData.eventTypes ?? [],
           isPublic: profileData.isPublic ?? true,
           profileImageUrl: profileData.profileImageUrl ?? null,
+          isVerified: Boolean(profileData.isVerified),
         });
       })
       .catch((err: any) => {
@@ -156,6 +159,12 @@ export default function PromoterPublicProfilePage() {
         genres={profile.eventTypes ?? []}
         avatarUrl={profile.profileImageUrl || fallbackAvatar}
       />
+
+      {profile.isVerified ? (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 mt-4">
+          <VerificationBanner />
+        </div>
+      ) : null}
 
       {/* ── CUERPO (MAIN) ──────────────────────────────────────────────── */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 relative z-10 -mt-8 space-y-6">

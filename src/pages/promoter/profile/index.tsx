@@ -6,6 +6,7 @@ import { withRole } from '@/components/auth/withRole';
 import { getProfileImage, uploadProfileImage } from '@/services/users/profileImage.service';
 import { deletePromoterGalleryImage, getPromoterGallery, uploadPromoterGalleryImage } from '@/services/promoters/gallery.service';
 import { addPromoterVideo, deletePromoterVideo, getPromoterVideos } from '@/services/promoters/videos.service';
+import { VerificationBanner } from '@/components/profile/VerificationBanner';
 
 type PromoterProfile = {
   id: string;
@@ -17,6 +18,7 @@ type PromoterProfile = {
   isPublic?: boolean | null;
   showPastEvents?: boolean | null;
   createdAt?: string | null;
+  isVerified?: boolean;
 };
 
 const EVENT_TYPES = [
@@ -78,6 +80,7 @@ function PromoterPrivateProfilePage() {
           isPublic: data.isPublic ?? true,
           showPastEvents: data.showPastEvents ?? false,
           createdAt: data.createdAt ?? null,
+          isVerified: Boolean(data.isVerified),
         });
       })
       .catch((err: any) => {
@@ -275,11 +278,6 @@ function PromoterPrivateProfilePage() {
 
             {/* INFO EDITABLE HERO */}
             <div className="flex-1 space-y-3 pb-2 w-full">
-              <div className="flex items-center gap-2 mb-1">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                <span className="text-xs font-medium text-emerald-400">Promotor verificado en ARTIME</span>
-              </div>
-
               <div className="relative w-full">
                 <input
                   value={profile.name}
@@ -344,6 +342,12 @@ function PromoterPrivateProfilePage() {
           </div>
         </div>
       </div>
+
+      {profile.isVerified ? (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-16 relative z-20">
+          <VerificationBanner />
+        </div>
+      ) : null}
 
       {/* ── CUERPO (MAIN) ──────────────────────────────────────────────── */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 -mt-10 relative z-10 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">

@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, ShieldCheck, UserRound } from 'lucide-react';
 
 import { getManagerPublicProfile } from '@/services/managers/managers.service';
+import { VerificationBanner } from '@/components/profile/VerificationBanner';
 
 type ManagerPublicProfile = {
   id: string;
   name: string;
   createdAt?: string | null;
+  isVerified?: boolean;
 };
 
 export default function ManagerPublicProfilePage() {
@@ -90,6 +92,12 @@ export default function ManagerPublicProfilePage() {
               Este manager representa artistas dentro del ecosistema ARTIME.
             </div>
           </section>
+
+          {profile.isVerified ? (
+            <div className="max-w-4xl">
+              <VerificationBanner />
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

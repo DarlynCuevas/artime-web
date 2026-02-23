@@ -7,12 +7,14 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/hooks/auth/useMe';
 import { getMyManagerProfile, getMyRepresentedArtists, updateMyManagerProfile } from '@/services/managers/managers.service';
 import { getStripeOnboardingStatus, startStripeOnboarding, type StripeOnboardingStatusResponse } from '@/services/payments/stripe-onboarding.service';
+import { VerificationBanner } from '@/components/profile/VerificationBanner';
 
 type ManagerProfile = {
   id: string;
   name: string;
   email?: string | null;
   createdAt?: string | null;
+  isVerified?: boolean;
 };
 
 type RepresentedArtist = {
@@ -139,6 +141,12 @@ function ManagerProfilePage() {
           <p className="mt-4 text-sm text-white/70">Gestiona identidad operativa, artistas representados y Stripe Connect.</p>
         </div>
       </div>
+
+      {profile.isVerified ? (
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-10 relative z-20">
+          <VerificationBanner />
+        </div>
+      ) : null}
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 mt-6 space-y-6">
         {error && <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}

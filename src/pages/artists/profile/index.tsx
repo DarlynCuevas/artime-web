@@ -9,6 +9,7 @@ import { deleteArtistGalleryImage, getArtistGallery, uploadArtistGalleryImage } 
 import { getProfileImage, uploadProfileImage } from '@/services/users/profileImage.service';
 import { addArtistVideo, deleteArtistVideo, getArtistVideos } from '@/services/artists/videos.service';
 import { useArtistDashboard } from '@/hooks/artists/useArtistDashboard';
+import { VerificationBanner } from '@/components/profile/VerificationBanner';
 
 type EditableProfile = {
 	id?: string;
@@ -22,6 +23,7 @@ type EditableProfile = {
 	isNegotiable: boolean;
 	socialLink?: string;
 	techRider?: string;
+	isVerified?: boolean;
 };
 
 function ArtistPrivateProfilePage() {
@@ -85,16 +87,12 @@ function ArtistPrivateProfilePage() {
 					isNegotiable: Boolean(data.isNegotiable),
 					socialLink: data.socialLink ?? '',
 					techRider: data.techRider ?? '',
+					isVerified: Boolean(data.isVerified),
 				});
 			})
 			.catch((err) => setError(err.message))
 			.finally(() => setLoadingProfile(false));
 	}, [user?.token, profileId]);
-
-	useEffect(() => {
-		if (!user?.token) return;
-		getProfileImage(user.token).then((result) => setProfileImageUrl(result.url)).catch(() => setProfileImageUrl(null));
-	}, [user?.token]);
 
 	useEffect(() => {
 		if (!profileId) return;
@@ -230,11 +228,6 @@ function ArtistPrivateProfilePage() {
 
 						{/* INFO EDITABLE HERO */}
 						<div className="flex-1 space-y-3 pb-2 w-full">
-							<div className="flex items-center gap-2 mb-1">
-								<ShieldCheck className="h-4 w-4 text-emerald-400" />
-								<span className="text-xs font-medium text-emerald-400">Perfil verificado en ARTIME</span>
-							</div>
-
 							<div className="relative group">
 								<input
 									value={profile.name}
@@ -285,6 +278,12 @@ function ArtistPrivateProfilePage() {
 					</div>
 				</div>
 			</div>
+
+			{profile.isVerified ? (
+				<div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-16 relative z-20">
+					<VerificationBanner />
+				</div>
+			) : null}
 
 			{/* ── CUERPO (MAIN) ──────────────────────────────────────────────── */}
 			<main className="max-w-5xl mx-auto px-4 sm:px-6 -mt-10 relative z-10 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">

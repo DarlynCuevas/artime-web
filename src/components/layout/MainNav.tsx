@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import {
   AlertCircle,
   BadgeCheck,
+  Building2,
   Bell,
   BellRing,
   Banknote,
@@ -14,6 +15,7 @@ import {
   FileSignature,
   HandCoins,
   LayoutDashboard,
+  Inbox,
   MessageSquare,
   PartyPopper,
   Settings,
@@ -61,6 +63,7 @@ const navByRole: Record<
     main: [
       { label: 'Dashboard', href: '/venues/dashboard', icon: LayoutDashboard },
       { label: 'Bookings', href: '/venues/bookings', icon: Ticket },
+      { label: 'Sugerencias', href: '/venues/suggestions', icon: Inbox },
       { label: 'Artistas', href: '/venues/discover', icon: Users },
       { label: 'Perfil', href: '/venues/profile', icon: UserRound },
     ],
@@ -79,7 +82,8 @@ const navByRole: Record<
     main: [
       { label: 'Dashboard', href: '/manager/dashboard', icon: LayoutDashboard },
       { label: 'Bookings', href: '/manager/bookings', icon: Ticket },
-      { label: 'Artistas', href: '/manager/discover', icon: Users },
+      { label: 'Artistas', href: '/manager/artists', icon: Users },
+      { label: 'Salas', href: '/manager/venues', icon: Building2 },
       { label: 'Calendario', href: '/manager/calendar', icon: CalendarDays },
       { label: 'Perfil', href: '/manager/profile', icon: UserRound },
     ],
@@ -272,6 +276,24 @@ export function MainNav({ children }: { children: ReactNode }) {
         title: 'Invitación rechazada',
         description: `${artistName} ha rechazado la invitación${eventName ? ` para ${eventName}` : ''}.`,
         href: latest.payload?.eventId ? `/events/${latest.payload.eventId}#event-invitations` : '/events',
+      });
+    }
+
+    if (latest.type === 'VENUE_ARTIST_SUGGESTION_CREATED') {
+      toast({
+        title: 'Nueva sugerencia recibida',
+        description: `${latest.payload?.managerName ?? 'Un manager'} te sugiere a ${latest.payload?.artistName ?? 'un artista'}.`,
+        href: latest.payload?.suggestionId
+          ? `/venues/suggestions?suggestionId=${latest.payload.suggestionId}`
+          : '/venues/suggestions',
+      });
+    }
+
+    if (latest.type === 'VENUE_ARTIST_SUGGESTION_RESOLVED') {
+      toast({
+        title: 'Sugerencia actualizada',
+        description: `${latest.payload?.venueName ?? 'Una sala'} ha marcado la sugerencia de ${latest.payload?.artistName ?? 'un artista'} como ${latest.payload?.status ?? 'actualizada'}.`,
+        href: '/manager/venues',
       });
     }
   }, [latestNotifications]);
@@ -659,6 +681,22 @@ export function MainNav({ children }: { children: ReactNode }) {
                                     return;
                                   }
 
+                                  if (n.type === 'VENUE_ARTIST_SUGGESTION_CREATED') {
+                                    const suggestionId = n.payload?.suggestionId;
+                                    const target = suggestionId
+                                      ? `/venues/suggestions?suggestionId=${suggestionId}`
+                                      : '/venues/suggestions';
+                                    router.push(target);
+                                    setShowDropdown(false);
+                                    return;
+                                  }
+
+                                  if (n.type === 'VENUE_ARTIST_SUGGESTION_RESOLVED') {
+                                    router.push('/manager/venues');
+                                    setShowDropdown(false);
+                                    return;
+                                  }
+
                                   if (n.type === 'EVENT_INVITATION_CREATED') {
                                     const eventId = n.payload?.eventId || n.payload?.event_id;
                                     const invitationId = n.payload?.invitationId || n.payload?.invitation_id;
@@ -736,6 +774,9 @@ function getHeaderMeta(pathname: string, role?: string | null) {
   if (base.includes('/bookings')) {
     return { title: 'Bookings', subtitle: 'Contrataciones en curso' };
   }
+  if (base.includes('/suggestions')) {
+    return { title: 'Sugerencias', subtitle: 'Bandeja de propuestas de artistas' };
+  }
   if (base.includes('/calendar')) {
     return { title: 'Calendario', subtitle: 'Disponibilidad y fechas' };
   }
@@ -764,6 +805,8 @@ const NOTIFICATION_CONFIG: Record<string, { icon: React.ReactNode; color: string
   ARTIST_CALL_CREATED: { icon: <Sparkles className="h-4 w-4" />, color: 'text-amber-600', bg: 'bg-amber-100', label: 'Nueva convocatoria' },
   REPRESENTATION_REQUEST_CREATED: { icon: <Users className="h-4 w-4" />, color: 'text-violet-600', bg: 'bg-violet-100', label: 'Solicitud de representación' },
   REPRESENTATION_REQUEST_RESOLVED: { icon: <BadgeCheck className="h-4 w-4" />, color: 'text-slate-600', bg: 'bg-slate-100', label: 'Respuesta a solicitud' },
+  VENUE_ARTIST_SUGGESTION_CREATED: { icon: <Inbox className="h-4 w-4" />, color: 'text-amber-700', bg: 'bg-amber-100', label: 'Nueva sugerencia' },
+  VENUE_ARTIST_SUGGESTION_RESOLVED: { icon: <BadgeCheck className="h-4 w-4" />, color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Sugerencia resuelta' },
 };
 
 const DEFAULT_CONFIG = { icon: <Bell className="h-4 w-4" />, color: 'text-slate-500', bg: 'bg-slate-100', label: 'Notificación' };
@@ -805,6 +848,8 @@ function NotificationItem({ notification, onClick }: { notification: ArtistNotif
       case 'ARTIST_CALL_CREATED': return `Nueva convocatoria${p.venueName ? ` de ${p.venueName}` : ''}`;
       case 'REPRESENTATION_REQUEST_CREATED': return `${p.managerName ?? 'Un manager'} quiere representarte`;
       case 'REPRESENTATION_REQUEST_RESOLVED': return `Respuesta a tu solicitud: ${p.result ?? ''}`.trim();
+      case 'VENUE_ARTIST_SUGGESTION_CREATED': return `${p.managerName ?? 'Un manager'} sugiere a ${p.artistName ?? 'un artista'}`;
+      case 'VENUE_ARTIST_SUGGESTION_RESOLVED': return `${p.venueName ?? 'Una sala'} actualizó tu sugerencia`;
       default: return config.label;
     }
   })();

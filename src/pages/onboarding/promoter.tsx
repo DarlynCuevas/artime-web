@@ -24,6 +24,7 @@ export default function PromoterOnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   const hasToken = Boolean(user?.token);
   const queryDisplayName = typeof router.query.displayName === 'string' ? router.query.displayName.trim() : '';
+  const isNamePrefilled = Boolean(queryDisplayName);
 
   useEffect(() => {
     if (!profileName && queryDisplayName) {
@@ -85,7 +86,7 @@ export default function PromoterOnboardingPage() {
 
       <form onSubmit={onSubmit} className="space-y-6 mt-4">
             <Card title="Identidad" icon={<Sparkles className="h-4 w-4 text-slate-600" />}>
-              {profileName ? (
+              {isNamePrefilled ? (
                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                   Nombre visible: <span className="font-semibold text-slate-900">{profileName}</span>
                 </div>

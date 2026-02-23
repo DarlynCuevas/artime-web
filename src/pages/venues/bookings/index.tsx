@@ -173,7 +173,7 @@ function InterestedCard({ item }: { item: InterestedArtistCall }) {
 
       <div className="flex justify-end">
         <Link
-          href={`/venues/bookings/new?artistId=${item.artistId ?? ''}&date=${item.date ?? ''}&amount=${item.offeredPrice ?? ''}`}
+          href={`/bookings/new?artistId=${item.artistId ?? ''}&date=${item.date ?? ''}&amount=${item.offeredPrice ?? ''}`}
           className="flex items-center gap-1 text-[11px] font-black uppercase tracking-widest text-amber-600 hover:text-amber-700 transition-colors"
         >
           Iniciar contratación <ArrowRight className="w-3.5 h-3.5" />

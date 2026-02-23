@@ -14,12 +14,14 @@ import { useAuth } from '@/hooks/auth/useAuth';
 import { useMe } from '@/hooks/auth/useMe';
 import { getArtistGallery } from '@/services/artists/gallery.service';
 import { getArtistVideos } from '@/services/artists/videos.service';
+import { createRepresentationRequest } from '@/services/representations/representations.service';
 
 import { ProfileHero } from '@/components/profile/ProfileHero';
 import { PricingCard } from '@/components/profile/PricingCard';
 import { GlassCard } from '@/components/profile/GlassCard';
 import { ManagerSidebarCard } from '@/components/profile/ManagerSidebarCard';
 import { AvailabilityCalendar } from '@/components/profile/AvailabilityCalendar';
+import { VerificationBanner } from '@/components/profile/VerificationBanner';
 
 type ArtistProfile = {
   id: string;
@@ -38,6 +40,7 @@ type ArtistProfile = {
   representationRequestId?: string | null;
   representationCommission?: number | null;
   profileImageUrl?: string | null;
+  isVerified?: boolean;
 };
 
 export default function ArtistProfilePage() {
@@ -57,6 +60,8 @@ export default function ArtistProfilePage() {
   const [videos, setVideos] = useState<Array<{ id: string; youtubeId: string; title?: string | null }>>([]);
   const [showVideoId, setShowVideoId] = useState<string | null>(null);
   const [mediaTab, setMediaTab] = useState<'gallery' | 'videos' | 'material'>('gallery');
+  const [requestingRepresentation, setRequestingRepresentation] = useState(false);
+  const [representationMessage, setRepresentationMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   useEffect(() => {
     if (!id || !user?.token) return;
@@ -136,13 +141,53 @@ export default function ArtistProfilePage() {
     );
   };
 
+  const hasActiveManager = Boolean(artist.managerId) || artist.representationStatus === 'ACTIVE';
+  const hasPendingRequest = artist.representationStatus === 'PENDING' || artist.canRequestRepresentation === false;
+  const managerCtaDisabled = hasActiveManager || hasPendingRequest || requestingRepresentation;
+
+  const handleManagerRepresentationRequest = async () => {
+    if (!user?.token || !isManager || managerCtaDisabled) return;
+    setRepresentationMessage(null);
+    setRequestingRepresentation(true);
+    try {
+      await createRepresentationRequest({
+        artistId: artist.id,
+        commissionPercentage: artist.representationCommission ?? 20,
+        token: user.token,
+      });
+      setRepresentationMessage({
+        type: 'ok',
+        text: 'Solicitud de representación enviada.',
+      });
+      setArtist((prev) => (prev ? { ...prev, representationStatus: 'PENDING', canRequestRepresentation: false } : prev));
+    } catch (err: unknown) {
+      setRepresentationMessage({
+        type: 'err',
+        text: err instanceof Error ? err.message : 'No se pudo enviar la solicitud',
+      });
+    } finally {
+      setRequestingRepresentation(false);
+    }
+  };
+
+  const ctaButtonText = isManager
+    ? hasActiveManager
+      ? 'Manager activo'
+      : hasPendingRequest
+        ? 'Solicitud pendiente'
+        : requestingRepresentation
+          ? 'Enviando...'
+          : 'Solicitar representación'
+    : 'Iniciar booking';
+
   const pricingCard = (
     <PricingCard
       amount={artist.basePrice}
       currency={artist.currency}
       isNegotiable={artist.isNegotiable}
-      buttonText={isManager ? 'Ver calendario' : 'Iniciar booking'}
-      onActionClick={() => handleBooking()}
+      buttonText={ctaButtonText}
+      actionDisabled={isManager ? managerCtaDisabled : false}
+      onActionClick={isManager ? handleManagerRepresentationRequest : () => handleBooking()}
     />
   );
 
@@ -172,6 +217,12 @@ export default function ArtistProfilePage() {
           actionElement={pricingCard}
         />
 
+        {artist.isVerified ? (
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 mt-4">
+            <VerificationBanner />
+          </div>
+        ) : null}
+
         {/* PricingCard móvil */}
         <div className="block lg:hidden max-w-5xl mx-auto px-4 pt-4">
           {pricingCard}
@@ -183,6 +234,14 @@ export default function ArtistProfilePage() {
 
             {/* Columna principal */}
             <div className="lg:col-span-2 space-y-6">
+              {representationMessage && (
+                <div className={`rounded-2xl px-4 py-3 text-sm font-semibold ${representationMessage.type === 'ok'
+                  ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border border-rose-200 bg-rose-50 text-rose-700'
+                  }`}>
+                  {representationMessage.text}
+                </div>
+              )}
 
               {/* Bio */}
               <GlassCard title="Sobre el artista" icon={<Sparkles className="w-4 h-4" />}>

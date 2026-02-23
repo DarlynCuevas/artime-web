@@ -16,6 +16,7 @@ export interface NotificationPreferences {
     messages: boolean;
     system: boolean;
     marketing: boolean;
+    suggestions: boolean;
 }
 
 export type VerificationStatus = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';

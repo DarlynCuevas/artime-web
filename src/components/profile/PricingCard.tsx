@@ -6,6 +6,7 @@ interface PricingCardProps {
     isNegotiable: boolean;
     buttonText?: string;
     onActionClick?: () => void;
+    actionDisabled?: boolean;
     className?: string;
 }
 
@@ -15,6 +16,7 @@ export function PricingCard({
     isNegotiable,
     buttonText = 'Solicitar Fecha',
     onActionClick,
+    actionDisabled = false,
     className = '',
 }: PricingCardProps) {
     return (
@@ -41,7 +43,12 @@ export function PricingCard({
 
             {/* Lower part: Action */}
             <button
-                className="w-full h-11 rounded-xl bg-brand-amber hover:bg-amber-400 text-amber-950 font-bold text-sm shadow-[0_4px_14px_0_rgba(245,158,11,0.39)] hover:shadow-[0_6px_20px_rgba(245,158,11,0.23)] hover:-translate-y-0.5 transition-all duration-200"
+                disabled={actionDisabled}
+                className={`w-full h-11 rounded-xl font-bold text-sm transition-all duration-200 ${
+                    actionDisabled
+                        ? 'bg-slate-700 text-slate-300 cursor-not-allowed'
+                        : 'bg-brand-amber hover:bg-amber-400 text-amber-950 shadow-[0_4px_14px_0_rgba(245,158,11,0.39)] hover:shadow-[0_6px_20px_rgba(245,158,11,0.23)] hover:-translate-y-0.5'
+                }`}
                 onClick={onActionClick}
             >
                 {buttonText}

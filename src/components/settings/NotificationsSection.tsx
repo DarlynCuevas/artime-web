@@ -18,6 +18,7 @@ const defaultPrefs: NotificationPreferences = {
     messages: true,
     system: true,
     marketing: false,
+    suggestions: true,
 };
 
 const labels: Record<keyof NotificationPreferences, { title: string; description: string }> = {
@@ -40,6 +41,10 @@ const labels: Record<keyof NotificationPreferences, { title: string; description
     marketing: {
         title: 'Novedades y marketing',
         description: 'Noticias de Artime, nuevas funcionalidades y ofertas.',
+    },
+    suggestions: {
+        title: 'Sugerencias de managers',
+        description: 'Nuevas sugerencias de artistas para tu sala y sus actualizaciones.',
     },
 };
 
@@ -68,8 +73,8 @@ export function NotificationsSection({ token }: Props) {
             await updateNotificationPreferences(prefs, token);
             setMessage({ type: 'ok', text: 'Preferencias guardadas correctamente.' });
             setTimeout(() => setMessage(null), 3000);
-        } catch (err: any) {
-            setMessage({ type: 'err', text: err?.message ?? 'No se pudieron guardar las preferencias' });
+        } catch (err: unknown) {
+            setMessage({ type: 'err', text: err instanceof Error ? err.message : 'No se pudieron guardar las preferencias' });
         } finally {
             setSaving(false);
         }
