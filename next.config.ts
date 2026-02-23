@@ -41,9 +41,10 @@ const nextConfig: NextConfig = {
             value: `
               default-src 'self';
               script-src 'self' https://js.stripe.com;
-              style-src 'self' 'unsafe-inline' https://js.stripe.com;
+              style-src 'self' 'unsafe-inline' https://js.stripe.com https://fonts.googleapis.com;
               frame-src 'self' https://js.stripe.com https://www.youtube.com https://www.youtube-nocookie.com;
               img-src 'self' data: blob: https://lqimbxjicvdddaoxgjmm.supabase.co https://img.youtube.com;
+              font-src 'self' data: https://fonts.gstatic.com;
               connect-src ${connectSrc};
             `
               .replace(/\s+/g, " ")
