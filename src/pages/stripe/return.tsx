@@ -1,9 +1,27 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useMe } from '@/src/hooks/auth/useMe';
 
 export default function StripeReturn() {
   const router = useRouter();
+  const { loading, role } = useMe();
+  const destination = useMemo(() => {
+    if (role === 'ARTIST') return '/artists/profile';
+    if (role === 'VENUE') return '/venues/profile';
+    if (role === 'MANAGER') return '/manager/profile';
+    if (role === 'PROMOTER') return '/promoter/profile';
+    return '/';
+  }, [role]);
+
+  useEffect(() => {
+    if (loading) return;
+    const timeout = setTimeout(() => {
+      void router.replace(destination);
+    }, 1200);
+    return () => clearTimeout(timeout);
+  }, [loading, destination, router]);
+
   const message = useMemo(() => {
     const status = router.query?.status as string | undefined;
     if (status === 'success') return 'Stripe conectado correctamente. Ya puedes cerrar esta ventana.';
@@ -18,10 +36,10 @@ export default function StripeReturn() {
         <p className="text-sm text-slate-600">{message}</p>
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Link
-            href="/settings?tab=verification"
+            href={destination}
             className="inline-flex items-center justify-center rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-amber-950 hover:bg-amber-400 transition"
           >
-            Ir a Ajustes
+            Ir a tu perfil
           </Link>
           <Link
             href="/"
