@@ -38,6 +38,7 @@ import {
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 );
+const APP_TIME_ZONE = 'Europe/Madrid';
 
 function BookingDetailPage() {
   const router = useRouter();
@@ -1041,7 +1042,14 @@ function formatDate(value?: string | null) {
 function formatDateTime(value?: string | null) {
   if (!value) return '—';
   const d = new Date(value);
-  return d.toLocaleString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: APP_TIME_ZONE,
+  });
 }
 
 function formatRelativeTime(value?: string | Date | null) {
@@ -1076,7 +1084,11 @@ function formatShortDate(value?: string | null) {
 function formatShortTime(value?: string | null) {
   if (!value) return '—';
   const d = new Date(value);
-  return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: APP_TIME_ZONE,
+  });
 }
 
 function formatBookingStatusLabel(status: string, currentRole?: string | null, finalOfferSenderRole?: string | null) {
