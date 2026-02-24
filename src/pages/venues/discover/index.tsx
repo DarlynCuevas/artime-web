@@ -295,41 +295,43 @@ export default function VenueDiscoverArtistsPage() {
         )}
 
         {!loading && filteredArtists.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredArtists.map((artist) => (
-              <Link
-                key={artist.id}
-                href={`/artists/profile/${artist.id}`}
-                className="group border border-slate-100 overflow-hidden bg-white hover:shadow-md transition-all"
-              >
-                <div className="aspect-square bg-slate-100 overflow-hidden flex items-center justify-center text-slate-500 font-black text-xl">
-                  {artist.profileImageUrl ? (
-                    <img src={artist.profileImageUrl} alt={`Foto de ${artist.name}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                  ) : (
-                    <span>{artist.name?.slice(0, 1)?.toUpperCase() ?? '?'}</span>
-                  )}
-                </div>
-
-                <div className="pt-2.5 sm:pt-3 pb-2.5 sm:pb-3 px-2.5 sm:px-3 space-y-1.5">
-                  <p className="text-slate-900 text-sm leading-tight truncate flex items-center gap-1.5 font-normal">
-                    <span className="truncate">{artist.name}</span>
-                    {artist.isVerified ? <VerifiedShieldIcon /> : null}
-                  </p>
-                  <p className="text-[11px] text-slate-500 leading-tight line-clamp-2">
-                    {artist.city}
-                    {artist.genres?.length ? ` · ${artist.genres.slice(0, 2).join(' · ')}` : ''}
-                  </p>
-                  <div className="flex items-center justify-between gap-1.5 pt-0.5">
-                    <p className="text-xs font-normal text-slate-900 tabular-nums truncate">{formatCurrency(artist.basePrice, artist.currency)}</p>
-                    {artist.isNegotiable && (
-                      <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 text-[10px] font-bold">
-                        Negociable
-                      </span>
+          <div className="relative w-screen left-1/2 -translate-x-1/2 md:w-[calc(100vw-var(--sidebar-width))] md:left-auto md:translate-x-0 md:ml-[calc((100vw-var(--sidebar-width)-100%)/-2)]">
+            <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-0">
+              {filteredArtists.map((artist) => (
+                <Link
+                  key={artist.id}
+                  href={`/artists/profile/${artist.id}`}
+                  className="group border border-slate-100 overflow-hidden bg-white hover:shadow-md transition-all"
+                >
+                  <div className="aspect-square bg-slate-100 overflow-hidden flex items-center justify-center text-slate-500 font-black text-xl">
+                    {artist.profileImageUrl ? (
+                      <img src={artist.profileImageUrl} alt={`Foto de ${artist.name}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    ) : (
+                      <span>{artist.name?.slice(0, 1)?.toUpperCase() ?? '?'}</span>
                     )}
                   </div>
-                </div>
-              </Link>
-            ))}
+
+                  <div className="pt-2.5 sm:pt-3 pb-2.5 sm:pb-3 px-2.5 sm:px-3 space-y-1.5">
+                    <p className="text-slate-900 text-sm leading-tight truncate flex items-center gap-1.5 font-normal">
+                      <span className="truncate">{artist.name}</span>
+                      {artist.isVerified ? <VerifiedShieldIcon /> : null}
+                    </p>
+                    <p className="text-[11px] text-slate-500 leading-tight line-clamp-2">
+                      {artist.city}
+                      {artist.genres?.length ? ` · ${artist.genres.slice(0, 2).join(' · ')}` : ''}
+                    </p>
+                    <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                      <p className="text-xs font-normal text-slate-900 tabular-nums truncate">{formatCurrency(artist.basePrice, artist.currency)}</p>
+                      {artist.isNegotiable && (
+                        <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 text-[10px] font-bold">
+                          Negociable
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         )}
       </main>
