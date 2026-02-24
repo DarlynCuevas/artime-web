@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Calendar, Coins, Filter, MapPin, Music, Search, Sparkles, X, Zap } from 'lucide-react';
+import { Calendar, Coins, Filter, MapPin, Music, Search, Sparkles, X, Zap } from 'lucide-react';
 
 import { discoverArtists } from '@/services/artists/discoverArtists.service';
 import { createArtistCall } from '@/services/venues/artist-calls.service';
@@ -18,6 +18,7 @@ type DiscoverArtist = {
   basePrice: number;
   currency: string;
   isNegotiable: boolean;
+  isVerified?: boolean;
 };
 
 export default function VenueDiscoverArtistsPage() {
@@ -49,9 +50,15 @@ export default function VenueDiscoverArtistsPage() {
         maxPrice,
         search: searchTerm || undefined,
       });
-      const normalized = (data ?? [])
-        .map((a: any) => ({ ...a, id: a.id || a.artistId || a.artist_id }))
-        .filter((a: any) => Boolean(a.id));
+      const normalized = (Array.isArray(data) ? data : [])
+        .map((artist) => {
+          const candidate = artist as Partial<DiscoverArtist>;
+          return {
+            ...candidate,
+            id: candidate.id || candidate.artistId || candidate.artist_id,
+          };
+        })
+        .filter((artist): artist is DiscoverArtist => Boolean(artist.id));
       setArtists(normalized);
     } catch {
       setError('No se pudieron cargar los artistas');
@@ -70,7 +77,7 @@ export default function VenueDiscoverArtistsPage() {
     const trimmedCity = city.trim();
     const trimmedGenre = genre.trim();
     const trimmedSearch = searchTerm.trim();
-    const filters: Record<string, any> = {};
+    const filters: Record<string, string | number> = {};
     if (trimmedGenre) filters.genre = trimmedGenre;
     if (minPrice !== undefined) filters.minPrice = minPrice;
     if (maxPrice !== undefined) filters.maxPrice = maxPrice;
@@ -85,8 +92,8 @@ export default function VenueDiscoverArtistsPage() {
         user.token,
       );
       setCallMessage(`Convocatoria creada. Artistas notificados: ${res.notifiedArtists ?? res.notified ?? 0}`);
-    } catch (err: any) {
-      setCallError(err?.message || 'No se pudo notificar a los artistas');
+    } catch (err: unknown) {
+      setCallError(err instanceof Error ? err.message : 'No se pudo notificar a los artistas');
     } finally {
       setCallLoading(false);
     }
@@ -101,47 +108,36 @@ export default function VenueDiscoverArtistsPage() {
   const hasActiveFilters = Boolean(city || genre || date || minPrice !== undefined || maxPrice !== undefined);
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24">
+      <div className="min-h-screen bg-slate-50 pb-24">
 
       {/* ── HERO ─────────────────────────────────────────────── */}
-      <div className="relative w-full overflow-hidden bg-fintech-dark rounded-3xl">
+      <div className="relative w-screen left-1/2 -translate-x-1/2 overflow-hidden bg-fintech-dark -mt-6 md:-mt-8 md:w-[calc(100vw-var(--sidebar-width))] md:left-auto md:translate-x-0 md:ml-[calc((100vw-var(--sidebar-width)-100%)/-2)]">
         <div className="absolute inset-0 bg-gradient-to-br from-fintech-dark via-slate-800 to-fintech-dark opacity-90" />
         <div className="absolute -top-32 -right-32 w-96 h-96 bg-brand-amber rounded-full mix-blend-multiply filter blur-[128px] opacity-15 animate-pulse" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-10" />
 
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-14 pb-12">
-          <div className="mb-10">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center shrink-0">
-                <Sparkles className="w-6 h-6 text-amber-400" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.3em] mb-0.5">Catálogo</p>
-                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Descubrir artistas</h1>
-              </div>
-            </div>
-            <p className="text-white/50 text-sm max-w-xl ml-16">
-              Consulta artistas con condiciones base visibles para iniciar una contratación formal.
-            </p>
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5">
+          <div className="mb-3 sm:mb-4">
+            <h1 className="text-lg sm:text-xl font-normal text-white tracking-tight">Descubre artistas</h1>
           </div>
 
           {/* Barra de búsqueda principal */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 md:max-w-3xl md:mx-auto">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && loadArtists()}
                 placeholder="Buscar artista por nombre…"
-                className="w-full rounded-2xl bg-white/8 border border-white/10 text-white placeholder-white/30 px-4 py-3.5 pl-11 text-sm font-medium focus:outline-none focus:border-amber-400/50 focus:bg-white/12 transition-all"
+                className="w-full rounded-2xl bg-white border border-white/20 text-slate-900 placeholder-slate-400 px-4 py-2.5 pl-11 text-sm font-normal focus:outline-none focus:border-amber-300 transition-all"
               />
               {searchTerm && (
                 <button
                   type="button"
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-white/50 hover:bg-white/20 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -150,7 +146,7 @@ export default function VenueDiscoverArtistsPage() {
             <button
               type="button"
               onClick={() => setShowFilters((s) => !s)}
-              className={`flex items-center gap-2 px-4 py-3.5 rounded-2xl border font-black text-xs uppercase tracking-widest transition-all duration-200 ${showFilters || hasActiveFilters
+              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border font-black text-xs uppercase tracking-widest transition-all duration-200 sm:w-auto ${showFilters || hasActiveFilters
                 ? 'bg-amber-500/20 border-amber-400/30 text-amber-300'
                 : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10 hover:text-white/70'
                 }`}
@@ -165,7 +161,7 @@ export default function VenueDiscoverArtistsPage() {
               type="button"
               onClick={loadArtists}
               disabled={loading}
-              className="px-5 py-3.5 rounded-2xl bg-brand-amber text-amber-950 font-black text-xs uppercase tracking-widest hover:bg-amber-400 transition-all duration-200 disabled:opacity-50 shrink-0"
+              className="hidden sm:inline-flex px-5 py-3 rounded-2xl bg-brand-amber text-amber-950 font-black text-xs uppercase tracking-widest hover:bg-amber-400 transition-all duration-200 disabled:opacity-50 shrink-0"
             >
               {loading ? 'Buscando…' : 'Buscar'}
             </button>
@@ -173,7 +169,7 @@ export default function VenueDiscoverArtistsPage() {
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 mt-6 space-y-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 mt-4 sm:mt-6 space-y-6">
 
         {/* Panel de filtros expandible */}
         {showFilters && (
@@ -299,70 +295,67 @@ export default function VenueDiscoverArtistsPage() {
         )}
 
         {!loading && filteredArtists.length > 0 && (
-          <div className="bg-white border border-slate-200 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.04)] overflow-hidden">
-            <div className="px-6 py-5 border-b border-slate-50 bg-slate-50/50 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredArtists.map((artist) => (
+              <Link
+                key={artist.id}
+                href={`/artists/profile/${artist.id}`}
+                className="group border border-slate-100 overflow-hidden bg-white hover:shadow-md transition-all"
+              >
+                <div className="aspect-square bg-slate-100 overflow-hidden flex items-center justify-center text-slate-500 font-black text-xl">
+                  {artist.profileImageUrl ? (
+                    <img src={artist.profileImageUrl} alt={`Foto de ${artist.name}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                  ) : (
+                    <span>{artist.name?.slice(0, 1)?.toUpperCase() ?? '?'}</span>
+                  )}
                 </div>
-                <div>
-                  <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest">Resultados</h2>
-                  <p className="text-[10px] text-slate-400 font-bold mt-0.5">{filteredArtists.length} artista{filteredArtists.length !== 1 ? 's' : ''} disponible{filteredArtists.length !== 1 ? 's' : ''}</p>
-                </div>
-              </div>
-            </div>
 
-            <div className="divide-y divide-slate-50">
-              {filteredArtists.map((artist) => (
-                <Link
-                  key={artist.id}
-                  href={`/artists/profile/${artist.id}`}
-                  className="group flex items-center gap-4 px-6 py-4 hover:bg-slate-50/50 transition-colors"
-                >
-                  {/* Avatar */}
-                  <div className="w-11 h-11 rounded-2xl bg-amber-500/10 shrink-0 overflow-hidden flex items-center justify-center text-amber-600 font-black text-sm group-hover:bg-amber-500/20 transition-colors">
-                    {artist.profileImageUrl ? (
-                      <img src={artist.profileImageUrl} alt={`Foto de ${artist.name}`} className="w-full h-full object-cover" />
-                    ) : (
-                      <span>{artist.name?.slice(0, 1)?.toUpperCase() ?? '?'}</span>
+                <div className="pt-2.5 sm:pt-3 pb-2.5 sm:pb-3 px-2.5 sm:px-3 space-y-1.5">
+                  <p className="text-slate-900 text-sm leading-tight truncate flex items-center gap-1.5 font-normal">
+                    <span className="truncate">{artist.name}</span>
+                    {artist.isVerified ? <VerifiedShieldIcon /> : null}
+                  </p>
+                  <p className="text-[11px] text-slate-500 leading-tight line-clamp-2">
+                    {artist.city}
+                    {artist.genres?.length ? ` · ${artist.genres.slice(0, 2).join(' · ')}` : ''}
+                  </p>
+                  <div className="flex items-center justify-between gap-1.5 pt-0.5">
+                    <p className="text-xs font-normal text-slate-900 tabular-nums truncate">{formatCurrency(artist.basePrice, artist.currency)}</p>
+                    {artist.isNegotiable && (
+                      <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 text-[10px] font-bold">
+                        Negociable
+                      </span>
                     )}
                   </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-900">{artist.name}</p>
-                    <div className="flex items-center gap-3 mt-0.5 text-[11px] text-slate-400 font-medium">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" /> {artist.city}
-                      </span>
-                      {artist.genres?.length ? (
-                        <span className="flex items-center gap-1">
-                          <Music className="w-3 h-3" />
-                          {artist.genres.slice(0, 3).join(' · ')}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  {/* Precio */}
-                  <div className="text-right shrink-0">
-                    <p className="font-black text-slate-900 tabular-nums">{formatCurrency(artist.basePrice, artist.currency)}</p>
-                    <p className={`text-[10px] font-bold ${artist.isNegotiable ? 'text-amber-500' : 'text-slate-400'}`}>
-                      {artist.isNegotiable ? 'Negociable' : 'Fijo'}
-                    </p>
-                  </div>
-
-                  {/* CTA */}
-                  <div className="w-8 h-8 rounded-xl border border-slate-200 flex items-center justify-center shrink-0 group-hover:border-amber-300 group-hover:bg-amber-50 transition-all">
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-600 transition-colors" />
-                  </div>
-                </Link>
-              ))}
-            </div>
+                </div>
+              </Link>
+            ))}
           </div>
         )}
       </main>
     </div>
+  );
+}
+
+function VerifiedShieldIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="w-3.5 h-3.5 shrink-0">
+      <path
+        d="M12 2.5L19.5 5.6V11.5C19.5 16.3 16.6 20.5 12 22C7.4 20.5 4.5 16.3 4.5 11.5V5.6L12 2.5Z"
+        fill="none"
+        stroke="#45E6D3"
+        strokeWidth="1.9"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8.8 12.2L11 14.3L15.2 10.2"
+        fill="none"
+        stroke="#45E6D3"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
