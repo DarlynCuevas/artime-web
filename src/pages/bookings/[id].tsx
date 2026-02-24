@@ -5,7 +5,6 @@ import { ArrowLeft, ArrowRight, Calendar, MapPin, Clock, CreditCard, FileText, A
 
 import { CancelBookingModal } from '@/components/bookings/CancelBookingModal';
 import { NegotiationPanel } from '@/components/bookings/NegotiationPanel';
-import { SignContractModal } from '@/components/bookings/SignContractModal';
 import { useContract } from '@/hooks/bookings/contracts/useContract';
 import { useBooking } from '@/hooks/bookings/useBooking';
 import { useNegotiation } from '@/hooks/bookings/useNegotiation';
@@ -23,7 +22,7 @@ import {
   createPaymentIntentForMilestone,
   getMilestonesForBooking,
 } from '@/services/bookings/payments/payments.service.';
-import { downloadContractPdf, signContract } from '@/services/contracts/contracts.service';
+import { createDocusignSigningUrl, downloadContractPdf } from '@/services/contracts/contracts.service';
 
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js';
@@ -59,7 +58,6 @@ function BookingDetailPage() {
   const { contract, refresh: refreshContract } = useContract(bookingId);
 
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [showSignContractModal, setShowSignContractModal] = useState(false);
   const [showConditions, setShowConditions] = useState(false);
   const [eventName, setEventName] = useState<string | null>(null);
 
@@ -67,6 +65,8 @@ function BookingDetailPage() {
   const [milestoneId, setMilestoneId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentInfo, setPaymentInfo] = useState<string | null>(null);
+  const [signingWithDocusign, setSigningWithDocusign] = useState(false);
+  const [docusignError, setDocusignError] = useState<string | null>(null);
   const [paymentSummary, setPaymentSummary] = useState<{
     paidAmount: number;
     totalAmount: number;
@@ -243,7 +243,7 @@ function BookingDetailPage() {
   const canSignContract =
     Boolean(contract) &&
     contract?.status === 'DRAFT' &&
-    (role === 'ARTIST' || role === 'MANAGER');
+    (role === 'ARTIST' || role === 'VENUE' || role === 'PROMOTER');
   const canShowSignActionInRequiredPanel =
     booking.status === 'ACCEPTED' && canSignContract;
 
@@ -425,12 +425,33 @@ function BookingDetailPage() {
                 {canShowSignActionInRequiredPanel && (
                   <button
                     type="button"
-                    onClick={() => setShowSignContractModal(true)}
+                    disabled={signingWithDocusign}
+                    onClick={async () => {
+                      if (!contract?.id) return;
+                      try {
+                        setDocusignError(null);
+                        setSigningWithDocusign(true);
+                        const returnUrl = `${window.location.origin}/docusign/return`;
+                        const result = await createDocusignSigningUrl({
+                          contractId: contract.id,
+                          token: user.token,
+                          returnUrl,
+                        });
+                        window.location.assign(result.signingUrl);
+                      } catch (error) {
+                        setDocusignError(error instanceof Error ? error.message : 'No se pudo abrir DocuSign');
+                      } finally {
+                        setSigningWithDocusign(false);
+                      }
+                    }}
                     className="contract-sign-cta h-11 w-full sm:w-auto px-6 rounded-xl border border-amber-400 text-amber-700 hover:bg-amber-50 font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 text-center"
                   >
-                    <FileSignature className="w-4 h-4" /> Firmar contrato
+                    <FileSignature className="w-4 h-4" /> {signingWithDocusign ? 'Abriendo DocuSign...' : 'Firmar contrato'}
                   </button>
                 )}
+                {docusignError ? (
+                  <p className="text-sm text-red-600 font-medium">{docusignError}</p>
+                ) : null}
                 {booking.status === 'ACCEPTED' && canCancelBooking && (
                   <button
                     type="button"
@@ -648,18 +669,6 @@ function BookingDetailPage() {
         />
       )}
 
-      <SignContractModal
-        open={showSignContractModal}
-        title="Firmar contrato"
-        confirmLabel="Firmar contrato"
-        onClose={() => setShowSignContractModal(false)}
-        onConfirm={async () => {
-          if (!contract?.id) return;
-          await signContract(contract.id, user.token);
-          await refreshContract();
-          await refresh();
-        }}
-      />
     </div>
   );
 }
