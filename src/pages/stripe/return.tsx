@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect, useMemo } from 'react';
-import { useMe } from '@/src/hooks/auth/useMe';
+import { useMe } from '@/hooks/auth/useMe';
 
 export default function StripeReturn() {
   const router = useRouter();
