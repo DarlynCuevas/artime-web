@@ -43,6 +43,36 @@ export async function signContract(
   }
 }
 
+export async function createDocusignSigningUrl(params: {
+  contractId: string;
+  token: string;
+  returnUrl?: string;
+}): Promise<{ signingUrl: string; envelopeId: string; status: string }> {
+  const res = await fetch(
+    `${API_BASE_URL}/contracts/${params.contractId}/docusign/signing-url`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${params.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        returnUrl: params.returnUrl,
+      }),
+    },
+  );
+
+  if (!res.ok) {
+    const payload = await res.json().catch(() => null);
+    const message =
+      (payload && typeof payload.message === 'string' && payload.message) ||
+      'No se pudo iniciar DocuSign';
+    throw new Error(message);
+  }
+
+  return res.json();
+}
+
 export function getContractPdfUrl(bookingId: string) {
   return `${API_BASE_URL}/bookings/${bookingId}/contract/pdf`;
 }
