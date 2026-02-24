@@ -296,7 +296,7 @@ export default function VenueDiscoverArtistsPage() {
 
         {!loading && filteredArtists.length > 0 && (
           <div className="relative w-screen left-1/2 -translate-x-1/2 md:w-[calc(100vw-var(--sidebar-width))] md:left-auto md:translate-x-0 md:ml-[calc((100vw-var(--sidebar-width)-100%)/-2)]">
-            <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-0">
+            <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-0 lg:gap-2 xl:gap-3 lg:px-2 xl:px-3">
               {filteredArtists.map((artist) => (
                 <Link
                   key={artist.id}
