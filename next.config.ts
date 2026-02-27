@@ -30,6 +30,7 @@ const connectSrc = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  turbopack: false,
 
   async headers() {
     return [
