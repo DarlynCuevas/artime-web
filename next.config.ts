@@ -30,11 +30,6 @@ const connectSrc = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  
-  server: {
-    port: 3000,
-    host: '0.0.0.0',
-  },
 
   async headers() {
     return [
