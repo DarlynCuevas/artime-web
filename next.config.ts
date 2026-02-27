@@ -12,12 +12,12 @@ function getOrigin(value?: string) {
 // Legacy static allowlist used previously (kept for quick rollback/testing).
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const LEGACY_CONNECT_SRC =
-  "'self' http://localhost:3000 https://artime-backend.onrender.com https://api.stripe.com https://lqimbxjicvdddaoxgjmm.supabase.co wss://lqimbxjicvdddaoxgjmm.supabase.co";
+  "'self' http://localhost:3001 https://artime-backend.onrender.com https://api.stripe.com https://lqimbxjicvdddaoxgjmm.supabase.co wss://lqimbxjicvdddaoxgjmm.supabase.co";
 
 const apiOrigin = getOrigin(process.env.NEXT_PUBLIC_API_BASE_URL);
 const connectSrc = [
   "'self'",
-  "http://localhost:3000",
+  "http://localhost:3001",
   "https://artime-backend.onrender.com",
   apiOrigin,
   "https://api.stripe.com",
