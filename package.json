@@ -1,43 +1,8 @@
 {
-  "name": "web",
+  "name": "my-v0-project",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 8080",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "use:render": "node -e \"const fs=require('fs');const p='.env.local';let s=fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const line='NEXT_PUBLIC_API_BASE_URL=https://artime-backend.onrender.com';if(s.match(/^NEXT_PUBLIC_API_BASE_URL=.*$/m)) s=s.replace(/^NEXT_PUBLIC_API_BASE_URL=.*$/m,line); else s=line+'\\n'+s;fs.writeFileSync(p,s);console.log('Set NEXT_PUBLIC_API_BASE_URL to Render');\"",
-    "use:local": "node -e \"const fs=require('fs');const p='.env.local';let s=fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';const line='NEXT_PUBLIC_API_BASE_URL=http://localhost:3000';if(s.match(/^NEXT_PUBLIC_API_BASE_URL=.*$/m)) s=s.replace(/^NEXT_PUBLIC_API_BASE_URL=.*$/m,line); else s=line+'\\n'+s;fs.writeFileSync(p,s);console.log('Set NEXT_PUBLIC_API_BASE_URL to Local');\""
-  },
-  "dependencies": {
-    "@radix-ui/react-dialog": "^1.1.15",
-    "@radix-ui/react-separator": "^1.1.8",
-    "@radix-ui/react-tooltip": "^1.2.8",
-    "@stripe/react-stripe-js": "^5.6.0",
-    "@stripe/stripe-js": "^8.7.0",
-    "@supabase/supabase-js": "^2.95.1",
-    "class-transformer": "^0.5.1",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.470.0",
-    "next": "16.1.1",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "tailwind-merge": "^3.4.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "autoprefixer": "^10.4.23",
-    "babel-plugin-react-compiler": "1.0.0",
-    "concurrently": "^9.2.1",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.1",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.19",
-    "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5"
+    "build": "echo 'no build script'"
   }
 }
